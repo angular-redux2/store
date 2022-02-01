@@ -25,7 +25,7 @@ with some of Angular advanced features, including:
 
 ## Getting Started
 
-- I already know what Redux and RxJS are. [Give me the TL;DR](docs/quickstart.md).
+- I already know what Redux and RxJS are. [Give me the TL;DR](articles/quickstart.md).
 - Take me to the [API docs](https://angular-redux2.github.io/store).
 
 ## Resources
