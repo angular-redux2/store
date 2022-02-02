@@ -2,7 +2,7 @@
     "name": "@angular-redux2/store",
     "author": "Garfild (https://github.com/Garefild)",
     "license": "MIT",
-    "version": "4.0.3",
+    "version": "4.0.4",
     "homepage": "https://github.com/angular-redux2/store",
     "description": "Angular bindings for Redux",
     "repository": {
@@ -29,7 +29,6 @@
         "redux": ">=4.1.0",
         "@angular/core": ">=12.0.0",
         "@angular/common": ">=12.0.0",
-        "redux-devtools-extension": ">=2.13.9",
         "broadcast-channel": ">=4.8.0"
     },
     "dependencies": {

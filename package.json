@@ -2,7 +2,7 @@
     "name": "angular-redux2-wrapper",
     "author": "Garfild (https://github.com/Garefild)",
     "license": "MIT",
-    "version": "4.0.3",
+    "version": "4.0.4",
     "homepage": "https://github.com/angular-redux2/store",
     "description": "Angular bindings for Redux",
     "repository": {
