@@ -1,4 +1,8 @@
 # angular-redux2/store
+> Please note that **function names are changed** from the `@angular-redux/store` version (this is a new code source) and  need to adjust accordingly
+> 
+> **like**: `select => Select`, `withsubstore => Substore`, `dispatch => Dispatch`<br>
+> **Docs**: https://angular-redux2.github.io/store/modules/src.html
 
 [![npm version](https://img.shields.io/npm/v/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 [![downloads per month](https://img.shields.io/npm/dm/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
