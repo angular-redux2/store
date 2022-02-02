@@ -20,7 +20,7 @@ import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
  *     @Input() userId: String;
  *
  *     // The substore will be created from the return value of this function.
- *     get getBasePath(): Array<string | String> | null {
+ *     getBasePath(): Array<string | String> | null {
  *         return this.userId ? ['users', this.userId] : null;
  *     }
  * }
