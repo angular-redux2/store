@@ -8,15 +8,18 @@ npm install --save redux @angular-redux2/store
 
 ## Quick Start
 
-`store/store.module.ts` 
+`store/store.module.ts`
 
-Import the `NgReduxModule` class and add it to your application module as an `import`. Once you've done this, you'll be able to inject `NgRedux` into your Angular components. In your top-level app module, you can configure your Redux store with reducers, initial state, and optionally middlewares and enhancers as you would in Redux directly.
+Import the `NgReduxModule` class and add it to your application module as an `import`. Once you've done this, you'll be
+able to inject `NgRedux` into your Angular components. In your top-level app module, you can configure your Redux store
+with reducers, initial state, and optionally middlewares and enhancers as you would in Redux directly.
 
 ```typescript
 /**
  * Imports
  */
 
+import { createLogger } from 'redux-logger';
 import { CommonModule } from '@angular/common';
 import { isDevMode, NgModule } from '@angular/core';
 
@@ -52,7 +55,7 @@ export class StoreModule {
         if (devTools.enhancer() && isDevMode())
             enhancer = [ devTools.enhancer() ];
 
-        ngRedux.configureStore(<any> rootReducer, INITIAL_STATE, [], enhancer);
+        ngRedux.configureStore(rootReducer, INITIAL_STATE, [ createLogger() ], enhancer);
     }
 }
 ```
@@ -112,24 +115,25 @@ export class StoreModule {
 >
 > Note that to use it, you'll need to install it with `npm install --save redux-logger` and type definitions for it with `npm install --save-dev @types/redux-logger`.
 
-Now your Angular app has been reduxified! Use the `@Select` decorator to access your store state, and `.dispatch()` to dispatch actions:
+Now your Angular app has been reduxified! Use the `@Select` decorator to access your store state, and `.dispatch()` to
+dispatch actions:
 
 ```typescript
 import { Select } from '@angular-redux2/store';
 
 @Component({
-  template:
-    '<button (click)="onClick()">Clicked {{ count | async }} times</button>',
+    template:
+        '<button (click)="onClick()">Clicked {{ count | async }} times</button>',
 })
 class App {
-  @Select() count$: Observable<number>;
+    @Select() count$: Observable<number>;
 
-  constructor(private ngRedux: NgRedux<IAppState>) {
-      
-  }
+    constructor(private ngRedux: NgRedux<IAppState>) {
 
-  onClick() {
-    this.ngRedux.dispatch({ type: INCREMENT });
-  }
+    }
+
+    onClick() {
+        this.ngRedux.dispatch({ type: INCREMENT });
+    }
 }
 ```
