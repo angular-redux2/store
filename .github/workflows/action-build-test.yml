@@ -13,11 +13,10 @@ jobs:
 
     strategy:
         matrix:
-            node-version: [ 12.x ]
+            node-version: [12.x, 14.x, 16.x]
 
     steps:
         -   uses: actions/checkout@v2
-
         -   name: Cache node modules
             uses: actions/cache@v1
             with:
