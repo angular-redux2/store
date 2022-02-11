@@ -7,10 +7,10 @@
  *  const newObject = deepCopy(oldObject);
  * ```
  *
- * @param objectData - object to copy to new one.
+ * @param objectData - object to copy to new one.s
  */
 
-export function deepCopy(objectData: any): Object {
+export function deepCopy<T>(objectData: any): T {
     let outObject: any, value, key;
 
     if (typeof objectData !== 'object' || objectData === null) {
