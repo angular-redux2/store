@@ -3,7 +3,7 @@
  */
 
 import { Observable } from 'rxjs';
-import { AnyAction } from 'redux';
+import { Action, AnyAction } from 'redux';
 
 /**
  * The primitive type are accept by selector array.
@@ -84,12 +84,6 @@ export type Transformer<RootState, FragmentStore> = (store$: Observable<RootStat
  */
 
 export type ReducerAction<Payload = undefined> = (payload?: Payload) => AnyAction;
-
-/**
- * Reducer function type
- */
-
-export type Reducer<State = any> = (state: State, action: AnyAction) => State;
 
 /**
  * Type of fractal action

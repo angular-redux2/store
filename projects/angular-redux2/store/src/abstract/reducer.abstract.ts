@@ -2,13 +2,13 @@
  * Import third-party libraries
  */
 
-import { AnyAction } from 'redux';
+import { AnyAction, Reducer } from 'redux';
 
 /**
  * Interfaces
  */
 
-import { Reducer, ReducerAction } from '../interfaces/store.interface';
+import { ReducerAction } from '../interfaces/store.interface';
 
 /**
  * Base reducer class

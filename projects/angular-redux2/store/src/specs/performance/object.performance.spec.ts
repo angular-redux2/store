@@ -39,8 +39,8 @@ const storeStruct = {
  * Run performance test
  */
 
-describe.only('Run performance test for object Getter && Setter', () => {
-    test.only('should run 1M get request under a 0.4 second', () => {
+fdescribe('Run performance test for object Getter && Setter', () => {
+    fit('should run 1M get request under a 0.4 second', () => {
         const result = performanceTest(() => {
             get(storeStruct, [ 'level_1', 'level_2', 'level_3', 'key' ]);
         }, 1000000);
@@ -49,7 +49,7 @@ describe.only('Run performance test for object Getter && Setter', () => {
         expect(result).toBeLessThan(400);
     });
 
-    test.only('should run 1M set request under a 2 second', () => {
+    fit('should run 1M set request under a 2 second', () => {
         const result = performanceTest(() => {
             set(storeStruct, [ 'level_1', 'level_2', 'level_3', 'key' ], 5);
         }, 1000000);
