@@ -1,0 +1,122 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "env": {
+        "node": true,
+        "jest": true,
+        "es2021": true,
+        "commonjs": true
+    },
+    "extends": [
+        "eslint:recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 2021,
+        "project": [
+            "./tsconfig.json",
+            "./jest.config.js"
+        ]
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "rules": {
+        "no-undef": "off",
+        "no-redeclare": "off",
+        "padded-blocks": "off",
+        "no-unused-vars": "off",
+        "no-dupe-class-members": "off",
+        "newline-before-return": "error",
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "max-len": [
+            "error",
+            {
+                "code": 180
+            }
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "require-jsdoc": [
+            "warn",
+            {
+                "require": {
+                    "MethodDefinition": false,
+                    "ClassDeclaration": false,
+                    "FunctionExpression": false,
+                    "FunctionDeclaration": false,
+                    "ArrowFunctionExpression": false
+                }
+            }
+        ],
+        "linebreak-style": [
+            "error",
+            "windows"
+        ],
+        "array-bracket-spacing": [
+            "error",
+            "always",
+            {
+                "objectsInArrays": false,
+                "arraysInArrays": false
+            }
+        ],
+        "object-curly-spacing": [
+            2,
+            "always"
+        ],
+        "@typescript-eslint/member-ordering": [
+            "error",
+            {
+                "default": [
+                    // Fields
+                    "public-abstract-field",
+                    "public-static-field",
+                    "public-decorated-field",
+                    "public-instance-field",
+                    "protected-abstract-field",
+                    "protected-static-field",
+                    "protected-decorated-field",
+                    "protected-instance-field",
+                    "private-abstract-field",
+                    "private-static-field",
+                    "private-decorated-field",
+                    "private-instance-field",
+                    // Constructors
+                    "public-constructor",
+                    "protected-constructor",
+                    "private-constructor",
+                    // Methods
+                    "public-static-method",
+                    "public-decorated-method",
+                    "public-instance-method",
+                    "public-abstract-method",
+                    "protected-static-method",
+                    "protected-decorated-method",
+                    "protected-instance-method",
+                    "protected-abstract-method",
+                    "private-static-method",
+                    "private-decorated-method",
+                    "private-instance-method",
+                    "private-abstract-method"
+                ]
+            }
+        ]
+    },
+    "ignorePatterns": [
+        "**/*.js",
+        "**/*.spec.ts",
+        "src/specs/*",
+        "src/assets/*"
+    ]
+}

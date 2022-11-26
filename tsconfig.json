@@ -1,0 +1,39 @@
+/* To learn more about this file see: https://angular.io/config/tsconfig. */
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "baseUrl": "./",
+        "target": "ES2022",
+        "module": "ES2022",
+        "outDir": "./dist/out-tsc",
+        "moduleResolution": "node",
+        "strict": true,
+        "sourceMap": true,
+        "declaration": false,
+        "importHelpers": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "downlevelIteration": true,
+        "experimentalDecorators": true,
+        "useDefineForClassFields": false,
+        "noFallthroughCasesInSwitch": true,
+        "strictPropertyInitialization": false,
+        "forceConsistentCasingInFileNames": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "lib": [
+            "ES2022",
+            "dom"
+        ],
+        "paths": {
+            "@angular-redux2/store": [
+                "dist/angular-redux2/store"
+            ]
+        }
+    },
+    "angularCompilerOptions": {
+        "strictTemplates": true,
+        "strictInjectionParameters": true,
+        "strictInputAccessModifiers": true,
+        "enableI18nLegacyMessageIdFormat": false
+    }
+}
