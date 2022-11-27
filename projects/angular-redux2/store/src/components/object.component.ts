@@ -70,6 +70,7 @@ export function set(object: any, path: Array<string | number>, value: any): Obje
             tempObjet[key] = {};
         }
 
+        // Todo replace with proxy object.
         tempObjet[key] = { ...tempObjet[key] };
         tempObjet = tempObjet[key];
     }

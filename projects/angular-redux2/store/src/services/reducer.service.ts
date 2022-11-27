@@ -75,7 +75,8 @@ export class ReducerService {
      * construction calls with the `new` operator.
      */
 
-    private constructor() {}
+    private constructor() {
+    }
 
     /**
      * The static method that controls the access to the singleton instance.
@@ -282,8 +283,12 @@ export class ReducerService {
         }
 
         for (let key in object) {
-            if (object[key]['_isProxy']) {
-                object[key] = object[key]['_target'];
+            if (typeof object[key] !== 'object' || object[key] === null) {
+                continue;
+            }
+
+            if (object[key]._isProxy) {
+                object[key] = object[key]._target;
             }
 
             // Recursively (deep) clean for nested objects, including arrays

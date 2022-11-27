@@ -100,7 +100,7 @@ describe('Reducer-Service functional', () => {
     });
 });
 
-describe('', () => {
+describe('Should test immutable state create by js proxy.', () => {
     /**
      * Initialize local test invariant variable
      */
@@ -170,5 +170,11 @@ describe('', () => {
         expect(state.level1.name).toStrictEqual(undefined);
         expect(newState.level1.name).toStrictEqual('test');
         expect(newState.level1._isProxy).toBe(undefined);
+    });
+
+    test('Should clean object from proxy rerun if is not an object.', () => {
+        const result = (reducerService as any).clean('test');
+
+        expect(result).toBe('test');
     });
 });
