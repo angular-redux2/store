@@ -259,7 +259,7 @@ export class NgRedux<RootState> implements Store<RootState> {
      * @return StoreInterface<SubState>.
      */
 
-    configureSubStore<SubState>(basePath: PathSelector, localReducer: Reducer<SubState>): SubStoreService<SubState> {
+    configureSubStore<SubState>(basePath: PathSelector, localReducer: Reducer<SubState>): Store<SubState> {
         const subStoreService = new SubStoreService<SubState>(this, basePath, localReducer);
         subStoreService.setBasePath(basePath);
 

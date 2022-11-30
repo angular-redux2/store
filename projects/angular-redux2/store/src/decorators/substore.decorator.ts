@@ -12,7 +12,7 @@ import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
 
 /**
  * Modifies the behaviour of any `@Select`, `@Select$`, or `@Dispatch`
- * decorators to operate on a substore defined by the FractalStoreOptions.
+ * decorators to operate on a substore defined.
  *
  * ```typescript
  * @SubStore(userComponentReducer)

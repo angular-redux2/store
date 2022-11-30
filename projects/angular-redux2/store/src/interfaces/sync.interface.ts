@@ -5,12 +5,6 @@
 import { AnyAction } from 'redux';
 
 /**
- * Broadcast types - which type of communication to use.
- */
-
-export type BroadcastTypes = 'native' | 'idb' | 'localstorage' | 'node';
-
-/**
  * Init events type
  */
 

@@ -13,7 +13,7 @@ import { AnyAction } from 'redux';
  * this.ngRedux.dispatch({
  *     type: 'isLogin',
  *     payload: {
- *         name: 'test
+ *         name: 'test'
  *     }
  * });
  *
@@ -31,7 +31,7 @@ import { AnyAction } from 'redux';
  *     // optional static var to allow to add type's for auto-complete
  *     // ReducerAction< payload interface / state >
  *     static override actions: {
- *         isLogin: ReducerAction
+ *         isLogin: ReducerAction<Auth>
  *     };
  *
  *      @Action
