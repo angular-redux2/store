@@ -2,7 +2,6 @@
  * Imports third-party libraries
  */
 
-import { Injectable } from '@angular/core';
 import { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
 import { distinctUntilChanged, Observable, ReplaySubject, Subject } from 'rxjs';
 
@@ -73,7 +72,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
         selector?: Selector<R, S>,
         comparator?: Comparator
     ): Subject<S> {
-        return MockNgRedux.store.getSelectorStub<S>(
+        return this.store.getSelectorStub<S>(
             selector,
             comparator
         );
@@ -107,8 +106,8 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
         ...pathSelectors: PathSelector[]
     ): NgRedux<S> {
         return pathSelectors.length
-            ? MockNgRedux.store.getSubStore(...pathSelectors)
-            : MockNgRedux.store;
+            ? this.store.getSubStore(...pathSelectors)
+            : this.store;
     }
 
     /**
@@ -120,7 +119,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      */
 
     static reset(): void {
-        MockNgRedux.store.reset();
+        this.store.reset();
     }
 
     /**
@@ -201,9 +200,9 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      */
 
     static override get store(): MockNgRedux<any> {
-        MockNgRedux.instance ||= new MockNgRedux<any>();
+        this.instance ||= new MockNgRedux<any>();
 
-        return MockNgRedux.instance;
+        return this.instance;
     }
 
     /**
@@ -270,7 +269,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      */
 
     override getState(): S {
-        return <S>{};
+        return <S> {};
     }
 
     /**
@@ -320,14 +319,46 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
         selector?: Selector<S, SelectedState>,
         comparator?: Comparator
     ): SelectorStubRecord {
-        const key = selector ? selector.toString() : '';
-        const record = this.selections[key] || {
+        let signature = selector ? selector.toString() : '';
+
+        if ('function' === typeof selector) {
+            signature = this.coverageFunctionSignature(signature);
+            /**
+             * Run original coverage function
+             */
+
+            if ((window as any)['__coverage__']) {
+                try {
+                    selector(<any>{});
+                } catch (e) { /* empty */ }
+            }
+        }
+
+        const record = this.selections[signature] || {
             subject: new ReplaySubject<SelectedState>(),
             comparator,
         };
 
-        this.selections[key] = record;
+        this.selections[signature] = record;
 
         return record;
+    }
+
+    /**
+     * Remove coverage metadata from function signature.
+     * and create uniq signature for stub selection.
+     *
+     * @param signature - function signature
+     * @protected
+     */
+
+    protected coverageFunctionSignature<SelectedState>(
+        signature: string,
+    ): string {
+        signature = signature.replace(/cov_.+?[,;]/g, '');
+        signature = signature.replace(/return/g, '');
+        signature = signature.replace(/[^A-Za-z0-9]/g, '');
+
+        return signature;
     }
 }
