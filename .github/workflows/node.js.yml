@@ -16,9 +16,10 @@ jobs:
 
         strategy:
             matrix:
-                node-version: [ 16.x, 18.x ]
+                node: [ 16, 18 ]
                 # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
+        name: Node ${{ matrix.node }}
         steps:
             -   uses: actions/checkout@v2
             -   name: Use Node.js ${{ matrix.node-version }}
