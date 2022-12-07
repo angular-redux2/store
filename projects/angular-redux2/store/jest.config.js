@@ -1,7 +1,7 @@
 module.exports = {
     moduleNameMapper: {
-        '^@angular-redux2/store$': '<rootDir>/src/public-api.ts',
-        '^@angular-redux2/store/testing$': '<rootDir>/testing/public-api.ts',
+        '^@angular-redux2/store$': '<rootDir>/projects/angular-redux2/store/src/public-api.ts',
+        '^@angular-redux2/store/testing$': '<rootDir>/projects/angular-redux2/store/testing/public-api.ts',
     },
     modulePathIgnorePatterns: [
         '<rootDir>/dist',
