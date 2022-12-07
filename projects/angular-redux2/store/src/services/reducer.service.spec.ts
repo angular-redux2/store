@@ -2,15 +2,15 @@
  * Import third-party libraries
  */
 
-import { AnyAction } from "redux";
+import { AnyAction } from 'redux';
 
 /**
  * Services
  */
 
 import { ReducerService } from './reducer.service';
-import { ACTION_KEY } from "../interfaces/fractal.interface";
-import { RECEIVE_INIT_STATE } from "../interfaces/sync.interface";
+import { ACTION_KEY } from '../interfaces/fractal.interface';
+import { RECEIVE_INIT_STATE } from '../interfaces/sync.interface';
 
 /**
  * Initialize Global test invariant variable
@@ -42,7 +42,7 @@ describe('Reducer-Service functional', () => {
                 loc: 2314,
             }
         }
-    }
+    };
 
     test('Should root reducer not crush.', () => {
         const action: AnyAction = {
@@ -65,7 +65,6 @@ describe('Reducer-Service functional', () => {
     });
 
     test('Should redirect to custom reducer.', () => {
-        const customReducer = jest.fn();
         const action = {
             type: 'test',
             [ACTION_KEY]: {
@@ -74,10 +73,19 @@ describe('Reducer-Service functional', () => {
             }
         };
 
-        (reducerService as any).map = { 1: customReducer };
-        reducerService.rootReducer(state, action);
+        const customReducer = jest.fn((localState: any, localAction: any) => {
+            expect(localAction).toStrictEqual(action);
+            expect(localState).toStrictEqual(state['users']['danielle']);
 
-        expect(customReducer).toBeCalledWith(state['users']['danielle'], action);
+            localState.loc = 1234;
+        });
+
+        (reducerService as any).map = { 1: customReducer };
+        const newState: any = reducerService.rootReducer(state, action);
+
+        expect(customReducer).toBeCalled();
+        expect(newState['users']['danielle']['loc']).toStrictEqual(1234);
+        expect(state['users']['danielle']['loc']).toStrictEqual(1023);
     });
 
     test('Should replace reducer.', () => {
@@ -112,7 +120,7 @@ describe('Should test immutable state create by js proxy.', () => {
                 name: 'test'
             }
         }
-    }
+    };
 
     test('Should create new state with js proxy.', () => {
         const rootReducer = reducerService.composeRoot((state: any, action: any) => {
@@ -127,7 +135,7 @@ describe('Should test immutable state create by js proxy.', () => {
         expect(newState._isProxy).toBe(undefined);
     });
 
-    test('Should create new state in with js proxy on return state.', () => {
+    test('Should create new state by js proxy with return state.', () => {
         const rootReducer = reducerService.composeRoot((state: any, action: any) => {
             state.loc = action.payload;
 
@@ -176,5 +184,48 @@ describe('Should test immutable state create by js proxy.', () => {
         const result = (reducerService as any).clean('test');
 
         expect(result).toBe('test');
+    });
+
+    test('Should create new state with complex nested object by js proxy with return state.', () => {
+        const localState: any = {
+            categoriesGroups: [
+                {
+                    type: 'test',
+                    visible: true,
+                    categories: [ {
+                        name: 'phone'
+                    } ]
+                },
+                {
+                    type: 'number',
+                    visible: true,
+                    categories: [ {
+                        name: 'phone'
+                    } ]
+                }
+            ]
+        };
+
+
+        const rootReducer = reducerService.composeRoot((state: any, action: any) => {
+            let groups = state.categoriesGroups;
+            let group = groups.find((g: any) => g.type === action.payload.groupType);
+            let categoryIndex = group.categories.indexOf(group.categories.find((c: any) => c.name === action.payload.categoryName));
+            group.categories.splice(categoryIndex, 1);
+
+            return state;
+        });
+
+        const newState = rootReducer(localState, {
+            type: 'test', payload: {
+                groupType: 'number',
+                categoryName: 'phone'
+            }
+        });
+
+        expect(localState).not.toStrictEqual(newState);
+        expect(localState.categoriesGroups[1].categories.length).toStrictEqual(1);
+        expect(newState.categoriesGroups[1].categories.length).toStrictEqual(0);
+        expect(newState._isProxy).toBe(undefined);
     });
 });

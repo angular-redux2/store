@@ -29,9 +29,9 @@ import { AnyAction } from 'redux';
  * export class RoutesReducer extends AbstractReducer {
  *
  *     // optional static var to allow to add type's for auto-complete
- *     // ReducerAction< payload interface / state >
+ *     // ActionPayload< payload interface / state >
  *     static override actions: {
- *         isLogin: ReducerAction<Auth>
+ *         isLogin: ActionPayload<Auth>
  *     };
  *
  *      @Action

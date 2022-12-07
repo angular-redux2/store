@@ -8,7 +8,7 @@ import { AnyAction, Reducer } from 'redux';
  * Components
  */
 
-import { get, set } from '../components/object.component';
+import { duplicateObject, get, set } from '../components/object.component';
 
 /**
  * Interfaces
@@ -123,7 +123,12 @@ export class ReducerService {
             const localReducer = this.map[fractalKey.hash];
 
             if (fractalPath && localReducer) {
-                return set(state, fractalPath, localReducer(get(state, fractalPath), action));
+                const fractalState = get(state, fractalPath);
+                const newState = this.executeReducer(fractalState, localReducer, action);
+
+                if (newState !== fractalState) {
+                    return set(state, fractalPath, newState);
+                }
             }
         }
 
@@ -208,30 +213,47 @@ export class ReducerService {
     private composeReducers(...reducers: Array<Reducer>): Reducer {
         return (state: any, action: AnyAction) => {
             return reducers.reduce(
-                (previousState, reducer) => {
-                    let result = previousState;
-                    const proxyState = this.proxyState(previousState);
-                    const newState = reducer(proxyState.proxy, action);
-
-                    if (proxyState.proxy._isChanged) {
-                        result = this.clean(proxyState.proxy._target);
-                    } else if (newState && !newState._isProxy) {
-                        result = this.clean(newState);
-                    }
-
-                    proxyState.revoke();
-
-                    return result;
+                (previousState: any, reducer: Reducer) => {
+                    return this.executeReducer(previousState, reducer, action);
                 }, state
             );
         };
     }
 
+    /**
+     *
+     * @param state
+     * @param reducer
+     * @param action
+     * @private
+     */
+
+    private executeReducer(state: any, reducer: Reducer, action: AnyAction): any {
+        let result = state;
+        const proxyState = this.proxyState(state);
+        const newState = reducer(proxyState.proxy, action);
+
+        if (proxyState.proxy._isChanged) {
+            result = this.clean(proxyState.proxy._target);
+        } else if (newState && !newState._isProxy) {
+            result = this.clean(newState);
+        }
+
+        proxyState.revoke();
+
+        return result;
+    }
+
+    /**
+     * Proxy handler
+     * An object whose properties are functions define the behavior of proxy p when an operation is performed on it.
+     */
+
     private proxyHandler(): Object {
         const handler = {
             is_change: false,
-            get: function (target: any, key: string): any {
-                switch (key) {
+            get: function (target: any, prop: string): any {
+                switch (prop) {
                     case '_target':
                         return target;
 
@@ -242,11 +264,11 @@ export class ReducerService {
                         return this.is_change;
 
                     default:
-                        if (typeof target[key] === 'object' && !target[key]._isProxy) {
-                            target[key] = new Proxy({ ...target[key] }, handler);
+                        if (typeof target[prop] === 'object' && !target[prop]._isProxy) {
+                            target[prop] = new Proxy(duplicateObject(target[prop]), handler);
                         }
 
-                        return target[key];
+                        return target[prop];
                 }
             },
 

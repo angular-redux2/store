@@ -68,14 +68,25 @@ export function set(object: any, path: Array<string | number>, value: any): Obje
     for (let key of path.slice(0, -1)) {
         if (tempObjet[key] === undefined) {
             tempObjet[key] = {};
+        } else {
+            tempObjet[key] = duplicateObject(tempObjet[key]);
         }
 
-        // Todo replace with proxy object.
-        tempObjet[key] = { ...tempObjet[key] };
         tempObjet = tempObjet[key];
     }
 
     tempObjet[lastKey] = value;
 
     return result;
+}
+
+/**
+ * Create shallow new object
+ * @param object - original object
+ * @return object - new object
+ */
+export function duplicateObject(object: object): object {
+    const type = Array.isArray(object) ? [] : {};
+
+    return Object.assign(type, object);
 }

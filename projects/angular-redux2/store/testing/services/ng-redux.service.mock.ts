@@ -16,6 +16,7 @@ import { Comparator, NgRedux, PathSelector, Selector } from '@angular-redux2/sto
  */
 
 import { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfaces/store.interface.mock';
+import { SubStoreService } from '../../src/services/sub-store.service';
 
 /**
  * This is the public of `@angular-redux2/store`.
@@ -39,8 +40,8 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     selections: SelectorStubMap = {};
 
     /**
-     * @hidden
      * Instance of NgRedux (singleton service).
+     * @hidden
      */
 
     protected static override instance: MockNgRedux<any>;
@@ -195,8 +196,8 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * @hidden
      * access to singleton service instance.
+     * @hidden
      */
 
     static override get store(): MockNgRedux<any> {
@@ -225,8 +226,8 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      * ObservableStore from which it was created.
      */
 
-    override configureSubStore<SubState>(basePath: PathSelector, _: Reducer<SubState>): Store<SubState> {
-        return this.initSubStore<SubState>(basePath);
+    override configureSubStore<SubState>(basePath: PathSelector, _: Reducer<SubState>):  SubStoreService<SubState> {
+        return this.initSubStore<SubState>(basePath) as unknown as SubStoreService<SubState>;
     }
 
     /**
@@ -299,8 +300,8 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
 
 
     /**
-     * @hidden
      * Init new mock sub-store
+     * @hidden
      */
 
     protected initSubStore<SubState>(basePath: PathSelector) {
@@ -311,8 +312,8 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * @hidden
      * Init selector stub
+     * @hidden
      */
 
     protected initSelectorStub<SelectedState>(

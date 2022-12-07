@@ -8,7 +8,7 @@ import { AnyAction, Reducer } from 'redux';
  * Interfaces
  */
 
-import { ReducerAction } from '../interfaces/store.interface';
+import { ActionPayload } from '../interfaces/store.interface';
 
 /**
  * Base reducer class
@@ -24,17 +24,17 @@ export abstract class AbstractReducer {
      * class Reducer extends AbstractReducer {
      *
      *     // optional static var to allow to add type's for auto-complete
-     *     // ReducerAction< payload interface / state >
+     *     // ActionPayload< payload interface / state >
      *     static override actions: {
-     *         addBug: ReducerAction<addBugPayload>,
-     *         deleteBug: ReducerAction
+     *         addBug: ActionPayload<addBugPayload>,
+     *         deleteBug: ActionPayload
      *     };
      * }
      * ```
      */
 
     static actions: {
-        [key: string]: ReducerAction<any>
+        [key: string]: ActionPayload<any>
     } = {};
 
     /**
@@ -47,10 +47,10 @@ export abstract class AbstractReducer {
      * class Reducer extends AbstractReducer {
      *
      *     // optional static var to allow to add type's for auto-complete
-     *     // ReducerAction< payload interface / state >
+     *     // ActionPayload< payload interface / state >
      *     static override actions: {
-     *         addBug: ReducerAction<addBugPayload>,
-     *         deleteBug: ReducerAction
+     *         addBug: ActionPayload<addBugPayload>,
+     *         deleteBug: ActionPayload
      *     };
      *
      *     @Action

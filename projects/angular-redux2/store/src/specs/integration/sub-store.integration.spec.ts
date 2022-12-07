@@ -132,7 +132,7 @@ describe('NgRedux Sub-store functional', () => {
             (state: any, action: any) => ({ ...state, value: action.newValue })
         );
         nonExistentSubStore
-            .select(s => (s ? s.value : s))
+            .select((s: any): any => (s ? s.value : s))
             .pipe(take(2), toArray())
             .subscribe(v => {
                 expect(v).toEqual([ undefined, 'now I exist' ]);
@@ -147,15 +147,20 @@ describe('NgRedux Sub-store functional', () => {
     test('Should create its own sub-store', () => {
         const subSubStore = subStore.configureSubStore([ 'level3' ], defaultReducer);
 
+        defaultReducer.mockImplementationOnce((localState: any, localAction: any) => {
+            expect(localState).toStrictEqual({ level4: 3 });
+            expect(localAction).toStrictEqual({
+                type: 'MY_ACTION',
+                [ACTION_KEY]: {
+                    hash: -1826428781,
+                    path: [ 'foo', 'bar', 'level3' ]
+                },
+            });
+        });
+
         expect(subSubStore.getState()).toEqual({ level4: 3 });
         subSubStore.dispatch<AnyAction>({ type: 'MY_ACTION' });
 
-        expect(defaultReducer).toBeCalledWith({ level4: 3 }, {
-            type: 'MY_ACTION',
-            [ACTION_KEY]: {
-                hash: -1826428781,
-                path: [ 'foo', 'bar', 'level3' ]
-            },
-        });
+        expect(defaultReducer).toBeCalled();
     });
 });

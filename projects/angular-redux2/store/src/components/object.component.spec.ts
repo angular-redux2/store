@@ -26,8 +26,13 @@ const storeStruct = {
                 key: 'x',
             }
         },
+        arr: [
+            'test',
+            'array',
+            'string'
+        ]
     }
-}
+};
 
 
 describe('Should get a deeply nested property value from an object.', () => {
@@ -97,6 +102,12 @@ describe('Should get a deeply nested property value from an object.', () => {
         expect(get(test, [ 'test', 2 ])).toBe(undefined);
         expect(get(test, [ 'test', '2' ])).toBe(undefined);
     });
+
+    test('Should return an array and allow find function.', () => {
+        const array = get(storeStruct, [ 'level_1', 'arr' ]);
+        const result = array.find((value: string) => value == 'test');
+        expect(result).toStrictEqual('test');
+    });
 });
 
 /**
@@ -107,6 +118,13 @@ describe('Should get a deeply nested property value from an object.', () => {
 describe('Should sets a deeply-nested property value and return a new object.', () => {
     test('Should return undefined.', () => {
         expect(set(undefined, [ 'foo', 'bar' ], 5)).toBe(undefined);
+    });
+
+    test('Should performs a shallow set of array without mutation.', () => {
+        const original = { arr: [ 1, 2, 3, 4 ] };
+
+        expect(set(original, [ 'arr', '0' ], 2)).toStrictEqual({  arr: [ 2, 2, 3, 4 ] });
+        expect(original).toStrictEqual({ arr: [ 1, 2, 3, 4 ] });
     });
 
     test('Should performs a shallow set correctly without mutation.', () => {

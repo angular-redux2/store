@@ -14,7 +14,7 @@ import { AbstractReducer } from '../../abstract/reducer.abstract';
  * Interfaces
  */
 
-import { ReducerAction } from '../../interfaces/store.interface';
+import { ActionPayload } from '../../interfaces/store.interface';
 
 /**
  * Decorator's
@@ -38,7 +38,7 @@ class TestReducer extends AbstractReducer {
      */
 
     static override actions: {
-        addBug: ReducerAction<Bug>
+        addBug: ActionPayload<Bug>
     };
 
     @Action

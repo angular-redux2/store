@@ -87,7 +87,6 @@ export function Select$<T>(
 }
 
 /**
- * @hidden
  * Selects an observable using the given path selector, and runs it through the
  * given transformer function. A transformer function takes the store
  * observable as an input and returns a derived observable from it.
@@ -99,6 +98,7 @@ export function Select$<T>(
  *
  * @param comparator - Function used to determine if this selector has changed.
  * @param transformer - transformer that operates on observables instead of values.
+ * @hidden
  */
 
 function decorate(
@@ -123,7 +123,6 @@ function decorate(
 }
 
 /**
- * @hidden
  * Call store (root or substore) select with path.
  *
  * @param decoratedInstance - decorator instance
@@ -131,6 +130,7 @@ function decorate(
  * @param selector - select path in decorator.
  * @param comparator - Function used to determine if this selector has changed.
  * @param transformer - transformer that operates on observables instead of values.
+ * @hidden
  */
 
 function getInstanceSelection<T>(

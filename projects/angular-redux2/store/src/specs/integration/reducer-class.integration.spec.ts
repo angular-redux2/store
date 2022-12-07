@@ -8,7 +8,7 @@ import { AbstractReducer } from "../../abstract/reducer.abstract";
  * Interfaces
  */
 
-import { ReducerAction } from "../../interfaces/store.interface";
+import { ActionPayload } from "../../interfaces/store.interface";
 
 /**
  * Decorators
@@ -32,7 +32,7 @@ class UserReducer extends AbstractReducer {
      */
 
     static override actions: {
-        isLogin: ReducerAction<Payload>
+        isLogin: ActionPayload<Payload>
     }
 
     @Action
@@ -48,7 +48,7 @@ class AuthReducer extends AbstractReducer {
      */
 
     static override actions: {
-        isLogin: ReducerAction<Payload>
+        isLogin: ActionPayload<Payload>
     }
 
     @Action

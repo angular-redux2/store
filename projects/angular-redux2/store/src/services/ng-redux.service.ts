@@ -47,8 +47,8 @@ import { Comparator, PathSelector, Selector } from '../interfaces/store.interfac
 export class NgRedux<RootState> implements Store<RootState> {
 
     /**
-     * @hidden
      * Instance of NgRedux (singleton service).
+     * @hidden
      */
 
     protected static instance: NgRedux<any>;
@@ -90,10 +90,10 @@ export class NgRedux<RootState> implements Store<RootState> {
      * This implementation let you subclass the Singleton class while keeping
      * just one instance of each subclass around.
      *
-     * @hidden
      * static store<T extends Store>(): NgRedux<T>
      *
      * @return NgRedux
+     * @hidden
      */
 
     static get store(): NgRedux<any> {
@@ -259,7 +259,7 @@ export class NgRedux<RootState> implements Store<RootState> {
      * @return StoreInterface<SubState>.
      */
 
-    configureSubStore<SubState>(basePath: PathSelector, localReducer: Reducer<SubState>): Store<SubState> {
+    configureSubStore<SubState>(basePath: PathSelector, localReducer: Reducer<SubState>): SubStoreService<SubState> {
         const subStoreService = new SubStoreService<SubState>(this, basePath, localReducer);
         subStoreService.setBasePath(basePath);
 
@@ -374,11 +374,12 @@ export class NgRedux<RootState> implements Store<RootState> {
     }
 
     /**
-     * @hidden
      * Interoperability point for observable/reactive libraries.
      * @returns {observable} A minimal observable of state changes.
      * For more information, see the observable proposal:
      * https://github.com/tc39/proposal-observable
+     *
+     * @hidden
      */
 
     [Symbol.observable](): any {

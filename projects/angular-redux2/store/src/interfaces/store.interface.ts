@@ -2,8 +2,8 @@
  * Import third-party libraries
  */
 
+import { Action } from 'redux';
 import { Observable } from 'rxjs';
-import { Action, AnyAction } from 'redux';
 
 /**
  * The primitive type are accept by selector array.
@@ -77,13 +77,19 @@ export type Transformer<RootState, FragmentStore> = (store$: Observable<RootStat
  * ```typescript
  *
  *     static actions: {
- *         bugAdded: ReducerAction<PayloadAction>
+ *         bugAdded: ActionPayload<Auth>
  *     };
  *
  * ```
  */
+// Todo change the name to dispach action ?
+// Todo create action extend payload for reducer action
+export type ActionPayload<Payload = undefined> = (payload?: Payload) => AnyAction;
 
-export type ReducerAction<Payload = undefined> = (payload?: Payload) => AnyAction;
+export interface AnyAction<Payload = undefined> extends Action {
+    payload?: Payload;
+    [extraProps: string]: any;
+}
 
 /**
  * Type of fractal action
