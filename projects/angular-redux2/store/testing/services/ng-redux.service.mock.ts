@@ -9,14 +9,14 @@ import { distinctUntilChanged, Observable, ReplaySubject, Subject } from 'rxjs';
  * Import angular-redux2
  */
 
-import { Comparator, NgRedux, PathSelector, Selector } from '@angular-redux2/store';
+import { Comparator, PathSelector, Selector, NgRedux, SubStoreService } from '@angular-redux2/store';
 
 /**
  * Interfaces
  */
 
+
 import { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfaces/store.interface.mock';
-import { SubStoreService } from '../../src/services/sub-store.service';
 
 /**
  * This is the public of `@angular-redux2/store`.

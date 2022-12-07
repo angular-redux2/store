@@ -11,7 +11,7 @@ import { TestBed } from '@angular/core/testing';
  * Import angular-redux2
  */
 
-import { Dispatch, NgRedux, Select, Select$ } from '../../src/public-api';
+import { Dispatch, NgRedux, Select, Select$ } from '@angular-redux2/store';
 
 /**
  * Mocks

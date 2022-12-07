@@ -8,7 +8,7 @@ import { NgModule } from '@angular/core';
  * Import angular-redux2
  */
 
-import { DevToolsExtension, NgRedux } from '@angular-redux2/store';
+import { NgRedux, DevToolsExtension } from '@angular-redux2/store';
 
 /**
  * Mocks
