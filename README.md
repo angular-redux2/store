@@ -4,7 +4,7 @@
 > **like**: `select => Select`, `withsubstore => Substore`, `dispatch => Dispatch`<br>
 > **Docs**: https://angular-redux2.github.io/store/modules/src.html
 
-[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/cSRtr4Wv)
+[![Discord](https://img.shields.io/discord/1050521693795405874?logo=Angular-redux2)](https://discord.gg/cSRtr4Wv)
 [![npm version](https://img.shields.io/npm/v/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 [![downloads per month](https://img.shields.io/npm/dm/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 
