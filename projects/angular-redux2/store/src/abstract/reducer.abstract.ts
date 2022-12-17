@@ -25,10 +25,7 @@ export abstract class AbstractReducer {
      *
      *     // optional static var to allow to add type's for auto-complete
      *     // ActionPayload< payload interface / state >
-     *     static override actions: {
-     *         addBug: ActionPayload<addBugPayload>,
-     *         deleteBug: ActionPayload
-     *     };
+     *     static override actions: ActionPayload<Reducer>;
      * }
      * ```
      */
@@ -48,10 +45,7 @@ export abstract class AbstractReducer {
      *
      *     // optional static var to allow to add type's for auto-complete
      *     // ActionPayload< payload interface / state >
-     *     static override actions: {
-     *         addBug: ActionPayload<addBugPayload>,
-     *         deleteBug: ActionPayload
-     *     };
+     *     static override actions: ActionPayload<Reducer>;
      *
      *     @Action
      *     deleteBug(state: Auth, action: AnyAction) {

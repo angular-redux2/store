@@ -88,12 +88,12 @@ export type ActionPayload<Payload = undefined> = (payload?: Payload) => AnyActio
  * @example
  * ```typescript
  *      export class SomeReducer extends AbstractReducer {
- *          static actions: ReducerActions<SomeReducer>
+ *          static actions: ActionsReducer<SomeReducer>
  *      }
  * ```
  */
 
-type ReducerActions<T> = {
+export type ActionsReducer<T> = {
     [K in keyof T]: ActionPayload<Args<T[K]>[1]>
 }
 

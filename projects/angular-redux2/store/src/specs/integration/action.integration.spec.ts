@@ -1,10 +1,4 @@
 /**
- * Import third-party libraries
- */
-
-import { AnyAction } from 'redux';
-
-/**
  * Abstracts
  */
 
@@ -26,7 +20,7 @@ import { Action } from '../../decorators/action.decorator';
  * Mock class reducer
  */
 
-interface Bug {
+export interface Bug {
     name: string;
     active?: boolean;
     assign?: string;
@@ -42,8 +36,7 @@ class TestReducer extends AbstractReducer {
     };
 
     @Action
-    addBug(state: Array<Bug>, action: AnyAction): Array<Bug> {
-        const payload: Bug = action['payload'];
+    addBug(state: Array<Bug>, payload: ActionPayload<Bug>): Array<Bug> {
         return [ payload ];
     }
 }

@@ -233,12 +233,15 @@ export class ReducerService {
         const proxyState = this.proxyState(state);
         const newState = reducer(proxyState.proxy, action);
 
-        if (proxyState.proxy._isChanged) {
-            result = this.clean(proxyState.proxy._target);
-        } else if (newState && !newState._isProxy) {
+        if (newState && !newState._isProxy) {
+            console.log('y');
             result = this.clean(newState);
+        } else if (proxyState.proxy._isChanged) {
+            console.log('x');
+            result = this.clean(proxyState.proxy._target);
         }
 
+        console.log('end');
         proxyState.revoke();
 
         return result;

@@ -8,7 +8,7 @@ import { AbstractReducer } from "../../abstract/reducer.abstract";
  * Interfaces
  */
 
-import { ActionPayload } from "../../interfaces/store.interface";
+import { ActionsReducer } from "../../interfaces/store.interface";
 
 /**
  * Decorators
@@ -20,7 +20,7 @@ import { Action } from "../../decorators/action.decorator";
  * Initialize global test invariant variable
  */
 
-interface Payload {
+export interface Payload {
     name: string;
     isLogin?: boolean;
 }
@@ -31,12 +31,10 @@ class UserReducer extends AbstractReducer {
      * Action payload types
      */
 
-    static override actions: {
-        isLogin: ActionPayload<Payload>
-    }
+    static override actions: ActionsReducer<UserReducer>
 
     @Action
-    isLogin(payload: Payload) {
+    isLogin(state: any, payload: Payload) {
         return payload;
     }
 }
@@ -47,12 +45,10 @@ class AuthReducer extends AbstractReducer {
      * Action payload types
      */
 
-    static override actions: {
-        isLogin: ActionPayload<Payload>
-    }
+    static override actions: ActionsReducer<AuthReducer>;
 
     @Action
-    isLogin(payload: Payload) {
+    isLogin(state: any, payload: Payload) {
         return payload;
     }
 }
