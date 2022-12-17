@@ -14,7 +14,7 @@ import { AbstractReducer } from './reducer.abstract';
  * Interfaces
  */
 
-import { ActionPayload } from '../interfaces/store.interface';
+import {  ActionsReducer } from '../interfaces/store.interface';
 
 /**
  * Initialize global test invariant variable
@@ -35,10 +35,7 @@ class TestReducer extends AbstractReducer {
     /**
      * Action types
      */
-
-    static override actions: {
-        addBug: ActionPayload<BugPayload>
-    };
+    static override actions: ActionsReducer<TestReducer>;
 
     addBug(state: Array<BugPayload>, action: AnyAction): Array<BugPayload> {
         const payload: BugPayload = action['payload'];

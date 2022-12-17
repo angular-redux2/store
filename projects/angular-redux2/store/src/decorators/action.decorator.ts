@@ -30,9 +30,7 @@ import { AnyAction } from 'redux';
  *
  *     // optional static var to allow to add type's for auto-complete
  *     // ActionPayload< payload interface / state >
- *     static override actions: {
- *         isLogin: ActionPayload<Auth>
- *     };
+ *     static override actions: ActionPayload<RoutesReducer>;
  *
  *      @Action
  *      isLogin(state: Auth, action: AnyAction): Auth {

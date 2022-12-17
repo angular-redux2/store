@@ -70,21 +70,36 @@ export type Comparator = (state: any, newState: any) => boolean;
 export type Transformer<RootState, FragmentStore> = (store$: Observable<RootState>, scope: any) => Observable<FragmentStore>;
 
 /**
+ * Get function arguments.
+ */
+
+type Args<T> = T extends (...args: infer arg) => any ? arg : never;
+
+/**
+ * Type of function may get payload as argument.
+ */
+
+export type ActionPayload<Payload = undefined> = (payload?: Payload) => AnyAction;
+
+/**
  * Type of reducer action function for use in the auto generation.
  * help to typescript generate auto-complete.
  *
  * @example
  * ```typescript
- *
- *     static actions: {
- *         bugAdded: ActionPayload<Auth>
- *     };
- *
+ *      export class SomeReducer extends AbstractReducer {
+ *          static actions: ActionsReducer<SomeReducer>
+ *      }
  * ```
  */
-// Todo change the name to dispach action ?
-// Todo create action extend payload for reducer action
-export type ActionPayload<Payload = undefined> = (payload?: Payload) => AnyAction;
+
+export type ActionsReducer<T> = {
+    [K in keyof T]: ActionPayload<Args<T[K]>[1]>
+}
+
+/**
+ * Any action with payload for better autocomplete
+ */
 
 export interface AnyAction<Payload = undefined> extends Action {
     payload?: Payload;

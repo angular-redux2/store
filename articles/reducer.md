@@ -41,17 +41,18 @@ export class AuthReducer extends AbstractReducer {
      *
      *     // optional static var to allow to add type's for auto-complete
      *     // ActionPayload< payload interface / state >
-     *     static override actions: {
-     *         addBug: ActionPayload<addBugPayload>,
-     *         deleteBug: ActionPayload
+     *     static override actions: ActionsReducer<SomeReducer>;
+     *     
+     *     or 
+     *     
+     *     static actions: {
+     *          isLogin: ActionPayload;
      *     };
      * }
      * ```
      */
     
-    static actions: {
-        isLogin: ActionPayload;
-    };
+    static actions: ActionsReducer<AuthReducer>;
     
     /**
      * Update login data

@@ -11,6 +11,7 @@ export * from './abstract/reducer.abstract';
 export * from './services/ng-redux.service';
 export * from './services/dev-tool.service';
 export * from './services/sub-store.service';
+export * from './services/reducer.service';
 
 // Interfaces
 export * from './interfaces/sync.interface';
