@@ -2,6 +2,11 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
+      "paths": {
+        "@angular-redux2/store": [
+          "dist/angular-redux2/store"
+        ]
+      },
         "baseUrl": "./",
         "outDir": "./dist/out-tsc",
         "forceConsistentCasingInFileNames": true,
