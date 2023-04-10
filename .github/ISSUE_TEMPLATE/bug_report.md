@@ -16,9 +16,7 @@ assignees: ''
 ### What toolchain are you using for transpilation/bundling?
 
 * [ ] @angular/cli
-* [ ] Custom @ngTools/webpack
 * [ ] Raw `ngc`
-* [ ] SystemJS
 * [ ] Rollup
 * [ ] Other
 
@@ -36,15 +34,9 @@ OS:
 
 ### Expected Behaviour:
 
-
-
 ### Actual Behaviour:
 
-
-
 ### Stack Trace/Error Message:
-
-
 
 ### Additional Notes:
 (optional)
