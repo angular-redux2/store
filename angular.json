@@ -3,45 +3,5 @@
     "version": 1,
     "newProjectRoot": "projects",
     "projects": {
-        "@angular-redux2/store": {
-            "projectType": "library",
-            "root": "projects/angular-redux2/store",
-            "sourceRoot": "projects/angular-redux2/store/src",
-            "prefix": "lib",
-            "architect": {
-                "build": {
-                    "builder": "@angular-devkit/build-angular:ng-packagr",
-                    "options": {
-                        "project": "projects/angular-redux2/store/ng-package.json"
-                    },
-                    "configurations": {
-                        "production": {
-                            "tsConfig": "projects/angular-redux2/store/tsconfig.lib.prod.json"
-                        },
-                        "development": {
-                            "tsConfig": "projects/angular-redux2/store/tsconfig.lib.json"
-                        }
-                    },
-                    "defaultConfiguration": "production"
-                },
-                "test": {
-                    "builder": "@angular-builders/jest:run"
-                },
-                "lint": {
-                    "builder": "@angular-eslint/builder:lint",
-                    "options": {
-                        "lintFilePatterns": [
-                            "projects/angular-redux2/store/**/*.ts",
-                            "projects/angular-redux2/store/**/*.html"
-                        ]
-                    }
-                }
-            }
-        }
-    },
-    "cli": {
-        "schematicCollections": [
-            "@angular-eslint/schematics"
-        ]
     }
 }
