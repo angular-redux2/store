@@ -1,25 +1,25 @@
 {
+    "root": true,
     "parser": "@typescript-eslint/parser",
-    "env": {
-        "node": true,
-        "jest": true,
-        "es2021": true,
-        "commonjs": true
-    },
-    "extends": [
-        "eslint:recommended"
-    ],
-    "parserOptions": {
-        "ecmaVersion": 2021,
-        "project": [
-            "./tsconfig.json",
-            "./jest.config.js"
-        ]
-    },
     "plugins": [
         "@typescript-eslint"
     ],
+    "env": {
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
     "rules": {
+        "@typescript-eslint/array-type": "error",
+        "@typescript-eslint/consistent-type-imports": "error",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "_"
+            }
+        ],
         "no-undef": "off",
         "no-redeclare": "off",
         "padded-blocks": "off",
@@ -80,15 +80,12 @@
             {
                 "default": [
                     // Fields
-                    "public-abstract-field",
                     "public-static-field",
                     "public-decorated-field",
                     "public-instance-field",
-                    "protected-abstract-field",
                     "protected-static-field",
                     "protected-decorated-field",
                     "protected-instance-field",
-                    "private-abstract-field",
                     "private-static-field",
                     "private-decorated-field",
                     "private-instance-field",
@@ -100,19 +97,23 @@
                     "public-static-method",
                     "public-decorated-method",
                     "public-instance-method",
-                    "public-abstract-method",
                     "protected-static-method",
                     "protected-decorated-method",
                     "protected-instance-method",
-                    "protected-abstract-method",
                     "private-static-method",
                     "private-decorated-method",
-                    "private-instance-method",
-                    "private-abstract-method"
+                    "private-instance-method"
                 ]
             }
         ]
     },
+    "overrides": [
+        {
+            "files": "*.json",
+            "parser": "jsonc-eslint-parser",
+            "rules": {}
+        }
+    ],
     "ignorePatterns": [
         "**/*.js",
         "**/*.spec.ts",
