@@ -9,7 +9,7 @@ import { distinctUntilChanged, map, ReplaySubject } from 'rxjs';
  */
 
 import type { Observable } from 'rxjs';
-import type { AnyAction, Reducer, Store as ReduxStore, Unsubscribe } from 'redux';
+import type { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
 
 /**
  * Angular-redux
@@ -23,7 +23,6 @@ import { resolver } from '../components/selectors.component';
 
 import type { Comparator, Selector } from '../interfaces/store.interface';
 
-
 /**
  * A store is an object that holds the application's state tree.
  * There should only be a single store in a Redux app, as the composition
@@ -32,7 +31,7 @@ import type { Comparator, Selector } from '../interfaces/store.interface';
  * @template State type of state held by this store
  */
 
-export abstract class Store<State> implements ReduxStore<State> {
+export abstract class AbstractStore<State> implements Store<State> {
     /**
      * Angular subject store
      * correspond to store change event and trigger rxjs change event
@@ -76,7 +75,6 @@ export abstract class Store<State> implements ReduxStore<State> {
 
     abstract replaceReducer(nextReducer: Reducer<State, AnyAction>): void;
 
-
     /**
      * Adds a change listener.
      * It will be called any time an actions is dispatched, and some part of the state tree may potentially have changed.
@@ -113,10 +111,10 @@ export abstract class Store<State> implements ReduxStore<State> {
      * }
      * ```
      *
-     * @param selector - key or function to select a part of the state.
-     * @param comparator - comparison function called to test if an item is distinct from the previous item in the source.
-     *
-     * @return An Observable that emits items from the source Observable with distinct values.
+     * @template SelectedType The type of the selected slice of state
+     * @param {Selector<State, SelectedType>} [selector] - A key or function to select a part of the state
+     * @param {Comparator} [comparator] - A comparison function called to test if an item is distinct from the previous item in the source
+     * @returns {Observable<SelectedType>} An Observable that emits items from the source Observable with distinct values
      */
 
     select<SelectedType>(selector?: Selector<State, SelectedType>, comparator?: Comparator): Observable<SelectedType> {
