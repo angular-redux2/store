@@ -22,7 +22,7 @@ describe('getInstance', () => {
 describe('composeReducers', () => {
     test('should return a new reducer function that applies the middleware chain to the root reducer', () => {
         // Define a root reducer and middleware functions
-        const rootReducer = (state: any, action: any) => state;
+        const rootReducer = (state: any) => state;
         const middleware1 = (state: any, action: any, next: any) => next(state);
         const middleware2 = (state: any, action: any, next: any) => next(state);
 
@@ -38,7 +38,7 @@ describe('composeReducers', () => {
 
 describe('replaceReducer', () => {
     test('should replace the root reducer with a new reducer function', () => {
-        const nextReducer = (state: any, action: any) => state;
+        const nextReducer = (state: any) => state;
 
         reducerService.replaceReducer(nextReducer);
 
@@ -116,7 +116,7 @@ describe('produce', () => {
             prop2: {},
         };
         const action = {};
-        const producer = (state: any, action: any) => state;
+        const producer = (state: any) => state;
 
         // @ts-ignore
         const newState = reducerService.produce(state, action, producer);
@@ -158,7 +158,6 @@ describe('produce', () => {
         expect(state.items).toEqual([ 'apple', 'banana', 'orange' ]);
     });
 });
-
 
 describe('Immutable state created by js proxy', () => {
     let state: any;
@@ -219,7 +218,7 @@ describe('Immutable state created by js proxy', () => {
     });
 
     test('removes js proxy on spread operator', () => {
-        const rootReducer = reducerService.composeReducers((state, action) => {
+        const rootReducer = reducerService.composeReducers((state) => {
             const copyState = { ...state };
             copyState.level1.level2.name = 'test new name';
 
@@ -238,7 +237,7 @@ describe('Immutable state created by js proxy', () => {
     });
 
     test('Should create new state old way.', () => {
-        const rootReducer = reducerService.composeReducers((state: any, action: any) => {
+        const rootReducer = reducerService.composeReducers((state: any) => {
             const copyState = { ...state };
             copyState.level1 = { ...copyState.level1 };
             copyState.level1.name = 'test';
