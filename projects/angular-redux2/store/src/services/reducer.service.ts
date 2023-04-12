@@ -18,6 +18,35 @@ import type { Middleware } from '../interfaces/reducer.interface';
 
 /**
  * Service class for composing reducers and applying middleware to them.
+ *
+ * @example
+ * ```typescript
+ *
+ * @Action
+ * isLogin(state: Auth, action: AnyAction) {
+ *     state.isLoggedIn = true;
+ * }
+ *
+ * // or
+ *
+ * @Action
+ * isLogin(state: Auth, action: AnyAction) {
+ *     state.isLoggedIn = true;
+ *
+ *     return state;
+ * }
+ *
+ * //old-way
+ * export function authReducer(state: Auth, action: AnyAction): Auth {
+ *     const newState = { ...state };
+ *     switch (action.type) {
+ *         case IS_LOGIN:
+ *              return { isLoggedIn: !state.isLoggedIn };
+ *     }
+ *
+ *     return state;
+ * }
+ * ```
  */
 
 export class ReducerService {
@@ -145,10 +174,10 @@ export class ReducerService {
      *
      * @private
      * @template State The type of the state object.
-     * @param {State} state The base state object to be modified.
+     * @param {any} state The base state object to be modified.
      * @param {any} action The action object to be applied to the state.
      * @param {Reducer} producer The reducer function that applies the action to the draft state.
-     * @returns {State} The cleaned up state object after the modifications have been made.
+     * @returns {any} The cleaned up state object after the modifications have been made.
      */
 
     private produce<State extends object>(state: State, action: any, producer: Reducer): any {
