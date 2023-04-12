@@ -15,12 +15,6 @@ export function shallowCopy(object: any): any {
 /**
  * Returns the value at the specified path in the given object.
  *
- * @example
- * ```typescript
- * const test = { foo: { bar: 2 } };
- * get(test, [ 'foo', 'bar' ]) // to be 2
- * ```
- *
  * @param {object} object - The object to get the value from.
  * @param {Array<string|number>} path - The path to the value.
  * @returns {*} - The value at the specified path, or undefined if the path is not valid.
@@ -44,18 +38,6 @@ export function get(object: any, path: Array<string | number>): any {
  * Sets the value at the given path in the object.
  * If any intermediate keys in the path do not exist, they are created as empty objects.
  * A shallow copy of the object is made to avoid mutating the original object.
- *
- * @example
- * ```typescript
- * const original = {
- *      a: 1,
- *      b: {
- *          wat: 3,
- *      },
- * };
- *
- * set(original, [ 'b', 'c', 'd' ], 2)
- * ```
  *
  * @param object - The object to set the value in.
  * @param path - The path to the key whose value should be set.
