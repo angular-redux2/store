@@ -17,6 +17,7 @@
         "experimentalDecorators": true,
         "useDefineForClassFields": false,
         "noFallthroughCasesInSwitch": true,
+        "strictPropertyInitialization": false,
         "forceConsistentCasingInFileNames": true,
         "noPropertyAccessFromIndexSignature": true,
         "lib": [
