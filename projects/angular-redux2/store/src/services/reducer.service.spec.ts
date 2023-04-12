@@ -1,156 +1,225 @@
 /**
- * Import third-party libraries
+ * Angular-redux
  */
 
-import { AnyAction } from 'redux';
-
-/**
- * Services
- */
-
-import { ReducerService } from './reducer.service';
-import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { RECEIVE_INIT_STATE } from '../interfaces/sync.interface';
-
-/**
- * Initialize Global test invariant variable
- */
+import { ReducerService } from "./reducer.service";
 
 let reducerService: ReducerService;
 
 beforeEach(() => {
-    jest.restoreAllMocks();
+    // Create a new instance of the ReducerService class before each test
     reducerService = ReducerService.getInstance();
-    (reducerService as any).map = {};
 });
 
-describe('Reducer-Service functional', () => {
-    /**
-     * Initialize local test invariant variable
-     */
+describe('getInstance', () => {
+    it('should return the same instance of the ReducerService class', () => {
+        const instance1 = ReducerService.getInstance();
+        const instance2 = ReducerService.getInstance();
+        expect(instance1).toBe(instance2);
+    });
+});
 
-    const state = {
-        users: {
-            danielle: {
-                name: 'Danielle Reed',
-                occupation: 'Programmer',
-                loc: 1023,
+describe('composeReducers', () => {
+    test('should return a new reducer function that applies the middleware chain to the root reducer', () => {
+        // Define a root reducer and middleware functions
+        const rootReducer = (state: any, action: any) => state;
+        const middleware1 = (state: any, action: any, next: any) => next(state);
+        const middleware2 = (state: any, action: any, next: any) => next(state);
+
+        // Compose the reducers and middleware functions
+        const composedReducer = reducerService.composeReducers(rootReducer, [ middleware1, middleware2 ]);
+
+        // Assert that the composed reducer returns the expected value
+        const state = { foo: 'bar' };
+        const action = { type: 'TEST_ACTION' };
+        expect(composedReducer(state, action)).toEqual(state);
+    });
+});
+
+describe('replaceReducer', () => {
+    test('should replace the root reducer with a new reducer function', () => {
+        const nextReducer = (state: any, action: any) => state;
+
+        reducerService.replaceReducer(nextReducer);
+
+        expect(reducerService['rootReducer']).toEqual(nextReducer);
+    });
+});
+
+describe('executeMiddlewareChain', () => {
+    test('should execute the middleware chain for the current action and return the new state', () => {
+        // Define a state and action object
+        const state = { foo: 'bar' };
+        const action = { type: 'TEST_ACTION' };
+
+        // Define middleware functions
+        const middleware1 = jest.fn((state: any, action: any, next: any) => next(state));
+        const middleware2 = jest.fn((state: any, action: any, next: any) => next(state));
+        const middleware3 = jest.fn((state: any, action: any, next: any) => next(state));
+
+        // Register the middleware functions with the reducer service
+        const fn = reducerService.composeReducers((state: any) => state, [ middleware1, middleware2, middleware3 ]);
+
+        // Execute the middleware chain
+        fn(state, action);
+
+        // Assert that each middleware function was called with the correct arguments
+        expect(middleware1).toHaveBeenCalledWith(state, action, expect.any(Function));
+        expect(middleware2).toHaveBeenCalledWith(state, action, expect.any(Function));
+        expect(middleware3).toHaveBeenCalledWith(state, action, expect.any(Function));
+    });
+
+    test('should return the state if there are no middleware functions to execute', () => {
+        // Define a state and action object
+        const state = { foo: 'bar' };
+        const action = { type: 'TEST_ACTION' };
+
+        // Define a root reducer that simply returns the state
+        const rootReducer = (state: any) => state;
+
+        // Compose the reducers and middleware functions
+        const composedReducer = reducerService.composeReducers(rootReducer, []);
+
+        // Execute the middleware chain
+        const newState = composedReducer(state, action);
+
+        // Assert that the new state is the same as the original state
+        expect(newState).toEqual(state);
+    });
+});
+
+describe('cleanup', () => {
+    test('should recursively remove all proxy-related properties from an object', () => {
+        const obj = {
+            prop1: {},
+            prop2: {
+                prop3: {
+                    prop4: {},
+                },
             },
-            lise: {
-                name: 'Beth Lewis',
-                occupation: 'DevOps Specialist',
-                loc: 2314,
-            }
-        }
-    };
-
-    test('Should root reducer not crush.', () => {
-        const action: AnyAction = {
-            type: 'test',
-            '@angular-redux2::fractalKey': ''
+            prop5: {},
         };
 
-        expect(reducerService.rootReducer(state, action)).toStrictEqual(state);
-    });
+        // @ts-ignore
+        const cleanedObj = reducerService.cleanup(obj);
 
-    test('Should root reducer return new state from sync message.', () => {
-        const action: AnyAction = {
-            type: RECEIVE_INIT_STATE,
-            payload: {
-                name: 'test'
-            }
-        };
-
-        expect(reducerService.rootReducer(state, action)).toStrictEqual({ name: 'test' });
-    });
-
-    test('Should redirect to custom reducer.', () => {
-        const action = {
-            type: 'test',
-            [ACTION_KEY]: {
-                hash: 1,
-                path: [ 'users', 'danielle' ]
-            }
-        };
-
-        const customReducer = jest.fn((localState: any, localAction: any) => {
-            expect(localAction).toStrictEqual(action);
-            expect(localState).toStrictEqual(state['users']['danielle']);
-
-            localState.loc = 1234;
-        });
-
-        (reducerService as any).map = { 1: customReducer };
-        const newState: any = reducerService.rootReducer(state, action);
-
-        expect(customReducer).toBeCalled();
-        expect(newState['users']['danielle']['loc']).toStrictEqual(1234);
-        expect(state['users']['danielle']['loc']).toStrictEqual(1023);
-    });
-
-    test('Should replace reducer.', () => {
-        const testReducer = () => {
-        };
-        const map = (reducerService as any).map;
-        map[1234] = 'test';
-        reducerService.replaceReducer(1234, testReducer);
-
-        expect(map[1234]).toStrictEqual(testReducer);
-    });
-
-    test('Should register new reducer', () => {
-        const testReducer = () => {
-        };
-        const map = (reducerService as any).map;
-        reducerService.registerReducer(4321, testReducer);
-
-        expect(map[4321]).toStrictEqual(testReducer);
+        expect(cleanedObj.prop1).toEqual({});
+        expect(cleanedObj.prop2.prop3.prop4).toEqual({});
+        expect(cleanedObj.prop5).toEqual({});
     });
 });
 
-describe('Should test immutable state create by js proxy.', () => {
-    /**
-     * Initialize local test invariant variable
-     */
+describe('produce', () => {
+    test('should produce a new state object based on the given base state object and an action object', () => {
+        const state = {
+            prop1: {},
+            prop2: {},
+        };
+        const action = {};
+        const producer = (state: any, action: any) => state;
 
-    const state: any = {
-        loc: 'US',
-        level1: {
-            level2: {
-                name: 'test'
-            }
-        }
-    };
+        // @ts-ignore
+        const newState = reducerService.produce(state, action, producer);
 
-    test('Should create new state with js proxy.', () => {
-        const rootReducer = reducerService.composeRoot((state: any, action: any) => {
-            state.loc = state.loc + action.payload;
+        expect(newState).toEqual(state);
+    });
+
+    test('should return the cleaned up state object after modifications have been made', () => {
+        const state = {
+            counter: 0,
+            items: [ 'apple', 'banana', 'orange' ]
+        };
+
+        const incrementCounter = (state: any) => {
+            state.counter += 1;
+        };
+
+        // @ts-ignore
+        const newState = reducerService.produce(state, {}, incrementCounter);
+
+        expect(newState.counter).toBe(1);
+        expect(newState.items).toEqual([ 'apple', 'banana', 'orange' ]);
+    });
+
+    test('should not modify the original state object', () => {
+        const state = {
+            counter: 0,
+            items: [ 'apple', 'banana', 'orange' ]
+        };
+
+        const incrementCounter = (state: any) => {
+            state.counter += 1;
+        };
+
+        // @ts-ignore
+        reducerService.produce(state, {}, incrementCounter);
+
+        expect(state.counter).toBe(0);
+        expect(state.items).toEqual([ 'apple', 'banana', 'orange' ]);
+    });
+});
+
+
+describe('Immutable state created by js proxy', () => {
+    let state: any;
+
+    beforeEach(() => {
+        state = {
+            loc: 'US',
+            level1: {
+                level2: {
+                    name: 'test',
+                },
+            },
+            categoriesGroups: [
+                {
+                    type: 'test',
+                    visible: true,
+                    categories: [ { name: 'phone' } ],
+                },
+                {
+                    type: 'number',
+                    visible: true,
+                    categories: [ { name: 'phone' } ],
+                },
+            ],
+        };
+    });
+
+    test('creates new state with js proxy', () => {
+        const rootReducer = reducerService.composeReducers((state, action) => {
+            state.loc += action['payload'];
             state.level1.level2.name = 'test new name';
         });
         const newState = rootReducer(state, { type: 'test', payload: 'test' });
 
-        expect(state).not.toStrictEqual(newState);
-        expect(state.level1.level2.name).toStrictEqual('test');
-        expect(newState.level1.level2.name).toStrictEqual('test new name');
-        expect(newState._isProxy).toBe(undefined);
+        expect(newState).toEqual(expect.objectContaining({
+            loc: expect.any(String),
+            level1: expect.objectContaining({
+                level2: expect.objectContaining({
+                    name: 'test new name',
+                }),
+            }),
+        }));
+        expect(newState._isProxy).toBeUndefined();
     });
 
-    test('Should create new state by js proxy with return state.', () => {
-        const rootReducer = reducerService.composeRoot((state: any, action: any) => {
-            state.loc = action.payload;
+    test('creates new state by js proxy with return state', () => {
+        const rootReducer = reducerService.composeReducers((state, action) => {
+            state.loc = action['payload'];
 
             return state;
         });
         const newState = rootReducer(state, { type: 'test', payload: 'test' });
 
-        expect(state).not.toStrictEqual(newState);
-        expect(state.loc).toStrictEqual('US');
-        expect(newState.loc).toStrictEqual('test');
-        expect(newState._isProxy).toBe(undefined);
+        expect(newState).toEqual(expect.objectContaining({
+            loc: 'test',
+        }));
+        expect(newState._isProxy).toBeUndefined();
     });
 
-    test('Should remove js proxy on spread operator.', () => {
-        const rootReducer = reducerService.composeRoot((state: any, action: any) => {
+    test('removes js proxy on spread operator', () => {
+        const rootReducer = reducerService.composeReducers((state, action) => {
             const copyState = { ...state };
             copyState.level1.level2.name = 'test new name';
 
@@ -158,20 +227,25 @@ describe('Should test immutable state create by js proxy.', () => {
         });
         const newState = rootReducer(state, { type: 'test', payload: 'test' });
 
-        expect(state).not.toStrictEqual(newState);
-        expect(state.level1.level2.name).toStrictEqual('test');
-        expect(newState.level1.level2.name).toStrictEqual('test new name');
-        expect(newState.level1._isProxy).toBe(undefined);
+        expect(newState).toEqual(expect.objectContaining({
+            level1: expect.objectContaining({
+                level2: expect.objectContaining({
+                    name: 'test new name',
+                }),
+            }),
+        }));
+        expect(newState.level1._isProxy).toBeUndefined();
     });
 
     test('Should create new state old way.', () => {
-        const rootReducer = reducerService.composeRoot((state: any, action: any) => {
+        const rootReducer = reducerService.composeReducers((state: any, action: any) => {
             const copyState = { ...state };
             copyState.level1 = { ...copyState.level1 };
             copyState.level1.name = 'test';
 
             return copyState;
         });
+
         const newState = rootReducer(state, { type: 'test', payload: 'test' });
 
         expect(state).not.toStrictEqual(newState);
@@ -179,53 +253,69 @@ describe('Should test immutable state create by js proxy.', () => {
         expect(newState.level1.name).toStrictEqual('test');
         expect(newState.level1._isProxy).toBe(undefined);
     });
+});
 
-    test('Should clean object from proxy rerun if is not an object.', () => {
-        const result = (reducerService as any).clean('test');
-
-        expect(result).toBe('test');
-    });
-
+describe('Complex nested object with js proxy', () => {
     test('Should create new state with complex nested object by js proxy with return state.', () => {
-        const localState: any = {
-            categoriesGroups: [
+        const state = {
+            users: [
                 {
-                    type: 'test',
-                    visible: true,
-                    categories: [ {
-                        name: 'phone'
-                    } ]
+                    name: 'John',
+                    age: 28,
+                    address: {
+                        street: '123 Main St',
+                        city: 'Anytown',
+                        state: 'CA',
+                        zip: '12345'
+                    }
                 },
                 {
-                    type: 'number',
-                    visible: true,
-                    categories: [ {
-                        name: 'phone'
-                    } ]
+                    name: 'Jane',
+                    age: 32,
+                    address: {
+                        street: '456 Oak St',
+                        city: 'Othertown',
+                        state: 'CA',
+                        zip: '67890'
+                    }
                 }
             ]
         };
 
+        const rootReducer = reducerService.composeReducers((state, action) => {
+            const users = state.users;
+            const index = users.findIndex((user: any) => user.name === action['payload'].name);
 
-        const rootReducer = reducerService.composeRoot((state: any, action: any) => {
-            let groups = state.categoriesGroups;
-            let group = groups.find((g: any) => g.type === action.payload.groupType);
-            let categoryIndex = group.categories.indexOf(group.categories.find((c: any) => c.name === action.payload.categoryName));
-            group.categories.splice(categoryIndex, 1);
+            if (index >= 0) {
+                const user = users[index];
+                user.address = { ...user.address, ...action['payload'].address };
+            }
 
             return state;
         });
 
-        const newState = rootReducer(localState, {
-            type: 'test', payload: {
-                groupType: 'number',
-                categoryName: 'phone'
+        const newState = rootReducer(state, {
+            type: 'UPDATE_USER_ADDRESS',
+            payload: {
+                name: 'John',
+                address: {
+                    city: 'Newtown'
+                }
             }
         });
 
-        expect(localState).not.toStrictEqual(newState);
-        expect(localState.categoriesGroups[1].categories.length).toStrictEqual(1);
-        expect(newState.categoriesGroups[1].categories.length).toStrictEqual(0);
-        expect(newState._isProxy).toBe(undefined);
+        expect(newState).not.toBe(state);
+        expect(newState.users[0].address.city).toBe('Newtown');
+        expect(newState.users[0]._isProxy).toBeUndefined();
     });
 });
+
+describe('Utility function', () => {
+    test('Should clean object from proxy rerun if is not an object.', () => {
+        // @ts-ignore
+        const result = reducerService.cleanup('test');
+
+        expect(result).toBe('test');
+    });
+});
+

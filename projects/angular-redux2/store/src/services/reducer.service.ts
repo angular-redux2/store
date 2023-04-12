@@ -1,93 +1,48 @@
 /**
- * Import third-party libraries
+ * Import third-party types
  */
 
-import { AnyAction, Reducer } from 'redux';
+import type { AnyAction, Reducer } from 'redux';
 
 /**
- * Components
+ * Angular-redux
  */
 
-import { duplicateObject, get, set } from '../components/object.component';
+import { shallowCopy } from '../components/object.component';
 
 /**
- * Interfaces
+ * Import types
  */
 
-import { FractalKey } from '../interfaces/store.interface';
-import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { RECEIVE_INIT_STATE } from '../interfaces/sync.interface';
+import type { Middleware } from '../interfaces/reducer.interface';
 
 /**
- * Holding the root reducer that use to activate the correct reducer.
- * and wrap state with proxy that take care in the immutable state.
- *
- * @example
- * ```typescript
- *
- * @Action
- * isLogin(state: Auth, action: AnyAction) {
- *     state.isLoggedIn = true;
- * }
- *
- * // or
- *
- * @Action
- * isLogin(state: Auth, action: AnyAction) {
- *     state.isLoggedIn = true;
- *
- *     return state;
- * }
- *
- * //old-way
- * export function authReducer(state: Auth, action: AnyAction): Auth {
- *     const newState = { ...state };
- *     switch (action.type) {
- *         case IS_LOGIN:
- *              return { isLoggedIn: !state.isLoggedIn };
- *     }
- *
- *     return state;
- * }
- * ```
+ * Service class for composing reducers and applying middleware to them.
  */
 
 export class ReducerService {
-
     /**
-     * singleton instance
+     * The single instance of the `ReducerService` class.
+     * @hidden
      */
 
     private static instance: ReducerService;
 
     /**
-     * Map of register sub-store reducer
-     * A subStore expose the same interface as the main Redux store (dispatch, select, etc.),
-     * but is rooted at a particular path in your global state.
+     * Holding current root reducer
+     * @private
      */
 
-    private readonly map: {
-        [id: string]: Reducer
-    } = {};
+    private rootReducer: Reducer;
 
     /**
-     * The Singleton's constructor should always be private to prevent direct
-     * construction calls with the `new` operator.
+     * Returns the single instance of the `Singleton` class.
+     * If the instance has not yet been created, a new instance is created and returned.
+     *
+     * @returns {ReducerService} The single instance of the `Singleton` class
      */
 
-    private constructor() {
-    }
-
-    /**
-     * The static method that controls the access to the singleton instance.
-     *
-     * This implementation let you subclass the Singleton class while keeping
-     * just one instance of each subclass around.
-     *
-     * @return ReducerService
-     */
-
-    public static getInstance(): ReducerService {
+    static getInstance(): ReducerService {
         if (!ReducerService.instance) {
             ReducerService.instance = new ReducerService();
         }
@@ -96,230 +51,137 @@ export class ReducerService {
     }
 
     /**
-     * Compose root reducer with sub-store reducer.
+     * Composes multiple reducers into a single reducer function and applies middleware to it.
+     *
+     * @param {Reducer} rootReducer - The root reducer function to compose.
+     * @param {Middleware[]} [middlewares=[]] - An array of middleware functions to apply.
+     * @returns {Reducer} - A new reducer function that applies the middleware chain to the root reducer.
      */
 
-    composeRoot(rootReducer: Reducer): Reducer {
-        return this.composeReducers(this.rootReducer.bind(this), rootReducer);
-    }
+    composeReducers(rootReducer: Reducer, middlewares: Middleware[] = []): Reducer {
+        this.rootReducer = rootReducer;
 
-    /**
-     * Root Reducer that route between sub-reducer (local reducer for part of the store) and reducer.
-     *
-     * @param state - current state.
-     * @param action - the current action.
-     *
-     * @return Object
-     */
-
-    rootReducer(
-        state: any,
-        action: AnyAction & { ACTION_KEY?: FractalKey }
-    ): Object {
-        const fractalKey = action[ACTION_KEY];
-
-        if (fractalKey) {
-            const fractalPath = fractalKey.path;
-            const localReducer = this.map[fractalKey.hash];
-
-            if (fractalPath && localReducer) {
-                const fractalState = get(state, fractalPath);
-                const newState = this.executeReducer(fractalState, localReducer, action);
-
-                if (newState !== fractalState) {
-                    return set(state, fractalPath, newState);
-                }
+        const middlewareList = middlewares.concat([
+            (state: any, action: AnyAction) => {
+                return this.produce(state, action, this.rootReducer);
             }
-        }
+        ]);
 
-        if (action.type === RECEIVE_INIT_STATE) {
-            return action['payload'];
-        }
-
-        return state;
-    }
-
-    /**
-     * Register local reducer for part of the store.
-     *
-     * @param hashReducer - hash of reducer function for detection.
-     * @param localReducer - the reducer function
-     *
-     * @return void
-     */
-
-    registerReducer(
-        hashReducer: number,
-        localReducer: Reducer
-    ): void {
-        const existingFractalReducer = this.map[hashReducer];
-
-        if (!existingFractalReducer) {
-            this.map[hashReducer] = localReducer;
-        }
-    }
-
-    /**
-     * replaceReducer function, which replaces the current active root reducer function with a new root reducer function.
-     * Calling it will swap the internal reducer function reference, and dispatch an action.
-     * You might need this if your app implements code splitting, and you want to load some reducers dynamically.
-     * You might also need this if you implement a hot reloading mechanism for Redux.
-     *
-     * @param hashReducer - hash of reducer function for detection.
-     * @param nextLocalReducer - reducer of the same store.
-     *
-     * @return void
-     */
-
-    replaceReducer(
-        hashReducer: number,
-        nextLocalReducer: Reducer
-    ): void {
-        if (this.map[hashReducer]) {
-            this.map[hashReducer] = nextLocalReducer;
-        }
-    }
-
-    /**
-     * Hash signature of string.
-     * @param string - string to hash sign
-     *
-     * @return number
-     */
-
-    hashSignature(string: string): number {
-        let hash: number = 0;
-        let index = string.length;
-
-        while (index > 0) {
-            hash = (hash << 5) - hash + string.charCodeAt(--index) | 0;
-        }
-
-        return hash;
-    }
-
-    /**
-     * reduces an action by applying a sequence of delegate reducers.
-     *
-     * The `reduce()` method executes a user-supplied “reducer” callback function on each element of the array,
-     * in order, passing in the return value from the calculation on the preceding element.
-     * The final result of running the reducer across all elements of the array is a single value.
-     *
-     * @param reducers - array of reducers.
-     *
-     * @return Reducer
-     */
-
-    private composeReducers(...reducers: Array<Reducer>): Reducer {
-        return (state: any, action: AnyAction) => {
-            return reducers.reduce(
-                (previousState: any, reducer: Reducer) => {
-                    return this.executeReducer(previousState, reducer, action);
-                }, state
-            );
+        return (state: any, action: AnyAction): any => {
+            return this.executeMiddlewareChain(state, action, middlewareList);
         };
     }
 
     /**
+     * Replaces the root reducer function with a new reducer function.
      *
-     * @param state
-     * @param reducer
-     * @param action
+     * @param {Reducer} nextReducer - The new root reducer function to use.
+     * @returns {void}
+     */
+
+    replaceReducer(nextReducer: Reducer): void {
+        this.rootReducer = nextReducer;
+    }
+
+    /**
+     * Executes the middleware chain for the current action and returns the new state.
+     *
      * @private
+     * @param {any} state - The current state of the store.
+     * @param {AnyAction} action - The current action being dispatched.
+     * @param {Middleware[]} middlewareList - An array of middlewares registered with the store.
+     * @returns {any} - The new state of the store after executing the middleware chain.
      */
 
-    private executeReducer(state: any, reducer: Reducer, action: AnyAction): any {
-        let result = state;
-        const proxyState = this.proxyState(state);
-        const newState = reducer(proxyState.proxy, action);
+    private executeMiddlewareChain(state: any, action: AnyAction, middlewareList: Middleware[]): any {
+        const middlewares = middlewareList.slice();
 
-        if (newState && !newState._isProxy) {
-            console.log('y');
-            result = this.clean(newState);
-        } else if (proxyState.proxy._isChanged) {
-            console.log('x');
-            result = this.clean(proxyState.proxy._target);
+        function next(newState: any, newAction?: AnyAction): any {
+            if (!newAction) {
+                newAction = action;
+            }
+
+            // Get the next middleware function to execute
+            const fn = middlewares.shift();
+
+            if (!fn) {
+                // No more middleware functions to execute
+                return newState;
+            }
+
+            // Call the middleware function and pass it the next function to execute
+            return fn(newState, newAction, next);
         }
 
-        console.log('end');
-        proxyState.revoke();
-
-        return result;
+        return next(state, action);
     }
 
     /**
-     * Proxy handler
-     * An object whose properties are functions define the behavior of proxy p when an operation is performed on it.
+     * Recursively removes all proxy-related properties from an object.
+     *
+     * @private
+     * @param {any} object - The object to be cleaned up.
+     * @returns {any} - The cleaned up object.
      */
 
-    private proxyHandler(): Object {
-        const handler = {
-            is_change: false,
-            get: function (target: any, prop: string): any {
-                switch (prop) {
-                    case '_target':
-                        return target;
-
-                    case '_isProxy':
-                        return true;
-
-                    case '_isChanged':
-                        return this.is_change;
-
-                    default:
-                        if (typeof target[prop] === 'object' && !target[prop]._isProxy) {
-                            target[prop] = new Proxy(duplicateObject(target[prop]), handler);
-                        }
-
-                        return target[prop];
-                }
-            },
-
-            /**
-             * Set value into object
-             */
-
-            set: function (target: any, key: string, value: any): boolean {
-                this.is_change = true;
-                target[key] = value;
-
-                return true;
-            }
-        };
-
-        return handler;
-    }
-
-    /**
-     * Create proxy state
-     */
-
-    private proxyState(state: any): { proxy: any; revoke: () => void; } {
-        return Proxy.revocable({ ...state }, this.proxyHandler());
-    }
-
-    /**
-     * Remove proxy from an object
-     */
-
-    private clean(object: any): object {
-        if (typeof object !== 'object' || object === null) {
-            return object; // Return the value if is not an object.
-        }
-
-        for (let key in object) {
-            if (typeof object[key] !== 'object' || object[key] === null) {
-                continue;
+    private cleanup(object: any): any {
+        for (const prop in object) {
+            if (object[prop] && object[prop]._isProxy) {
+                object[prop] = object[prop]._target;
             }
 
-            if (object[key]._isProxy) {
-                object[key] = object[key]._target;
+            if (typeof object[prop] === 'object') {
+                this.cleanup(object[prop]);
             }
-
-            // Recursively (deep) clean for nested objects, including arrays
-            this.clean(object[key]);
         }
 
         return object;
+    }
+
+    /**
+     * Produces a new state object based on the given base state object and an action object.
+     * Uses a Proxy object to allow for "draft" modifications to the state object, and returns
+     * the cleaned up state object without any Proxy objects after the modifications have been made.
+     *
+     * @private
+     * @template State The type of the state object.
+     * @param {State} state The base state object to be modified.
+     * @param {any} action The action object to be applied to the state.
+     * @param {Reducer} producer The reducer function that applies the action to the draft state.
+     * @returns {State} The cleaned up state object after the modifications have been made.
+     */
+
+    private produce<State extends object>(state: State, action: any, producer: Reducer): any {
+        let result = state;
+        let hasChanged = false;
+
+        const proxy = new Proxy(shallowCopy(state), {
+            get(target: any, prop: string | symbol): any {
+                if (prop === '_target') return target;
+                if (prop === '_isProxy') return true;
+
+                if (typeof target[prop] === 'object' && !target[prop]._isProxy) {
+                    target[prop] = new Proxy(shallowCopy(target[prop]), this);
+                }
+
+                return target[prop];
+            },
+            set(target: any, prop: string | symbol, value: any): boolean {
+                hasChanged = true;
+                target[prop] = value;
+
+                return true;
+            },
+        });
+
+        const newState = producer(proxy, action);
+
+        if (newState && !newState._isProxy){
+            result = this.cleanup(newState);
+        } else if (hasChanged) {
+            result = this.cleanup(proxy._target);
+        }
+
+        return result;
     }
 }
