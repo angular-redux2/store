@@ -80,6 +80,7 @@
             2,
             "always"
         ],
+        "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/member-ordering": [
             "error",
             {
