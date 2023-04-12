@@ -1,54 +1,65 @@
 /**
- * Import third-party libraries
+ * Import types
  */
 
-import { Action } from 'redux';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 
 /**
- * The primitive type are accept by selector array.
- * select from store by Array<string | number>.
+ * An array of strings or numbers used to select a path in a state object.
  *
  * @example
  * ```typescript
+ * // Select the 'name' property from an object in the store using a PathSelector array.
  *  @Select(['foo', 'name']) readonly name$: Observable<string>;
  * ```
+ *
+ * @typedef {Array<string | number>} PathSelector
  */
 
 export type PathSelector = Array<string | number>;
 
 /**
- * The primitive type are accept by selector.
- * select from store by `string` | `number` | `symbol`.
+ * A string, number or symbol used to select a property in a state object.
  *
  * @example
  * ```typescript
  *  @Select('name') readonly name$: Observable<string>;
  * ```
+ *
+ * @typedef {string|number|symbol} PropertySelector
  */
 
 export type PropertySelector = string | number | symbol;
 
 /**
- * select from store by functional conditions.
+ * A function that selects a subset of a RootState object and returns it as an S object.
  *
  * @example
  * ```typescript
  *  @Select(store => store.name || 'new name') readonly name$: Observable<string>;
  * ```
+ *
+ * @template RootState - The type of the root state object.
+ * @template S - The type of the selected subset of the RootState object.
+ * @typedef {(s: RootState) => State} FunctionSelector
+ * @param {RootState} state - The root state object to select from.
+ * @returns {State} The selected subset of the root state object.
  */
 
-export type FunctionSelector<RootState, S> = ((s: RootState) => S);
+export type FunctionSelector<RootState, State> = ((state: RootState) => State);
 
 /**
- * combine all oder type `PropertySelector` | `PathSelector` | `FunctionSelector<RootState, S>`
+ * A selector used to select a property or a subset of a RootState object.
+ *
+ * @template RootState - The type of the root state object.
+ * @template State - The type of the selected subset of the RootState object.
+ * @typedef {PropertySelector|PathSelector|FunctionSelector<RootState, State>} Selector
  */
 
-export type Selector<RootState, S> = PropertySelector | PathSelector | FunctionSelector<RootState, S>;
+export type Selector<RootState, State> = PropertySelector | PathSelector | FunctionSelector<RootState, State>;
 
 /**
- * Type of function used to determine if this selector has changed.
- * Custom equality checker that can be used with `.select` and `@Select`.
+ * A function used to compare two state objects for equality.
  *
  * @example
  * ```typescript
@@ -58,60 +69,24 @@ export type Selector<RootState, S> = PropertySelector | PathSelector | FunctionS
  *
  * @Select(selector, customCompare)
  * ```
+ *
+ * @typedef {(state: any, newState: any) => boolean} Comparator
+ * @param {*} state - The original state object.
+ * @param {*} newState - The new state object.
+ * @returns {boolean} Whether the two state objects are equal.
  */
 
 export type Comparator = (state: any, newState: any) => boolean;
 
 /**
- *  Type of transformer -
- *  function takes the store observable as an input and returns a derived observable from it.
+ * A function used to transform a store of type Observable<RootState> to type Observable<FragmentStore>.
+ *
+ * @template RootState - The type of the root state object.
+ * @template FragmentStore - The type of the transformed state object.
+ * @typedef {(store$: Observable<RootState>, scope: any) => Observable<FragmentStore>} Transformer
+ * @param {Observable<RootState>} store$ - The root state store to transform.
+ * @param {any} scope - The scope of the transformation.
+ * @returns {Observable<FragmentStore>} The transformed store.
  */
 
 export type Transformer<RootState, FragmentStore> = (store$: Observable<RootState>, scope: any) => Observable<FragmentStore>;
-
-/**
- * Get function arguments.
- */
-
-type Args<T> = T extends (...args: infer arg) => any ? arg : never;
-
-/**
- * Type of function may get payload as argument.
- */
-
-export type ActionPayload<Payload = undefined> = (payload?: Payload) => AnyAction;
-
-/**
- * Type of reducer action function for use in the auto generation.
- * help to typescript generate auto-complete.
- *
- * @example
- * ```typescript
- *      export class SomeReducer extends AbstractReducer {
- *          static actions: ActionsReducer<SomeReducer>
- *      }
- * ```
- */
-
-export type ActionsReducer<T> = {
-    [K in keyof T]: ActionPayload<Args<T[K]>[1]>
-}
-
-/**
- * Any action with payload for better autocomplete
- */
-
-export interface AnyAction<Payload = undefined> extends Action {
-    payload?: Payload;
-    [extraProps: string]: any;
-}
-
-/**
- * Type of fractal action
- * @hidden
- */
-
-export type FractalKey = {
-    hash: number;
-    path: PathSelector;
-};
