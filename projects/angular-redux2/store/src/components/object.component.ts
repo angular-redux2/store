@@ -1,92 +1,71 @@
 /**
- * Gets a deeply-nested property value from an object by given a 'path'
- * of property names or array indices.
+ * Shallow copies an array or object.
+ * @param {any} object - The array or object to copy.
+ * @returns {any} A shallow copy of the input array or object.
+ */
+
+export function shallowCopy(object: any): any {
+    if (Array.isArray(object)) {
+        return object.slice();
+    }
+
+    return Object.assign({}, object);
+}
+
+/**
+ * Returns the value at the specified path in the given object.
  *
- * @example
- * ```typescript
- * const test = { foo: { bar: 2 } };
- * get(test, [ 'foo', 'bar' ]) // to be 2
- * ```
- *
- * @param object - the object to get a value from.
- * @param path - path to location in the object.
- *
- * @return any
+ * @param {object} object - The object to get the value from.
+ * @param {Array<string|number>} path - The path to the value.
+ * @returns {*} - The value at the specified path, or undefined if the path is not valid.
  */
 
 export function get(object: any, path: Array<string | number>): any {
-    if (!object) {
-        return undefined;
-    }
-
     let result = object;
 
-    for (let key of path) {
-        if (result[key] === undefined) {
+    for (const key of path) {
+        if (typeof result === 'object' && result !== null) {
+            result = Reflect.get(result, key);
+        } else {
             return undefined;
         }
-
-        result = result[key];
     }
 
     return result;
 }
 
 /**
- * Sets a deeply-nested property value from an object, given a 'path'
- * of property names or array indices. Path elements are created if
- * not there already. Does not mutate the given object.
+ * Sets the value at the given path in the object.
+ * If any intermediate keys in the path do not exist, they are created as empty objects.
+ * A shallow copy of the object is made to avoid mutating the original object.
  *
- * @example
- * ```typescript
- * const original = {
- *      a: 1,
- *      b: {
- *          wat: 3,
- *      },
- * };
- *
- * set(original, [ 'b', 'c', 'd' ], 2)
- * ```
- *
- * @param object - the object to set a value to.
- * @param path - path to location in the object.
- * @param value - the value to set in path location.
- *
- * @return object
+ * @param object - The object to set the value in.
+ * @param path - The path to the key whose value should be set.
+ * @param value - The value to set at the key.
+ * @returns A shallow copy of the object with the new value set at the given path.
  */
 
-export function set(object: any, path: Array<string | number>, value: any): Object {
-    if (!object) {
+export function set(object: any, path: Array<string | number>, value: any): any {
+    if (!object || !Array.isArray(path) || path.length < 1) {
         return object;
     }
 
-    const lastKey = path.at(-1) || '';
-    const result = { ...object };
+    const result = shallowCopy(object);
     let tempObjet = result;
 
-    for (let key of path.slice(0, -1)) {
-        if (tempObjet[key] === undefined) {
+    for (let i = 0; i < path.length - 1; i++) {
+        const key = path[i];
+
+        if (!tempObjet[key] || typeof tempObjet[key] !== 'object') {
             tempObjet[key] = {};
         } else {
-            tempObjet[key] = duplicateObject(tempObjet[key]);
+            tempObjet[key] = shallowCopy(tempObjet[key]);
         }
 
         tempObjet = tempObjet[key];
     }
 
-    tempObjet[lastKey] = value;
+    tempObjet[path[path.length - 1]] = value;
 
     return result;
-}
-
-/**
- * Create shallow new object
- * @param object - original object
- * @return object - new object
- */
-export function duplicateObject(object: object): object {
-    const type = Array.isArray(object) ? [] : {};
-
-    return Object.assign(type, object);
 }
