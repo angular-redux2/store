@@ -1,18 +1,15 @@
 /**
- * Import third-party libraries
+ * Import third-party types
  */
 
-import { AnyAction, Reducer } from 'redux';
+
+import type { AnyAction, Reducer } from 'redux';
 
 /**
- * Interfaces
+ * Angular-redux types
  */
 
-import { ActionPayload } from '../interfaces/store.interface';
-
-/**
- * Base reducer class
- */
+import type { ActionCreator } from '../interfaces/store.interface';
 
 export abstract class AbstractReducer {
 
@@ -22,7 +19,6 @@ export abstract class AbstractReducer {
      * @example
      * ```typescript
      * class Reducer extends AbstractReducer {
-     *
      *     // optional static var to allow to add type's for auto-complete
      *     // ActionPayload< payload interface / state >
      *     static override actions: ActionPayload<Reducer>;
@@ -31,13 +27,11 @@ export abstract class AbstractReducer {
      */
 
     static actions: {
-        [key: string]: ActionPayload<any>
+        [key: string]: ActionCreator<any>
     } = {};
 
     /**
-     * Wrap class with reducer function.
-     * This utility method takes a class and converts it to a reducer function
-     * allow easy usability
+     * Creates a Redux reducer based on the methods of the instantiated class.
      *
      * @example
      * ```typescript
@@ -55,8 +49,9 @@ export abstract class AbstractReducer {
      *
      * export const authReducer = Reducer.createReducer(BUG_INITIAL_STATE);
      * ```
-     * @param initialState - the initial state.
-     * @return Reducer<State>
+     * @param {new () => any} this - The class constructor.
+     * @param {any} initialState - The initial state for the reducer.
+     * @returns {Reducer<State>} A Redux reducer that can be used with createStore.
      */
 
     static createReducer<State = any>(this: new () => any, initialState: any): Reducer<State> {

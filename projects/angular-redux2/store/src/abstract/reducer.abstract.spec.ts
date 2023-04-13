@@ -1,94 +1,83 @@
 /**
- * Import third-party libraries
- */
-
-import { AnyAction } from 'redux';
-
-/**
- * Abstracts
+ * Angular-redux
  */
 
 import { AbstractReducer } from './reducer.abstract';
-
-/**
- * Interfaces
- */
-
-import {  ActionsReducer } from '../interfaces/store.interface';
-
-/**
- * Initialize global test invariant variable
- */
-
-const state = [ { name: 'bug name' } ];
-const payload = {
-    name: 'payload test'
-};
+import { Action } from '../decorators/action.decorator';
+import { PayloadAction, ReducerActions } from '../interfaces/store.interface';
 
 interface BugPayload {
     name: string;
     active?: boolean;
     assign?: string;
 }
+describe('AbstractReducer', () => {
+    const initialState = [{ name: 'init state' }];
+    const payload = { name: 'payload test' };
 
-class TestReducer extends AbstractReducer {
-    /**
-     * Action types
-     */
-    static override actions: ActionsReducer<TestReducer>;
+    class TestReducer extends AbstractReducer {
+        static override actions: ReducerActions<TestReducer>;
 
-    addBug(state: Array<BugPayload>, action: AnyAction): Array<BugPayload> {
-        const payload: BugPayload = action['payload'];
-        return [ payload ];
+        addBug(state: BugPayload[], action: PayloadAction): BugPayload[] {
+            const payload: BugPayload = action.payload;
+            return [payload];
+        }
     }
-}
 
-/**
- * Initialize global test mocks
- */
+    let addBugSpy = jest.spyOn(TestReducer.prototype, 'addBug');
+    let reducer = TestReducer.createReducer<BugPayload[]>(initialState);
 
-let addBugSpy = jest.spyOn(TestReducer.prototype, 'addBug');
-let reducer = TestReducer.createReducer<Array<BugPayload>>([ { name: 'init state' } ]);
-
-afterEach(() => {
-    addBugSpy.mockReset();
-});
-
-test('Should call correct method in reducer class.', () => {
-    reducer(state, {
-        type: 'addBug',
-        payload: payload
+    beforeEach(() => {
+        addBugSpy.mockReset();
     });
 
-    expect(addBugSpy).toBeCalledWith(state, payload);
-});
+    describe('createReducer', () => {
+        test('should return a reducer function that calls the method corresponding to the action type', () => {
+            class TestReducer extends AbstractReducer {
+                static override actions: any;
 
-test('Should call correct method with namespace in reducer class.', () => {
-    reducer(state, {
-        type: 'TestReducer/addBug',
-        payload: payload
+                @Action
+                addBug(state: any, action: any) {
+                    return { ...state, bugs: [ ...state.bugs, action ] };
+                }
+            }
+
+            const reducer = TestReducer.createReducer({ bugs: [] });
+
+            const initialState = { bugs: [] };
+            const state = reducer(initialState, TestReducer.actions.addBug({ id: 1, description: 'Test bug' }));
+
+            expect(state).toEqual({ bugs: [ { id: 1, description: 'Test bug' } ] });
+        });
     });
 
-    expect(addBugSpy).toBeCalledWith(state, payload);
-});
+    describe('TestReducer', () => {
+        test('should call the correct method in the reducer class', () => {
+            reducer(initialState, { type: 'addBug', payload });
 
-test('Should get new state from reducer method.', () => {
-    const stateMock = [{
-        name: 'test new state.'
-    }];
+            expect(addBugSpy).toHaveBeenCalledWith(initialState, payload);
+        });
 
-    addBugSpy.mockReturnValueOnce(stateMock);
-    const result = reducer(state, {
-        type: 'addBug',
+        test('should call the correct method with namespace in the reducer class', () => {
+            reducer(initialState, { type: 'TestReducer/addBug', payload });
+
+            expect(addBugSpy).toHaveBeenCalledWith(initialState, payload);
+        });
+
+        test('should get a new state from the reducer method', () => {
+            const newState = [{ name: 'test new state.' }];
+
+            addBugSpy.mockReturnValueOnce(newState);
+
+            const result = reducer(initialState, { type: 'addBug' });
+
+            expect(result).toStrictEqual(newState);
+        });
+
+        test('should return the same state when the method does not exist', () => {
+            const result = reducer(initialState, { type: 'undefinedTest' });
+
+            expect(result).toStrictEqual(initialState);
+        });
     });
-
-    expect(result).toStrictEqual(stateMock);
-});
-
-test('Should return same state when method is not exists.', () => {
-    const result = reducer(state, {
-        type: 'undefinedTest',
-    });
-
-    expect(result).toStrictEqual(state);
 });
