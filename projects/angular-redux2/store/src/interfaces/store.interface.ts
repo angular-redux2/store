@@ -1,5 +1,5 @@
 /**
- * Import types
+ * Import third-party types
  */
 
 import type { Observable } from 'rxjs';

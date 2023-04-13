@@ -1,8 +1,8 @@
-import { get, set, shallowCopy } from "./object.component";
-
 /**
  * Angular-redux
  */
+
+import { get, set, shallowCopy } from './object.component';
 
 const storeStruct = {
     foo: 1,
