@@ -151,6 +151,23 @@ export class ReducerService {
     }
 
     /**
+     * Replaces a registered sub-reducer with a new one based on the hash signature.
+     *
+     * @param {number} hashReducer - The hash signature of the registered sub-reducer.
+     * @param {Reducer} nextLocalReducer - The new sub-reducer to replace the existing one.
+     * @returns {void}
+     */
+
+    replaceSubReducer(
+        hashReducer: number,
+        nextLocalReducer: Reducer
+    ): void {
+        if (this.map[hashReducer]) {
+            this.map[hashReducer] = nextLocalReducer;
+        }
+    }
+
+    /**
      * Executes the middleware chain for the current action and returns the new state.
      *
      * @private
