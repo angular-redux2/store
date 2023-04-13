@@ -8,13 +8,14 @@ import type { AnyAction, Reducer } from 'redux';
  * Angular-redux
  */
 
-import { shallowCopy } from '../components/object.component';
+import { ACTION_KEY } from '../interfaces/fractal.interface';
+import { get, set, shallowCopy } from '../components/object.component';
 
 /**
- * Import types
+ * Angular-redux types
  */
 
-import type { Middleware } from '../interfaces/reducer.interface';
+import type { Middleware, NextMiddleware } from '../interfaces/reducer.interface';
 
 /**
  * Service class for composing reducers and applying middleware to them.
@@ -65,6 +66,17 @@ export class ReducerService {
     private rootReducer: Reducer;
 
     /**
+     * A map of Reducers indexed by their hash signatures.
+     *
+     * @private
+     * @type {Object.<string, Reducer>}
+     */
+
+    private readonly map: {
+        [id: string]: Reducer
+    } = {};
+
+    /**
      * Returns the single instance of the `Singleton` class.
      * If the instance has not yet been created, a new instance is created and returned.
      *
@@ -91,6 +103,7 @@ export class ReducerService {
         this.rootReducer = rootReducer;
 
         const middlewareList = middlewares.concat([
+            this.subStoreRootReducer,
             (state: any, action: AnyAction) => {
                 return this.produce(state, action, this.rootReducer);
             }
@@ -262,12 +275,17 @@ export class ReducerService {
      * @param {any} state The base state object to be modified.
      * @param {any} action The action object to be applied to the state.
      * @param {Reducer} producer The reducer function that applies the action to the draft state.
+     * @throws {Error} If the state is not object
      * @returns {any} The cleaned up state object after the modifications have been made.
      */
 
     private produce<State extends object>(state: State, action: any, producer: Reducer): any {
         let result = state;
         let hasChanged = false;
+
+        if (typeof state !== 'object') {
+            throw new Error('the state is not an object.');
+        }
 
         const proxy = new Proxy(shallowCopy(state), {
             get(target: any, prop: string | symbol): any {
@@ -290,7 +308,7 @@ export class ReducerService {
 
         const newState = producer(proxy, action);
 
-        if (newState && !newState._isProxy){
+        if (newState && !newState._isProxy) {
             result = this.cleanup(newState);
         } else if (hasChanged) {
             result = this.cleanup(proxy._target);
