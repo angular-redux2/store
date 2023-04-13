@@ -1,71 +1,78 @@
 /**
- * Import services
+ * Angular-redux
  */
 
 import { DevToolsExtension } from './dev-tool.service';
 
-/**
- * Before each test initial new instance.
- */
+describe('DevToolsExtension', () => {
+    let devTool: DevToolsExtension;
+    let appRef: any;
+    let ngRedux: any;
+    let environment: any;
 
-let devTool: DevToolsExtension;
-const appRef = <any> jest.fn();
-const ngRedux = <any> jest.fn();
-const environment: { [key: string]: any } = typeof window !== 'undefined' ? window : {};
+    beforeAll(() => {
+        appRef = {
+            tick: jest.fn(),
+        };
 
-beforeEach(() => {
-    devTool = new DevToolsExtension(appRef, ngRedux);
-    environment['__REDUX_DEVTOOLS_EXTENSION__'] = undefined;
-});
+        ngRedux = {
+            subscribe: jest.fn(),
+        };
 
-test('Should environment __REDUX_DEVTOOLS_EXTENSION__ to be falsy.', () => {
-    expect(devTool.isEnabled()).toBe(false);
-});
-
-test('Should environment __REDUX_DEVTOOLS_EXTENSION__ to be truthy.', () => {
-    environment['__REDUX_DEVTOOLS_EXTENSION__'] = {}
-
-    expect(devTool.isEnabled()).toBe(true);
-});
-
-test('Should enhancer to return null when devtool is undefined.', () => {
-    expect(devTool.enhancer({})).toBe(null);
-});
-
-test('Should enhancer to call devtool listen for detect changes.', () => {
-    const listen = jest.fn();
-    environment['__REDUX_DEVTOOLS_EXTENSION__'] = jest.fn();
-    environment['__REDUX_DEVTOOLS_EXTENSION__'].listen = listen;
-
-    devTool.enhancer({});
-    expect(listen).toBeCalled();
-});
-
-test('Should enhancer to call devtool callback with start and stop.', () => {
-    const unsubscribe = jest.fn();
-    let _listenCallback: Function = () => {};
-    let _subscribeCallback: Function = () => {};
-
-    const listen = jest.fn((callback: Function) => {
-        _listenCallback = callback;
+        environment = typeof window !== 'undefined' ? window : {};
+        environment.__REDUX_DEVTOOLS_EXTENSION__ = undefined;
     });
 
-    const subscribe = jest.fn((callback: Function) => {
-        _subscribeCallback = callback;
-
-        return unsubscribe;
+    beforeEach(() => {
+        devTool = new DevToolsExtension(appRef, ngRedux);
+        environment.__REDUX_DEVTOOLS_EXTENSION__ = undefined;
     });
 
-    appRef.tick = jest.fn();
-    ngRedux.subscribe = subscribe;
-    environment['__REDUX_DEVTOOLS_EXTENSION__'] = jest.fn();
-    environment['__REDUX_DEVTOOLS_EXTENSION__'].listen = listen;
-    devTool.enhancer({});
+    describe('isEnabled', () => {
+        test('should return false when __REDUX_DEVTOOLS_EXTENSION__ is undefined', () => {
+            expect(devTool.isEnabled()).toBe(false);
+        });
 
-    _listenCallback({ type: 'START' });
-    _subscribeCallback();
-    _listenCallback({ type: 'STOP' });
+        test('should return true when __REDUX_DEVTOOLS_EXTENSION__ is defined', () => {
+            environment.__REDUX_DEVTOOLS_EXTENSION__ = {};
+            expect(devTool.isEnabled()).toBe(true);
+        });
+    });
 
-    expect(appRef.tick).toBeCalledTimes(1);
-    expect(unsubscribe).toBeCalledTimes(1);
+    describe('enhancer', () => {
+        test('should return null when __REDUX_DEVTOOLS_EXTENSION__ is undefined', () => {
+            expect(devTool.enhancer({})).toBe(null);
+        });
+
+        test('should call listen method when __REDUX_DEVTOOLS_EXTENSION__ is defined', () => {
+            const listen = jest.fn();
+            environment.__REDUX_DEVTOOLS_EXTENSION__ = jest.fn();
+            environment.__REDUX_DEVTOOLS_EXTENSION__.listen = listen;
+
+            devTool.enhancer({});
+            expect(listen).toBeCalled();
+        });
+
+        test('should call tick and unsubscribe when START and STOP actions are detected', () => {
+            const unsubscribe = jest.fn();
+            const subscribe = jest.fn((callback) => {
+                callback();
+
+                return unsubscribe;
+            });
+            const listen = jest.fn().mockImplementation((callback) => {
+                callback({ type: 'START' });
+                callback({ type: 'STOP' });
+            });
+
+            jest.spyOn(devTool, 'isEnabled').mockReturnValue(true);
+            ngRedux.subscribe = subscribe;
+            environment.__REDUX_DEVTOOLS_EXTENSION__ = jest.fn();
+            environment.__REDUX_DEVTOOLS_EXTENSION__.listen = listen;
+            devTool.enhancer({});
+
+            expect(appRef.tick).toBeCalledTimes(1);
+            expect(unsubscribe).toBeCalledTimes(1);
+        });
+    });
 });
