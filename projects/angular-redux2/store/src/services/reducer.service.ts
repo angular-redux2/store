@@ -131,6 +131,26 @@ export class ReducerService {
     }
 
     /**
+     * Registers a local sub reducer with the Fractal Reducer Registry under the specified hash signature.
+     * If a reducer is already registered under the same hash signature, the new reducer is not added.
+     *
+     * @param {number} hashReducer - The hash signature of the reducer to be registered.
+     * @param {Reducer} localReducer - The local reducer to be registered.
+     * @returns {void}
+     */
+
+    registerSubReducer(
+        hashReducer: number,
+        localReducer: Reducer
+    ): void {
+        const existingFractalReducer = this.map[hashReducer];
+
+        if (!existingFractalReducer) {
+            this.map[hashReducer] = localReducer;
+        }
+    }
+
+    /**
      * Executes the middleware chain for the current action and returns the new state.
      *
      * @private
