@@ -2,6 +2,7 @@
  * Import third-party types
  */
 
+import type { Action } from 'redux';
 import type { Observable } from 'rxjs';
 
 /**
@@ -90,3 +91,69 @@ export type Comparator = (state: any, newState: any) => boolean;
  */
 
 export type Transformer<RootState, FragmentStore> = (store$: Observable<RootState>, scope: any) => Observable<FragmentStore>;
+
+/**
+ * An action with a payload property.
+ * @template Payload The type of the payload property.
+ */
+
+export interface PayloadAction<Payload = any> extends Action {
+    payload?: Payload;
+    [extraProps: string]: any;
+}
+
+/**
+ * Extracts the argument types of a function type `T`.
+ * If `T` is not a function type, returns never.
+ *
+ * @example
+ * ```typescript
+ *  type Fn = (a: string, b: number) => boolean;
+ *  type ArgsOfFn = Args<Fn>; // [string, number]
+ * ```
+ *
+ * @typeparam T - The function type from which to extract argument types.
+ * @returns A tuple of the argument types of `T`.
+ */
+
+type Args<T> = T extends (...args: infer arg) => any ? arg : never;
+
+/**
+ * Defines a type for an action creator function that may accept a payload of a given type, which is optional.
+ *
+ * @typeparam Payload - The type of the action's payload, which defaults to `undefined`.
+ * @param payload - The optional payload for the action.
+ * @returns An object of type `AnyAction` that represents the dispatched action.
+ */
+
+export type ActionCreator<Payload = undefined> = (payload?: Payload) => PayloadAction;
+
+/**
+ * The ReducerActions type defines a type that helps to generate auto-complete for reducer action functions.
+ * It is used as a property of a reducer class that extends AbstractReducer.
+ *
+ * The type is a mapped type that iterates through each key of the generic type T
+ * and creates a property with that same key. The value of each property is a function type called ActionPayload,
+ * which takes an optional payload and returns an AnyAction.
+ * The payload type is inferred from the second argument of the function type at that key in T.
+ *
+ * @example
+ * ```typescript
+ * export class MyReducer extends AbstractReducer {
+ *   static actions: ReducerActions<MyReducer> = {
+ *     someReducerFunction: (payload) => ({
+ *       type: 'SOME_ACTION',
+ *       payload,
+ *     }),
+ *   };
+ *
+ *   someReducerFunction(param1: string, param2: number): void {
+ *     // Some reducer logic here
+ *   }
+ * }
+ * ```
+ */
+
+export type ReducerActions<T> = {
+    [K in keyof T]: ActionCreator<Args<T[K]>[1]>;
+};
