@@ -1,28 +1,26 @@
 /**
- * Decorator's
+ * Import third-party libraries
  */
 
-import { Substore } from "./substore.decorator";
+import { AnyAction } from 'redux';
 
 /**
- * Interfaces
+ * Angular-redux
  */
 
-import { LOCAL_REDUCER_KEY } from "../interfaces/fractal.interface";
+import { Substore } from './substore.decorator';
+import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
 
-/**
- * Initialize global test invariant variable
- */
+describe('Substore', () => {
+    test('should set the reducer to the LOCAL_REDUCER_KEY property of the class constructor', () => {
+        // Define a sample reducer
+        const reducer = (state: any, action: AnyAction) => state;
 
-const reducer = (state: any, action: any) => {
-    return state;
-};
+        // Create a sample class with the @Substore decorator
+        @Substore(reducer)
+        class TestComponent {}
 
-@Substore(reducer)
-class Test {
-
-}
-
-test('Should create key in class that hold the local reducer function.', () => {
-    expect((Test as any)[LOCAL_REDUCER_KEY]).toStrictEqual(reducer);
+        // Expect the LOCAL_REDUCER_KEY property to be set to the reducer
+        expect((TestComponent as any)[LOCAL_REDUCER_KEY]).toBe(reducer);
+    });
 });

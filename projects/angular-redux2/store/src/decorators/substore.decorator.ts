@@ -1,19 +1,20 @@
 /**
- * Import third-party libraries
+ * Import third-party types
  */
 
-import { AnyAction, Reducer } from 'redux';
+import type { AnyAction, Reducer } from 'redux';
 
 /**
- * Interfaces
+ * Angular-redux
  */
 
 import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
 
 /**
- * Modifies the behaviour of any `@Select`, `@Select$`, or `@Dispatch`
- * decorators to operate on a substore defined.
+ * A decorator function that modifies the behavior of any `@Select`, `@Select$`, or `@Dispatch`
+ * decorators to operate on a substore defined with a given reducer.
  *
+ * @example
  * ```typescript
  * @SubStore(userComponentReducer)
  * export class TestComponent implements OnInit {
@@ -25,6 +26,9 @@ import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
  *     }
  * }
  * ```
+ *
+ * @param reducer - The reducer function used to create the substore.
+ * @returns A ClassDecorator function that sets the reducer to the class constructor's LOCAL_REDUCER_KEY property.
  */
 
 export function Substore(reducer: Reducer<any, AnyAction>): ClassDecorator {
