@@ -1,94 +1,67 @@
 /**
- * Import third-party libraries
+ * Import third-party types
  */
 
-import { AnyAction, Reducer, Store } from 'redux';
-import { distinctUntilChanged, map, Observable, ReplaySubject, Subscription } from 'rxjs';
+import type { Subscription } from 'rxjs';
+import type { AnyAction, Reducer } from 'redux';
 
 /**
- * Components
+ * Angular-redux
  */
 
-import { get } from '../components/object.component';
-import { resolver } from '../components/selectors.component';
-
-/**
- * Services
- */
-
-import { NgRedux } from './ng-redux.service';
 import { ReducerService } from './reducer.service';
-
-/**
- * Interfaces
- */
-
+import { get } from '../components/object.component';
+import { AbstractStore } from '../abstract/store.abstract';
 import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { Comparator, PathSelector, Selector } from '../interfaces/store.interface';
 
 /**
- * Carves off a 'subStore' or 'fractal' store from this one.
- *
- * The returned object is itself an observable store, however any
- * selections, dispatches, or invocations of localReducer will be
- * specific to that sub-store and will not know about the parent
- * ObservableStore from which it was created.
- *
- * This is handy for encapsulating component or module state while
- * still benefiting from time-travel, etc.
- *
- * @example
- * ```typescript
- *   onInit() {
- *     // The reducer passed here will affect state under `users.${userID}`
- *     // in the top-level store.
- *     this.subStore = this.ngRedux.configureSubStore(
- *       ['users', userId],
- *       userComponentReducer,
- *     );
- *
- *     // Substore selections are scoped to the base path used to configure
- *     // the substore.
- *     this.name$ = this.subStore.select('name');
- *     this.occupation$ = this.subStore.select('occupation');
- *     this.loc$ = this.subStore.select(s => s.loc || 0);
- *   }
- * ```
+ * Angular-redux types
  */
 
-export class SubStoreService<State> implements Store<State> {
+import type { NgRedux } from './ng-redux.service';
+import type { PathSelector } from '../interfaces/store.interface';
+
+/**
+ * A class representing a substore in the NgRedux store.
+ *
+ * @template State - The state shape of the substore.
+ * @class
+ */
+
+export class SubStoreService<State> extends AbstractStore<State> {
 
     /**
-     * Hold subscription to root store with sub-store path.
+     * An RxJS Subscription object representing the subscription to the store state changes.
+     * @private
+     * @type {Subscription}
      */
 
     private subscription: Subscription;
 
     /**
-     * Hash signature of reducer function.
+     * The hash value for this reducer.
+     *
+     * @private
+     * @readonly
+     * @type {number}
      */
 
     private readonly hashReducer: number;
 
     /**
-     * ReducerService
+     * An instance of the `ReducerService` used to register and replace reducers for the store.
+     * @type {ReducerService}
+     * @private
      */
 
     private readonly reducerService: ReducerService;
 
     /**
-     * Angular subject store.
-     * correspond to store change event and trigger rxjs change event.
-     */
-
-    private readonly _store$: ReplaySubject<any> = new ReplaySubject<any>(1);
-
-    /**
-     * Constructor
+     * Constructs a new SubStoreService instance.
      *
-     * @param rootStore - root store instance.
-     * @param basePath - sub store  base path.
-     * @param localReducer - sub store custom reducer.
+     * @param {NgRedux<any>} rootStore - The NgRedux store.
+     * @param {PathSelector} basePath - The base path of the substore.
+     * @param {Reducer<State>} localReducer - The reducer of the substore.
      */
 
     constructor(
@@ -96,85 +69,15 @@ export class SubStoreService<State> implements Store<State> {
         private basePath: PathSelector,
         private localReducer: Reducer<State>
     ) {
+        super();
         this.reducerService = ReducerService.getInstance();
 
         this.hashReducer = this.reducerService.hashSignature(localReducer.toString());
-        this.reducerService.registerReducer(this.hashReducer, localReducer);
+        this.reducerService.registerSubReducer(this.hashReducer, localReducer);
     }
 
     /**
-     * Dispatches an actions. It is the only way to trigger a state change.
-     * The reducer function, used to create the store, will be called with the current state tree and the given actions.
-     * Its return value will be considered the next state of the tree, and the change listeners will be notified.
-     *
-     * @param action - action to dispatch.
-     *
-     * @return dispatch action.
-     */
-
-    dispatch<A extends AnyAction>(action: A): A {
-        return this.rootStore.dispatch(
-            Object.assign({}, action, {
-                [ACTION_KEY]: {
-                    hash: this.hashReducer,
-                    path: this.basePath
-                },
-            })
-        );
-    }
-
-    /**
-     * Get store state.
-     *
-     * @example
-     * ```typescript
-     *   incrementIfOdd(): void {
-     *     const { counter } = this.ngRedux.getState();
-     *     if (counter % 2 !== 0) {
-     *       this.increment();
-     *     }
-     *   }
-     * ```
-     *
-     * @returns The current state tree of your application.
-     */
-
-    getState(): State {
-        return get(this.rootStore.getState(), this.basePath);
-    }
-
-    /**
-     * Set or update substore base path from root store.
-     * and set a subscribed for change detection
-     *
-     * @example
-     * ```typescript
-     *    ngOnChanges() {
-     *         if(this.subStore)
-     *             this.subStore.setBasePath([ 'users', this.userId ]);
-     *     }
-     * ```
-     *
-     * @param path - the path of select from root store.
-     */
-
-    setBasePath(path: PathSelector): void {
-        if (this.basePath === path && this.subscription) {
-            return;
-        }
-
-        this.basePath = path;
-
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
-
-        this.subscription = this.rootStore.select<State>(this.basePath).subscribe((value: any) => {
-            this._store$.next(value);
-        });
-    }
-
-    /**
+     * Configures a sub-store with a specified base path and local reducer.
      * Carves off a 'subStore' or 'fractal' store from this one.
      *
      * The returned object is itself an observable store, however any
@@ -203,63 +106,90 @@ export class SubStoreService<State> implements Store<State> {
      *   }
      * ```
      *
-     * @param basePath - select part of store
-     * @param localReducer - reducer of the same store
-     *
-     * @return StoreInterface<SubState>
+     * @template SubState The type of the sub-store state.
+     * @param {PathSelector} basePath The base path of the sub-store.
+     * @param {Reducer<SubState>} localReducer The local reducer of the sub-store.
+     * @returns {SubStoreService<SubState>} The sub-store service instance.
      */
 
     configureSubStore<SubState>(basePath: PathSelector, localReducer: Reducer<SubState>): SubStoreService<SubState> {
         const path = [ ...this.basePath, ...basePath ];
-        const subStoreService = new SubStoreService<SubState>(this.rootStore, path, localReducer);
-        subStoreService.setBasePath(path);
 
-        return subStoreService;
+        return new SubStoreService<SubState>(this.rootStore, path, localReducer);
     }
 
     /**
-     * Select a slice of state to expose as an observable.
+     * Returns the current state of the substore.
      *
      * @example
      * ```typescript
-     *
-     * constructor(private ngRedux: NgRedux<IAppState>) {}
-     *
-     * ngOnInit() {
-     *   let { increment, decrement } = CounterActions;
-     *   this.counter$ = this.ngRedux.select('counter');
-     * }
+     *   incrementIfOdd(): void {
+     *     const { counter } = this.ngRedux.getState();
+     *     if (counter % 2 !== 0) {
+     *       this.increment();
+     *     }
+     *   }
      * ```
      *
-     * @param selector - key or function to select a part of the state.
-     * @param comparator - comparison function called to test if an item is distinct from the previous item in the source.
-     *
-     * @return An Observable that emits items from the source Observable with distinct values.
+     * @returns {State} The current state of the substore.
      */
 
-    select<SelectedType>(selector?: Selector<State, SelectedType>, comparator?: Comparator): Observable<SelectedType> {
-        return this._store$.pipe(
-            distinctUntilChanged(),
-            map(resolver(selector)),
-            distinctUntilChanged(comparator)
+    getState(): State {
+        return get(this.rootStore.getState(), this.basePath);
+    }
+
+    /**
+     * Sets the base path for the store, and subscribes to updates.
+     *
+     * @example
+     * ```typescript
+     *    ngOnChanges() {
+     *         if(this.subStore)
+     *             this.subStore.setBasePath([ 'users', this.userId ]);
+     *     }
+     * ```
+     *
+     * @param path - The path selector.
+     * @returns void.
+     */
+
+    setBasePath(path: PathSelector): void {
+        if (this.basePath === path && this.subscription) {
+            return;
+        }
+
+        this.basePath = path;
+
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+
+        this.subscription = this.rootStore.select<State>(this.basePath).subscribe((value: any) => {
+            this._store$.next(value);
+        });
+    }
+
+    /**
+     * Dispatches an action object with an additional metadata object containing the hash and path of the sub-reducer.
+     *
+     * @template Action - The type of action to dispatch.
+     * @param {Action} action - The action object to dispatch.
+     * @returns {Action} The dispatched action object.
+     */
+
+    dispatch<Action extends AnyAction>(action: Action): Action {
+        return this.rootStore.dispatch(
+            Object.assign({}, action, {
+                [ACTION_KEY]: {
+                    hash: this.hashReducer,
+                    path: this.basePath
+                },
+            })
         );
     }
 
     /**
-     * Adds a change listener.
-     * It will be called any time an actions is dispatched, and some part of the state tree may potentially have changed.
-     * You may then call getState() to read the current state tree inside the callback.
-     *
-     * 1. The subscriptions are snapshotted just before every dispatch() call.
-     * If you subscribe or unsubscribe while the listeners are being invoked,
-     * this will not have any effect on the dispatch() that is currently in progress.
-     * However, the next dispatch() call, whether nested or not,
-     * will use a more recent snapshot of the subscription list.
-     *
-     * 2. The listener should not expect to see all states changes,
-     * as the state might have been updated multiple times during a nested dispatch() before the listener is called.
-     * It is, however, guaranteed that all subscribers registered before the dispatch()
-     * started will be called with the latest state by the time it exits.
+     * Subscribe to changes in the substore's state.
      *
      * @example
      * ```typescript
@@ -277,7 +207,8 @@ export class SubStoreService<State> implements Store<State> {
      *   }
      * ```
      *
-     * @param listener - A callback to be invoked on every dispatch.
+     * @param {() => void} listener - The callback function to be executed on state changes.
+     * @returns {() => void} - The unsubscribe function to remove the subscription.
      */
 
     subscribe(listener: () => void): (() => void) {
@@ -287,9 +218,7 @@ export class SubStoreService<State> implements Store<State> {
     }
 
     /**
-     * Replaces the reducer currently used by the store to calculate the state.
-     * You might need this if your app implements code splitting, and you want to load some reducers dynamically.
-     * You might also need this if you implement a hot reloading mechanism for Redux.
+     * Replaces the current local reducer with a new one.
      *
      * @example
      * ```typescript
@@ -301,24 +230,11 @@ export class SubStoreService<State> implements Store<State> {
      * ngRedux.replaceReducer(newRootReducer)
      * ```
      *
-     * @param nextLocalReducer - Reducer<RootState, AnyAction>
-     * @return void
+     * @param {Reducer<State>} nextLocalReducer - The new local reducer to replace the current one.
+     * @returns {void}
      */
 
     replaceReducer(nextLocalReducer: Reducer<State>) {
-        return this.reducerService.replaceReducer(this.hashReducer, nextLocalReducer);
-    }
-
-    /**
-     * Interoperability point for observable/reactive libraries.
-     * @returns {observable} A minimal observable of state changes.
-     * For more information, see the observable proposal:
-     * https://github.com/tc39/proposal-observable
-     *
-     * @hidden
-     */
-
-    [Symbol.observable](): any {
-        return this._store$;
+        return this.reducerService.replaceSubReducer(this.hashReducer, nextLocalReducer);
     }
 }

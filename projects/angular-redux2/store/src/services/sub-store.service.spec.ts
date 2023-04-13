@@ -1,145 +1,195 @@
 /**
- * Services
+ * Angular-redux
  */
 
-import { NgRedux } from './ng-redux.service';
-import { ReducerService } from './reducer.service';
-import { SubStoreService } from './sub-store.service';
-
-/**
- * Interfaces
- */
-
+import { NgRedux } from "./ng-redux.service";
+import { ReducerService } from "./reducer.service";
+import { get } from "../components/object.component";
+import { SubStoreService } from "./sub-store.service";
 import { ACTION_KEY } from "../interfaces/fractal.interface";
+import { NextMiddleware } from "../interfaces/reducer.interface";
 
 /**
- * Component
- */
-
-import { get } from '../components/object.component';
-
-/**
- * Initialize global test mocks
+ * Mocks
  */
 
 jest.mock('./ng-redux.service');
 
-/**
- * Initialize global test invariant variable
- */
+describe('SubStoreService', () => {
+    let ngRedux: NgRedux<any>;
+    let mockNext: NextMiddleware;
+    let reducerService: ReducerService;
+    let subStoreService: SubStoreService<any>;
+    let mockUnsubscribe: jest.Mock;
+    let mockHashSignature: jest.Mock;
+    let mockReplaceReducer: jest.Mock;
+    let mockRegisterReducer: jest.Mock;
 
-let ngRedux: NgRedux<any>;
-let reducerService: ReducerService;
-let subStoreService: SubStoreService<any>;
-let mockHashSignature: any = jest.fn();
-let mockReplaceReducer: any = jest.fn();
-let mockRegisterReducer: any = jest.fn();
-
-/**
- * Before & after etch test
- */
-
-beforeEach(() => {
-    ngRedux = new NgRedux();
-    reducerService = ReducerService.getInstance();
-
-    reducerService.hashSignature = mockHashSignature;
-    reducerService.replaceReducer = mockReplaceReducer;
-    reducerService.registerReducer = mockRegisterReducer;
-    subStoreService = new SubStoreService<any>(ngRedux, [ 'a', 'b' ], () => {
-    });
-});
-
-afterEach(() => {
-    jest.resetAllMocks();
-});
-
-test('Should initialize constructor logic.', () => {
-    expect(mockHashSignature).toBeCalled();
-    expect(mockRegisterReducer).toBeCalled();
-});
-
-test('Should dispatch root store.', () => {
-    subStoreService.dispatch(<any> {});
-    expect(ngRedux.dispatch).toHaveBeenCalledWith({
-        [ACTION_KEY]: {
-            hash: undefined,
-            path: [ 'a', 'b' ]
-        }
-    });
-});
-
-test('Should get substore state.', () => {
-    (get as any) = jest.fn();
-    subStoreService.getState();
-
-    expect(get).toHaveBeenCalledWith(undefined, [ 'a', 'b' ]);
-});
-
-test('Should not change base path.', () => {
-    const unsubscribe = jest.fn();
-    (subStoreService as any).subscription = {
-        unsubscribe
-    };
-
-    subStoreService.setBasePath((subStoreService as any).basePath);
-    expect(unsubscribe).not.toBeCalled();
-    expect(ngRedux.select).not.toBeCalled();
-});
-
-test('Should call unsubscribe and create new subscribe.', () => {
-    const basePath = [ 'a' ];
-    const mockNext = jest.fn();
-    const mockUnsubscribe = jest.fn();
-    const mockSubscribe = jest.fn((callback: Function) => {
-        callback();
+    beforeEach(() => {
+        ngRedux = new NgRedux();
+        mockNext = jest.fn();
+        reducerService = ReducerService.getInstance();
+        mockUnsubscribe = jest.fn();
+        mockHashSignature = jest.fn();
+        mockReplaceReducer = jest.fn();
+        mockRegisterReducer = jest.fn();
+        reducerService.hashSignature = mockHashSignature;
+        reducerService.replaceReducer = mockReplaceReducer;
+        reducerService.registerSubReducer = mockRegisterReducer;
+        subStoreService = new SubStoreService<any>(ngRedux, [ 'a', 'b' ], () => {
+        });
     });
 
-    (subStoreService as any)._store$.next = mockNext;
-    (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
-    (subStoreService as any).subscription = {
-        unsubscribe: mockUnsubscribe
-    };
-
-    subStoreService.setBasePath(basePath);
-    expect(mockUnsubscribe).toBeCalled();
-    expect(ngRedux.select).toBeCalledWith(basePath);
-    expect(mockSubscribe).toBeCalled();
-    expect(mockNext).toBeCalled();
-});
-
-test('Should create new substore instance.', () => {
-    const mockSubscribe = jest.fn();
-    (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
-
-    const instance = subStoreService.configureSubStore([ 'a', 'b', 'c' ], () => {
+    afterEach(() => {
+        jest.resetAllMocks();
     });
-    expect((subStoreService as any).basePath).toStrictEqual([ 'a', 'b' ]);
-    expect((instance as any).basePath).toStrictEqual([ 'a', 'b', 'a', 'b', 'c' ]);
+
+    describe('constructor', () => {
+        test('should initialize constructor logic.', () => {
+            expect(mockHashSignature).toBeCalled();
+            expect(mockRegisterReducer).toBeCalled();
+        });
+    });
+
+    describe('dispatch', () => {
+        test('should dispatch root store.', () => {
+            subStoreService.dispatch(<any>{});
+            expect(ngRedux.dispatch).toHaveBeenCalledWith({
+                [ACTION_KEY]: {
+                    hash: undefined,
+                    path: [ 'a', 'b' ]
+                }
+            });
+        });
+
+        test('should dispatch to root store with correct action key', () => {
+            subStoreService.dispatch({
+                type: 'test'
+            });
+            expect(ngRedux.dispatch).toHaveBeenCalledWith({
+                type: 'test',
+                [ACTION_KEY]: {
+                    hash: undefined,
+                    path: [ 'a', 'b' ]
+                }
+            });
+        });
+    });
+
+    describe('getState', () => {
+        test('should get substore state.', () => {
+            (get as jest.Mock) = jest.fn();
+            subStoreService.getState();
+            expect(get).toHaveBeenCalledWith(undefined, [ 'a', 'b' ]);
+        });
+
+        test('should call get with correct arguments', () => {
+            (get as any) = jest.fn();
+            subStoreService.getState();
+            expect(get).toHaveBeenCalledWith(undefined, [ 'a', 'b' ]);
+        });
+    });
+
+    describe('setBasePath', () => {
+        test('should not change base path.', () => {
+            const unsubscribe = jest.fn();
+            (subStoreService as any).subscription = { unsubscribe };
+            subStoreService.setBasePath((subStoreService as any).basePath);
+
+            expect(unsubscribe).not.toBeCalled();
+            expect(ngRedux.select).not.toBeCalled();
+        });
+
+        test('should call unsubscribe and create new subscribe.', () => {
+            const basePath = [ 'a' ];
+            const mockSubscribe = jest.fn((callback: Function) => {
+                callback();
+            });
+
+            (subStoreService as any)._store$.next = mockNext;
+            (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
+            (subStoreService as any).subscription = { unsubscribe: mockUnsubscribe };
+            subStoreService.setBasePath(basePath);
+
+            expect(mockUnsubscribe).toBeCalled();
+            expect(ngRedux.select).toBeCalledWith(basePath);
+            expect(mockSubscribe).toBeCalled();
+            expect(mockNext).toBeCalled();
+        });
+
+        test('should not call unsubscribe or ngRedux.select if base path is unchanged', () => {
+            const unsubscribe = jest.fn();
+            (subStoreService as any).subscription = {
+                unsubscribe
+            };
+
+            subStoreService.setBasePath((subStoreService as any).basePath);
+            expect(unsubscribe).not.toBeCalled();
+            expect(ngRedux.select).not.toBeCalled();
+        });
+
+        test('should call unsubscribe and create new subscribe if base path is changed', () => {
+            const basePath = [ 'a' ];
+            const mockSubscribe = jest.fn((callback: Function) => {
+                callback();
+            });
+
+            (subStoreService as any)._store$.next = mockNext;
+            (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
+            (subStoreService as any).subscription = {
+                unsubscribe: mockUnsubscribe
+            };
+
+            subStoreService.setBasePath(basePath);
+            expect(mockUnsubscribe).toBeCalled();
+            expect(ngRedux.select).toBeCalledWith(basePath);
+            expect(mockSubscribe).toBeCalled();
+            expect(mockNext).toBeCalled();
+        });
+    });
+
+    describe('configureSubStore', () => {
+        test('should create a new substore instance with correct base path', () => {
+            const mockSubscribe = jest.fn();
+            (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
+
+            const instance = subStoreService.configureSubStore([ 'a', 'b', 'c' ], () => {
+            });
+            expect((subStoreService as any).basePath).toStrictEqual([ 'a', 'b' ]);
+            expect((instance as any).basePath).toStrictEqual([ 'a', 'b', 'a', 'b', 'c' ]);
+        });
+    });
+
+    describe('subscribe', () => {
+        test('should call select method', () => {
+            const mockSelect = jest.spyOn(subStoreService, 'select');
+            subStoreService.subscribe(() => {
+            });
+            expect(mockSelect).toBeCalled();
+        });
+
+        test('should assign new subscription', () => {
+            jest.spyOn(subStoreService, 'select');
+            subStoreService.subscribe(() => {
+            });
+
+            expect(subStoreService.select).toBeCalled();
+        });
+
+        test('should call select and subscribe to substore changes', () => {
+            const mockSelect = jest.spyOn(subStoreService, 'select');
+            subStoreService.subscribe(() => {
+            });
+            expect(mockSelect).toBeCalled();
+        });
+    });
+
+    describe('replaceReducer', () => {
+        test('should call replaceReducer on reducer service', () => {
+            jest.spyOn((subStoreService as any).reducerService, 'replaceSubReducer').mockImplementation(mockReplaceReducer);
+            subStoreService.replaceReducer(() => {
+            });
+            expect(mockReplaceReducer).toBeCalled();
+        });
+    });
 });
-
-test('Should call observable pip in sub store select method.', () => {
-    (subStoreService as any)._store$ = new (jest.fn())();
-    (subStoreService as any)._store$.pipe = jest.fn();
-    subStoreService.select();
-
-    expect((subStoreService as any)._store$.pipe).toBeCalled();
-});
-
-test('Should subscribe to substore changes.', () => {
-    const mockSelect = jest.spyOn(subStoreService, 'select');
-    subStoreService.subscribe(() => {});
-
-    expect(mockSelect).toBeCalled();
-});
-
-test('Should replace reducer.', () => {
-    subStoreService.replaceReducer(() => {});
-    expect(mockReplaceReducer).toBeCalled();
-});
-
-test('Should get store observable.', () => {
-    (subStoreService as any)._store$ = new (jest.fn())();
-
-    expect(subStoreService[Symbol.observable]()).toStrictEqual((subStoreService as any)._store$);
-})
