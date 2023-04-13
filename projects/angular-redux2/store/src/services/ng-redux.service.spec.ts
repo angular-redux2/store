@@ -2,18 +2,18 @@
  * Import third-party libraries
  */
 
-import { of } from "rxjs";
-import { NgZone } from "@angular/core";
-import { compose, createStore, Reducer, Store, StoreEnhancer } from "redux";
+import { of } from 'rxjs';
+import { NgZone } from '@angular/core';
+import { compose, createStore, Reducer, Store, StoreEnhancer } from 'redux';
 
 /**
  * Angular-redux
  */
 
-import { NgRedux } from "./ng-redux.service";
-import { ReducerService } from "./reducer.service";
-import { SubStoreService } from "./sub-store.service";
-import { Middleware } from "../interfaces/reducer.interface";
+import { NgRedux } from './ng-redux.service';
+import { ReducerService } from './reducer.service';
+import { SubStoreService } from './sub-store.service';
+import { Middleware } from '../interfaces/reducer.interface';
 
 describe('NgRedux', () => {
     let ngRedux: NgRedux;

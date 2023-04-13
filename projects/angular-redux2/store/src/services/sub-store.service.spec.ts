@@ -2,12 +2,12 @@
  * Angular-redux
  */
 
-import { NgRedux } from "./ng-redux.service";
-import { ReducerService } from "./reducer.service";
-import { get } from "../components/object.component";
-import { SubStoreService } from "./sub-store.service";
-import { ACTION_KEY } from "../interfaces/fractal.interface";
-import { NextMiddleware } from "../interfaces/reducer.interface";
+import { NgRedux } from './ng-redux.service';
+import { ReducerService } from './reducer.service';
+import { get } from '../components/object.component';
+import { SubStoreService } from './sub-store.service';
+import { ACTION_KEY } from '../interfaces/fractal.interface';
+import { NextMiddleware } from '../interfaces/reducer.interface';
 
 /**
  * Mocks

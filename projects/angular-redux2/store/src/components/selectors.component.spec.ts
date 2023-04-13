@@ -3,7 +3,7 @@
  */
 
 import { get } from './object.component';
-import { getSelectorType, resolver } from "./selectors.component";
+import { getSelectorType, resolver } from './selectors.component';
 
 /**
  * Mocks
