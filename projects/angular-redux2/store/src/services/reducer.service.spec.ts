@@ -3,6 +3,8 @@
  */
 
 import { ReducerService } from "./reducer.service";
+import { ACTION_KEY } from "../interfaces/fractal.interface";
+import { Middleware } from "../interfaces/reducer.interface";
 
 let reducerService: ReducerService;
 
