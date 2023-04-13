@@ -1,28 +1,11 @@
 /**
- * Import third-party libraries
+ * Import third-party types
  */
 
-import { AnyAction } from 'redux';
+import type { AnyAction } from 'redux';
 
 /**
- * This decorator generate dispatch action method for a reducer-class method.
- * If you set an actions static var with type this will generate with autocomplete.
- *
- * ```typescript
- * // Old style
- * this.ngRedux.dispatch({
- *     type: 'isLogin',
- *     payload: {
- *         name: 'test'
- *     }
- * });
- *
- * this.ngRedux.dispatch(
- *     RoutesReducer.actions.isLogin({
- *         name: 'test'
- *     });
- * );
- * ```
+ * A decorator function that generates an action creator for a specific function.
  *
  * @example
  * ```typescript
@@ -45,11 +28,12 @@ import { AnyAction } from 'redux';
  * }
  * ```
  *
- * @param target - target reducer class instance.
- * @param functionName - function name as action name.
+ * @param {*} target - The target object on which to apply the decorator.
+ * @param {string} functionName - The name of the function to create the action for.
+ * @constructor
  */
 
-export const Action = (target: any, functionName: string): void =>  {
+export const Action = (target: any, functionName: string): void => {
     const TargetClass = target.constructor;
     const actionName = `${TargetClass.name }/${functionName}`;
 

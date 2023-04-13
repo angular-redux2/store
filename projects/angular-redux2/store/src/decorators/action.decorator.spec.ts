@@ -1,48 +1,45 @@
 /**
- * Import third-party libraries
+ * Angular-redux
  */
 
-import { AnyAction } from 'redux';
+import { Action } from "./action.decorator";
 
-/**
- * Decorator's
- */
+describe('Action', () => {
+    class ExampleReducer {
+        static actions: any;
 
-import { Action } from './action.decorator';
-
-/**
- * Initialize global test invariant variable
- */
-
-interface BugPayload {
-    name: string;
-    active?: boolean;
-    assign?: string;
-}
-
-class TestReducer {
-    @Action
-    addBug(state: Array<BugPayload>, action: AnyAction): Array<BugPayload> {
-        const payload: BugPayload = action['payload'];
-        return [ payload ];
+        @Action
+        exampleFunction(payload: any) {
+            return payload;
+        }
     }
-}
 
-/**
- * Test auto generate action struct.
- */
-
-test('Should return action object that generate from addBug method.', () => {
-    new TestReducer();
-    const result = (TestReducer as any).actions['addBug']();
-    const resultPayload = (TestReducer as any).actions['addBug']({ test: 'test'});
-
-    expect(resultPayload).toStrictEqual({
-        type: 'TestReducer/addBug',
-        payload: { test: 'test'}
+    test('should create an action creator for a specific function', () => {
+        expect(ExampleReducer.actions.exampleFunction('test payload')).toEqual({
+            type: 'ExampleReducer/exampleFunction',
+            payload: 'test payload',
+        });
     });
 
-    expect(result).toStrictEqual({
-        type: 'TestReducer/addBug'
-    })
+    test('TestReducer.addBug() should return an action object with the correct type and payload', () => {
+        // Instantiate the test subject
+        new ExampleReducer();
+
+        // Call the action creator without a payload
+        const result = (ExampleReducer as any).actions['exampleFunction']();
+
+        // Call the action creator with a payload
+        const resultPayload = (ExampleReducer as any).actions['exampleFunction']({ test: 'test' });
+
+        // Assert that the action creator without a payload returns an action object with the correct type and no payload
+        expect(result).toEqual({
+            type: 'ExampleReducer/exampleFunction'
+        });
+
+        // Assert that the action creator with a payload returns an action object with the correct type and payload
+        expect(resultPayload).toEqual({
+            type: 'ExampleReducer/exampleFunction',
+            payload: { test: 'test' }
+        });
+    });
 });
