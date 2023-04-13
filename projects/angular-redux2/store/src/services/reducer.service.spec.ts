@@ -49,6 +49,16 @@ describe('replaceReducer', () => {
 });
 
 describe('executeMiddlewareChain', () => {
+    test('should return the state when no middleware functions to execute', () => {
+        const state = {};
+        const action = { type: 'TEST_ACTION' };
+        const middlewareList: Middleware[] = [];
+
+        const newState = (reducerService as any).executeMiddlewareChain(state, action, middlewareList);
+
+        expect(newState).toBe(state);
+    });
+
     test('should execute the middleware chain for the current action and return the new state', () => {
         // Define a state and action object
         const state = { foo: 'bar' };
@@ -158,6 +168,16 @@ describe('produce', () => {
 
         expect(state.counter).toBe(0);
         expect(state.items).toEqual([ 'apple', 'banana', 'orange' ]);
+    });
+
+    test('should throw error if state is not an object', () => {
+        const action = { type: 'SOME_ACTION' };
+        const producer = (state: any, action: any) => state;
+
+        expect(() => {
+            // @ts-ignore
+            reducerService.produce('not an object', action, producer);
+        }).toThrowError('the state is not an object.');
     });
 });
 
@@ -320,3 +340,117 @@ describe('Utility function', () => {
     });
 });
 
+describe('hashSignature', () => {
+    test('should generate correct hash for input string', () => {
+        const inputString = 'test string';
+        const expectedHash = -1334601185; // expected hash for "test string"
+
+        const result = reducerService.hashSignature(inputString);
+
+        expect(result).toEqual(expectedHash);
+    });
+
+    test('should generate correct hash for empty string', () => {
+        const inputString = '';
+        const expectedHash = 0;
+
+        const result = reducerService.hashSignature(inputString);
+
+        expect(result).toEqual(expectedHash);
+    });
+});
+
+describe('registerSubReducer', () => {
+    test('should add a reducer to the map if it does not exist', () => {
+        const reducer = (state: any, action: any) => state;
+        reducerService.registerSubReducer(12345, reducer);
+
+        expect(reducerService['map'][12345]).toEqual(reducer);
+    });
+
+    test('should not add a reducer to the map if it already exists', () => {
+        const reducer1 = (state: any, action: any) => state;
+        const reducer2 = (state: any, action: any) => state;
+        reducerService.registerSubReducer(123456, reducer1);
+        reducerService.registerSubReducer(123456, reducer2);
+
+        expect(reducerService['map'][123456]).toEqual(reducer1);
+    });
+
+    test('should do nothing if the sub-reducer does not exist', () => {
+        // @ts-ignore
+        reducerService['map'] = {
+            12345: (state: any) => state,
+            123456: (state: any) => state,
+        };
+
+        reducerService.replaceSubReducer(789, (state: any) => ({ foo: 'bar' }));
+
+        expect(reducerService['map']['789']).toBeUndefined();
+    });
+
+    test('should replace the sub-reducer with the given hash key', () => {
+        const hashReducer = 1;
+        const nextLocalReducer = jest.fn();
+
+        // Adding a mock reducer to map
+        reducerService['map'][hashReducer] = jest.fn();
+
+        // Replacing the reducer with the given hash key
+        reducerService.replaceSubReducer(hashReducer, nextLocalReducer);
+
+        // Expect the reducer to be replaced
+        expect(reducerService['map'][hashReducer]).toBe(nextLocalReducer);
+    });
+});
+
+describe('subStoreRootReducer', () => {
+    const initialState = {
+        foo: {
+            bar: {
+                test: 42,
+            },
+        },
+    };
+
+    const action = {
+        type: 'SOME_ACTION',
+        payload: 'name',
+        [ACTION_KEY]: {
+            hash: 1234,
+            path: [ 'foo', 'bar' ],
+        },
+    };
+
+    const next = jest.fn((state: any, action: any, next: any) => state);
+
+    test('should update state correctly for a matching action', () => {
+        const localReducer = jest.fn((state, action) => {
+            return {
+                test: {
+                    baz: action.payload
+                }
+            };
+        });
+
+        reducerService.registerSubReducer(1234, localReducer);
+        const state = (reducerService as any).subStoreRootReducer(initialState, action, next);
+
+        expect(state).toEqual({
+            foo: {
+                bar: {
+                    test: { baz: 'name' },
+                },
+            },
+        });
+
+        expect(localReducer).toHaveBeenCalledWith(initialState.foo.bar, action);
+    });
+
+    test('should not update state for a non-matching action', () => {
+        const state = (reducerService as any).subStoreRootReducer(initialState, { type: 'OTHER_ACTION' }, next);
+
+        expect(state).toEqual(initialState);
+        expect(next).toHaveBeenCalledWith(initialState, { type: 'OTHER_ACTION' });
+    });
+});
