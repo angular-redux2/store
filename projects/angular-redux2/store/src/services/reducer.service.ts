@@ -168,6 +168,36 @@ export class ReducerService {
     }
 
     /**
+     * The root reducer function for sub-stores.
+     *
+     * @private
+     * @param {any} state - The current state of the sub-store.
+     * @param {AnyAction} action - The current action dispatched to the sub-store.
+     * @param {NextMiddleware} next - The next middleware to call.
+     * @returns {void} If the sub-store state is not changed. If the sub-store state is changed, returns the new state.
+     */
+
+    private subStoreRootReducer(state: any, action: AnyAction, next: NextMiddleware): void {
+        const fractalKey = action[ACTION_KEY];
+
+        if (fractalKey) {
+            const fractalPath = fractalKey.path;
+            const localReducer = this.map[fractalKey.hash];
+
+            if (fractalPath && localReducer) {
+                const fractalState = get(state, fractalPath);
+                const newState = this.produce(fractalState, action, localReducer);
+
+                if (newState !== fractalState) {
+                    return set(state, fractalPath, newState);
+                }
+            }
+        }
+
+        return next(state, action);
+    }
+
+    /**
      * Executes the middleware chain for the current action and returns the new state.
      *
      * @private
