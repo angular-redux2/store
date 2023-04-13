@@ -211,7 +211,7 @@ describe('set', () => {
                 },
             } ],
         ])('set', (original, path, value, expected) => {
-            test(`returns ${ expected }`, () => {
+            test(`returns ${ JSON.stringify(expected) }`, () => {
                 expect(set(original, path, value)).toEqual(expected);
             });
 
