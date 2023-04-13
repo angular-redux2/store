@@ -113,6 +113,24 @@ export class ReducerService {
     }
 
     /**
+     * Calculates the hash signature of the given string using the djb2 algorithm.
+     *
+     * @param {string} string - The string to calculate the hash signature of.
+     * @returns {number} - The calculated hash signature.
+     */
+
+    hashSignature(string: string): number {
+        let hash = 0;
+        let index = string.length;
+
+        while (index > 0) {
+            hash = (hash << 5) - hash + string.charCodeAt(--index) | 0;
+        }
+
+        return hash;
+    }
+
+    /**
      * Executes the middleware chain for the current action and returns the new state.
      *
      * @private
