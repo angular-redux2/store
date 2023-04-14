@@ -1,13 +1,12 @@
 /**
- * Components
+ * Angular-redux
  */
 
 import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
 /**
- * Auto-dispatches the return value of the decorated function.
- * Decorate a function creator method with @Dispatch and its return
- * value will automatically be passed to ngRedux.dispatch() for you.
+ * Decorator that automatically dispatches the return value of a decorated function
+ * to the Redux store using `ngRedux.dispatch()`.
  *
  * ```typescript
  * // These dispatches will be scoped to the substore as well, as if you
@@ -21,14 +20,23 @@ import { DecoratorFlagComponent } from '../components/decorator-flag.component';
  * }
  * ```
  *
- * @param target - target reducer class instance.
- * @param functionName - function name as action name.
- * @param descriptor - object PropertyDescriptor
- * @return PropertyDescriptor
+ * In the above example, the `addCode` function is decorated with `@Dispatch`.
+ * Anytime the `addCode` function is called, its return value will automatically
+ * be dispatched to the Redux store using `ngRedux.dispatch()`.
+ *
+ * @remarks
+ * This decorator assumes that the component instance has an `ngRedux` property
+ * that refers to a valid `NgRedux` instance. If the component instance does not
+ * have an `ngRedux` property, an error will be thrown.
+ *
+ * @param {any} target - The target class instance.
+ * @param {string | symbol | number} functionName - The name of the decorated function.
+ * @param {PropertyDescriptor} descriptor - The object PropertyDescriptor.
+ * @return The PropertyDescriptor.
  */
 
 export function Dispatch(target: any, functionName: string | symbol | number, descriptor?: PropertyDescriptor): any {
-    let originalMethod: Function;
+    let originalMethod: any;
     descriptor = descriptor || Object.getOwnPropertyDescriptor(target, functionName);
 
     const wrapped = function (this: any, ...args: any[]) {
