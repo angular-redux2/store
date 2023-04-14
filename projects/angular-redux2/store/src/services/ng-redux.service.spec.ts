@@ -4,7 +4,13 @@
 
 import { of } from 'rxjs';
 import { NgZone } from '@angular/core';
-import { compose, createStore, Reducer, Store, StoreEnhancer } from 'redux';
+import { compose, createStore } from 'redux';
+
+/**
+ * Import third-party types
+ */
+
+import type { Reducer, Store, StoreEnhancer } from 'redux';
 
 /**
  * Angular-redux
@@ -13,7 +19,12 @@ import { compose, createStore, Reducer, Store, StoreEnhancer } from 'redux';
 import { NgRedux } from './ng-redux.service';
 import { ReducerService } from './reducer.service';
 import { SubStoreService } from './sub-store.service';
-import { Middleware } from '../interfaces/reducer.interface';
+
+/**
+ * Angular-redux types
+ */
+
+import type { Middleware } from '../interfaces/reducer.interface';
 
 describe('NgRedux', () => {
     let ngRedux: NgRedux;
@@ -149,11 +160,10 @@ describe('NgRedux', () => {
 
     describe('dispatch', () => {
         let store: Store<any, any>;
-        let spyReplaceReducer: jest.SpyInstance;
         const reducer = (state = {}) => state;
 
         beforeEach(() => {
-            spyReplaceReducer = jest.spyOn(
+            jest.spyOn(
                 ReducerService.getInstance(),
                 'composeReducers'
             ).mockReturnValueOnce(reducer);

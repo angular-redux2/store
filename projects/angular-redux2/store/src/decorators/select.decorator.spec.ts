@@ -19,7 +19,7 @@ interface State {
  * Initialize global test mocks
  */
 
-jest.mock('../components/decorator-flag.component')
+jest.mock('../components/decorator-flag.component');
 const mockSelectStore = jest.fn();
 
 (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
@@ -41,11 +41,10 @@ describe('Select', () => {
     test('should define a property on the target object', () => {
         const target = {};
         Select<State>(state => state.foo)(target, 'myProp');
-        expect(target.hasOwnProperty('myProp')).toBe(true);
+        expect(target).toHaveProperty('myProp');
     });
 
     test('should return an observable when the property is accessed', () => {
-        const target = {};
         const store = {
             select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
         };
@@ -61,18 +60,20 @@ describe('Select$', () => {
     });
 
     test('should define a property on the target object', () => {
-        const target = {};
-        Select$<State>(['foo'], obs$ => obs$)(target, 'myProp');
-        expect(target.hasOwnProperty('myProp')).toBe(true);
-    });
-
-    test('should return an observable when the property is accessed', () => {
-        const target = {};
         const store = {
             select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
         };
         const instance: any = { store };
-        Select$<State>(['foo'], obs$ => obs$)(instance, 'myProp');
+        Select$<State>([ 'foo' ], obs$ => obs$)(instance, 'myProp');
+        expect(instance).toHaveProperty('myProp');
+    });
+
+    test('should return an observable when the property is accessed', () => {
+        const store = {
+            select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
+        };
+        const instance: any = { store };
+        Select$<State>([ 'foo' ], obs$ => obs$)(instance, 'myProp');
         expect(instance.myProp.subscribe).toBeDefined();
     });
 });

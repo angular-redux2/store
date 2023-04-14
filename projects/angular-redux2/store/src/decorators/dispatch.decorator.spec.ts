@@ -2,7 +2,7 @@
  * Angular-redux
  */
 
-import { Dispatch } from "./dispatch.decorator";
+import { Dispatch } from './dispatch.decorator';
 import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
 /**
@@ -18,19 +18,19 @@ class TestClass {
     }
 
     @Dispatch
-    emptyBug(numberOfLines: number): any {
+    emptyBug(): any {
         return null;
     }
 
     @Dispatch
-    trueBug(numberOfLines: number): any {
+    trueBug(): any {
         return true;
     }
 }
 
 describe('Dispatch', () => {
     let targetClass: any;
-    let mockDispatch = jest.fn();
+    const mockDispatch = jest.fn();
 
     beforeEach(() => {
         targetClass = new TestClass();
@@ -54,14 +54,14 @@ describe('Dispatch', () => {
     });
 
     test('should dispatch the result to the store when returning a falsy value', () => {
-        const result = targetClass.emptyBug(5);
+        const result = targetClass.emptyBug();
 
         expect(result).toBeNull();
         expect(mockDispatch).toHaveBeenCalledWith(null);
     });
 
     test('should dispatch the result to the store when returning a truthy value that is not an object', () => {
-        const result = targetClass.trueBug(5);
+        const result = targetClass.trueBug();
 
         expect(result).toBe(true);
         expect(mockDispatch).toHaveBeenCalledWith(true);

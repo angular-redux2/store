@@ -33,7 +33,7 @@ describe('getSelectorType', () => {
         [ 3, 'property' ],
         [ Symbol('whatever'), 'property' ],
         [ (state: any) => state, 'function' ],
-        [ [ 'one', 'two' ], 'path' ],
+        [[ 'one', 'two' ], 'path' ],
         [ undefined, 'nil' ],
     ])('detectSelectorType should get selector type \'%s\' for selector \'%s\'', (selector, expectedType) => {
         expect(getSelectorType(selector)).toBe(expectedType);
@@ -77,7 +77,7 @@ describe('resolver', () => {
         const state = { one: { two: 'value' } };
         fn(state);
 
-        expect(get).toBeCalledWith(state, [ 'one', 'two' ])
+        expect(get).toBeCalledWith(state, [ 'one', 'two' ]);
     });
 
     test('returns the state for undefined selector', () => {
@@ -119,7 +119,7 @@ describe('resolver', () => {
             test('should return value from reducer by path', () => {
                 (get as jest.Mock).mockReturnValueOnce(13);
 
-                const reducer = resolver(['level1', 'level2']);
+                const reducer = resolver([ 'level1', 'level2' ]);
 
                 expect.assertions(1);
                 expect(reducer(state)).toStrictEqual(13);

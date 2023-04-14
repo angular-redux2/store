@@ -7,7 +7,12 @@ import { ReducerService } from './reducer.service';
 import { get } from '../components/object.component';
 import { SubStoreService } from './sub-store.service';
 import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { NextMiddleware } from '../interfaces/reducer.interface';
+
+/**
+ * Angular-redux types
+ */
+
+import type { NextMiddleware } from '../interfaces/reducer.interface';
 
 /**
  * Mocks
@@ -36,8 +41,7 @@ describe('SubStoreService', () => {
         reducerService.hashSignature = mockHashSignature;
         reducerService.replaceReducer = mockReplaceReducer;
         reducerService.registerSubReducer = mockRegisterReducer;
-        subStoreService = new SubStoreService<any>(ngRedux, [ 'a', 'b' ], () => {
-        });
+        subStoreService = new SubStoreService<any>(ngRedux, [ 'a', 'b' ], jest.fn);
     });
 
     afterEach(() => {
@@ -100,23 +104,6 @@ describe('SubStoreService', () => {
             expect(ngRedux.select).not.toBeCalled();
         });
 
-        test('should call unsubscribe and create new subscribe.', () => {
-            const basePath = [ 'a' ];
-            const mockSubscribe = jest.fn((callback: Function) => {
-                callback();
-            });
-
-            (subStoreService as any)._store$.next = mockNext;
-            (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
-            (subStoreService as any).subscription = { unsubscribe: mockUnsubscribe };
-            subStoreService.setBasePath(basePath);
-
-            expect(mockUnsubscribe).toBeCalled();
-            expect(ngRedux.select).toBeCalledWith(basePath);
-            expect(mockSubscribe).toBeCalled();
-            expect(mockNext).toBeCalled();
-        });
-
         test('should not call unsubscribe or ngRedux.select if base path is unchanged', () => {
             const unsubscribe = jest.fn();
             (subStoreService as any).subscription = {
@@ -130,7 +117,7 @@ describe('SubStoreService', () => {
 
         test('should call unsubscribe and create new subscribe if base path is changed', () => {
             const basePath = [ 'a' ];
-            const mockSubscribe = jest.fn((callback: Function) => {
+            const mockSubscribe = jest.fn((callback: any) => {
                 callback();
             });
 
@@ -153,8 +140,7 @@ describe('SubStoreService', () => {
             const mockSubscribe = jest.fn();
             (ngRedux.select as jest.Mock).mockReturnValueOnce({ subscribe: mockSubscribe });
 
-            const instance = subStoreService.configureSubStore([ 'a', 'b', 'c' ], () => {
-            });
+            const instance = subStoreService.configureSubStore([ 'a', 'b', 'c' ], jest.fn);
             expect((subStoreService as any).basePath).toStrictEqual([ 'a', 'b' ]);
             expect((instance as any).basePath).toStrictEqual([ 'a', 'b', 'a', 'b', 'c' ]);
         });
@@ -163,23 +149,20 @@ describe('SubStoreService', () => {
     describe('subscribe', () => {
         test('should call select method', () => {
             const mockSelect = jest.spyOn(subStoreService, 'select');
-            subStoreService.subscribe(() => {
-            });
+            subStoreService.subscribe(jest.fn);
             expect(mockSelect).toBeCalled();
         });
 
         test('should assign new subscription', () => {
             jest.spyOn(subStoreService, 'select');
-            subStoreService.subscribe(() => {
-            });
+            subStoreService.subscribe(jest.fn);
 
             expect(subStoreService.select).toBeCalled();
         });
 
         test('should call select and subscribe to substore changes', () => {
             const mockSelect = jest.spyOn(subStoreService, 'select');
-            subStoreService.subscribe(() => {
-            });
+            subStoreService.subscribe(jest.fn);
             expect(mockSelect).toBeCalled();
         });
     });
@@ -187,8 +170,7 @@ describe('SubStoreService', () => {
     describe('replaceReducer', () => {
         test('should call replaceReducer on reducer service', () => {
             jest.spyOn((subStoreService as any).reducerService, 'replaceSubReducer').mockImplementation(mockReplaceReducer);
-            subStoreService.replaceReducer(() => {
-            });
+            subStoreService.replaceReducer(jest.fn);
             expect(mockReplaceReducer).toBeCalled();
         });
     });

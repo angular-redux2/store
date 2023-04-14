@@ -190,7 +190,7 @@ export class ReducerService {
      * @returns {void} If the sub-store state is not changed. If the sub-store state is changed, returns the new state.
      */
 
-    private subStoreRootReducer(state: any, action: AnyAction, next: NextMiddleware): void {
+    private subStoreRootReducer(state: any, action: AnyAction, next: NextMiddleware): AnyAction {
         const fractalKey = action[ACTION_KEY];
 
         if (fractalKey) {
