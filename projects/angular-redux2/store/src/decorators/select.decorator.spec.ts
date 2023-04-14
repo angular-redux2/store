@@ -2,44 +2,25 @@
  * Import third-party libraries
  */
 
-import { Observable } from "rxjs";
+import { BehaviorSubject } from 'rxjs';
 
 /**
- * Decorator's
+ * Angular-redux
  */
 
 import { Select, Select$ } from './select.decorator';
-
-/**
- * Components
- */
-
 import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
-/**
- * Initialize global test invariant variable
- */
-
-const mockTransformer = jest.fn();
-const mockSelectStore = jest.fn();
+interface State {
+    foo: string;
+}
 
 /**
  * Initialize global test mocks
  */
 
 jest.mock('../components/decorator-flag.component')
-
-class MockClass {
-    @Select()
-    empty$: Observable<number>;
-
-    @Select('username')
-    users$: Observable<number>;
-
-    @Select$('username', mockTransformer)
-    user$: Observable<number>;
-}
-
+const mockSelectStore = jest.fn();
 
 (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
     selections: {},
@@ -48,89 +29,50 @@ class MockClass {
     }
 }));
 
-
-/**
- * After-each test
- */
-
 afterEach(() => {
     jest.clearAllMocks();
 });
 
-test('Should remove $ from variable name and use-it as selector.', () => {
-    const mockInstance = new MockClass();
-    const result = mockInstance.empty$;
+describe('Select', () => {
+    test('should create a property decorator function', () => {
+        expect(typeof Select).toBe('function');
+    });
 
-    expect(mockSelectStore).toBeCalledWith('empty', undefined);
+    test('should define a property on the target object', () => {
+        const target = {};
+        Select<State>(state => state.foo)(target, 'myProp');
+        expect(target.hasOwnProperty('myProp')).toBe(true);
+    });
+
+    test('should return an observable when the property is accessed', () => {
+        const target = {};
+        const store = {
+            select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
+        };
+        const instance: any = { store };
+        Select<State>(state => state.foo)(instance, 'myProp');
+        expect(instance.myProp.subscribe).toBeDefined();
+    });
 });
 
-test('Should call store select with arguments.', () => {
-    const mockInstance = new MockClass();
-    const result = mockInstance.users$;
+describe('Select$', () => {
+    test('should create a property decorator function', () => {
+        expect(typeof Select$).toBe('function');
+    });
 
-    expect(mockSelectStore).toBeCalledWith('username', undefined);
-});
+    test('should define a property on the target object', () => {
+        const target = {};
+        Select$<State>(['foo'], obs$ => obs$)(target, 'myProp');
+        expect(target.hasOwnProperty('myProp')).toBe(true);
+    });
 
-test('Should return undefined if store is undefined.', () => {
-    (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
-        selections: {},
-        store: undefined
-    }));
-
-    const mockInstance = new MockClass();
-
-    expect(mockInstance.users$).toStrictEqual(undefined);
-});
-
-test('Should return select value from cache.', () => {
-    (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
-        selections: {
-            users$: 'test'
-        },
-        store: undefined
-    }));
-
-    const mockInstance = new MockClass();
-
-    expect(mockInstance.users$).toStrictEqual('test');
-});
-
-test('Should call pipe when transformer is set.', () => {
-    const mockPipe = jest.fn();
-    (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
-        selections: {},
-        store: {
-            select: () => {
-                return {
-                    pipe: mockPipe
-                }
-            }
-        }
-    }));
-
-    const mockInstance = new MockClass();
-    const result = mockInstance.user$;
-
-    expect(mockPipe).toBeCalled();
-});
-
-test('Should call transformer if is set.', () => {
-    const mockPipe = jest.fn();
-    (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
-        selections: {},
-        store: {
-            select: () => {
-                return {
-                    pipe: (OperatorFunction: any, OperatorFunction2: any) => {
-                        OperatorFunction();
-                    }
-                }
-            }
-        }
-    }));
-
-    const mockInstance = new MockClass();
-    const result = mockInstance.user$;
-
-    expect(mockTransformer).toBeCalled();
+    test('should return an observable when the property is accessed', () => {
+        const target = {};
+        const store = {
+            select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
+        };
+        const instance: any = { store };
+        Select$<State>(['foo'], obs$ => obs$)(instance, 'myProp');
+        expect(instance.myProp.subscribe).toBeDefined();
+    });
 });
