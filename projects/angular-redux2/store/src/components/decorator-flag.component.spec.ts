@@ -1,128 +1,106 @@
 /**
- * Services
+ * Angular-redux
  */
 
 import { NgRedux } from '../services/ng-redux.service';
-
-/**
- * Components
- */
-
 import { DecoratorFlagComponent } from './decorator-flag.component';
-
-/**
- * Interfaces
- */
-
 import { LOCAL_REDUCER_KEY, SELECTION_KEY, SUBSTORE_KEY } from '../interfaces/fractal.interface';
 
-/**
- * Initialize global test invariant variable
- */
+describe('DecoratorFlagComponent', () => {
+    describe('reducer getter', () => {
+        test('should return the correct reducer if it exists', () => {
+            const reducer = (state: any, action: any) => state;
+            const instance = new DecoratorFlagComponent({ constructor: { [LOCAL_REDUCER_KEY]: reducer } });
+            expect(instance.reducer).toBe(reducer);
+        });
 
-class TestClass {
-}
-
-const mockGetBasePath = jest.fn();
-const testInstance: any = new TestClass();
-const mockNgStore = jest.spyOn(NgRedux, 'store', 'get');
-
-/**
- * Initialize global test mocks
- */
-
-
-const instance: any = new DecoratorFlagComponent(testInstance);
-
-/**
- * Clear all jest mock
- */
-
-afterEach(() => {
-    jest.clearAllMocks();
-    testInstance.getBasePath = mockGetBasePath;
-});
-
-
-test('Should return local reducer is undefined.', () => {
-    expect(instance.reducer).toStrictEqual(undefined);
-});
-
-test('Should return local reducer.', () => {
-    testInstance.constructor[LOCAL_REDUCER_KEY] = 'reducer';
-
-    expect(instance.reducer).toStrictEqual('reducer');
-});
-
-test('Should return base path is undefined.', () => {
-    testInstance.getBasePath = undefined;
-    expect(instance.basePath).toStrictEqual(undefined);
-});
-
-test('Should return base path.', () => {
-    testInstance.getBasePath();
-    expect(mockGetBasePath).toBeCalled();
-});
-
-test('Should return cache selector empty object.', () => {
-    expect(instance.selections).toStrictEqual({});
-});
-
-test('Should return cache selector object.', () => {
-    const testFunction = jest.fn();
-    testInstance[SELECTION_KEY] = {
-        test: testFunction
-    };
-
-    instance.selections['test']();
-    expect(testFunction).toBeCalled();
-});
-
-test('Should return NgRedux root store.', () => {
-    new NgRedux();
-    instance.store;
-    expect(mockNgStore).toBeCalled();
-});
-
-test('Should return factory sub-store.', () => {
-    const mockConfigureSubStore = jest.fn();
-    mockGetBasePath.mockReturnValueOnce(['a', 'b']);
-    testInstance.constructor[LOCAL_REDUCER_KEY] = jest.fn();
-
-    mockNgStore.mockReturnValueOnce(<any>{
-        configureSubStore: mockConfigureSubStore
-    })
-
-    instance.store;
-    expect(mockConfigureSubStore).toBeCalled();
-});
-
-test('Should return cache sub-store.', () => {
-    const mockInstance = jest.fn();
-    mockGetBasePath.mockReturnValueOnce(['a', 'b']);
-    testInstance.constructor[LOCAL_REDUCER_KEY] = jest.fn();
-    testInstance[SUBSTORE_KEY] = {
-        cachePath: (['a', 'b'] || []).toString(),
-        instance: mockInstance
-    };
-
-    expect(instance.store).toStrictEqual(mockInstance);
-});
-
-test('Should return factory sub-store (instance not exists).', () => {
-    const mockInstance = jest.fn();
-    const mockConfigureSubStore = jest.fn();
-
-    mockGetBasePath.mockReturnValueOnce(['a', 'b']);
-    testInstance.constructor[LOCAL_REDUCER_KEY] = jest.fn();
-    testInstance[SUBSTORE_KEY] = {
-        cachePath: (['a', 'b'] || []).toString()
-    };
-
-    mockNgStore.mockReturnValueOnce(<any>{
-        configureSubStore: mockConfigureSubStore
+        test('should return undefined if no reducer exists', () => {
+            const instance = new DecoratorFlagComponent({ constructor: {} });
+            expect(instance.reducer).toBeUndefined();
+        });
     });
 
-    instance.store;
-    expect(mockConfigureSubStore).toBeCalled();
+    describe('basePath getter', () => {
+        it('should return the base path selector when basePath is a function', () => {
+            const basePathFn = jest.fn(() => ['foo', 'bar']);
+            const instance = { basePath: basePathFn };
+            const component = new DecoratorFlagComponent(instance);
+            const result = component.basePath;
+            expect(basePathFn).toHaveBeenCalled();
+            expect(result).toEqual(['foo', 'bar']);
+        });
+
+        it('should return undefined when basePath is not a function', () => {
+            const instance = { basePath: ['foo', 'bar'] };
+            const component = new DecoratorFlagComponent(instance);
+            const result = component.basePath;
+            expect(result).toBeUndefined();
+        });
+    });
+
+    describe('selections getter', () => {
+        it('should return the selection object associated with the decorated instance', () => {
+            const decoratedInstance = {
+                [SELECTION_KEY]: {
+                    prop1: 'value1',
+                    prop2: 'value2',
+                },
+            };
+            const component = new DecoratorFlagComponent(decoratedInstance);
+
+            expect(component.selections).toEqual({
+                prop1: 'value1',
+                prop2: 'value2',
+            });
+        });
+    });
+
+    describe('store getter', () => {
+        let ngReduxMock: any;
+        let ngReduxStoreMock: any;
+        const ngStoreSpy = jest.spyOn(NgRedux, 'store', 'get');
+
+        beforeEach(() => {
+            ngReduxStoreMock = {
+                configureSubStore: jest.fn()
+            };
+            ngReduxMock = {
+                get store() {
+                    return ngReduxStoreMock;
+                }
+            };
+        });
+
+        afterEach(() => {
+            jest.clearAllMocks();
+        });
+
+        it('should return the global store when there is no reducer or base path', () => {
+            const decoratedInstance = {};
+            const component = new DecoratorFlagComponent(decoratedInstance);
+            ngStoreSpy.mockReturnValueOnce(ngReduxStoreMock)
+
+            expect(component.store).toBe(ngReduxStoreMock);
+            expect(ngReduxStoreMock.configureSubStore).not.toHaveBeenCalled();
+        });
+
+        it('should return a substore instance when there is a reducer and base path', () => {
+            const reducer = jest.fn();
+            const basePath = jest.fn(() => ['some', 'path']);
+            const substoreMock = {};
+
+            ngReduxStoreMock.configureSubStore.mockReturnValue(substoreMock);
+            ngStoreSpy.mockReturnValueOnce(ngReduxStoreMock)
+
+            const decoratedInstance = { basePath };
+            Object.defineProperty(decoratedInstance.constructor, LOCAL_REDUCER_KEY, {
+                value: reducer,
+                writable: true
+            });
+            const component = new DecoratorFlagComponent(decoratedInstance);
+
+            expect(component.store).toBe(substoreMock);
+            expect(ngReduxStoreMock.configureSubStore).toHaveBeenCalledWith(['some', 'path'], reducer);
+        });
+    });
 });
