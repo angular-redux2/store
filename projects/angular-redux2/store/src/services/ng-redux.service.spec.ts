@@ -206,7 +206,7 @@ describe('NgRedux', () => {
     });
 
     describe('subscribe', () => {
-        it('should subscribe a listener to the store', () => {
+        test('should subscribe a listener to the store', () => {
             const mockListener = jest.fn();
             const mockUnsubscribe = jest.fn();
             const mockStore = {
@@ -228,7 +228,7 @@ describe('NgRedux', () => {
             ReducerService.getInstance().replaceReducer = jest.fn();
         });
 
-        it('should call ReducerService replaceReducer with nextReducer', () => {
+        test('should call ReducerService replaceReducer with nextReducer', () => {
             const nextReducer = jest.fn();
             ngRedux.replaceReducer(nextReducer);
 
