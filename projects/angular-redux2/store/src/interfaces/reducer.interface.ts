@@ -2,27 +2,7 @@
  * Import third-party types
  */
 
-import type { Action, AnyAction, Dispatch, MiddlewareAPI } from 'redux';
-
-/**
- * Middleware function signature for Redux
- *
- * @template S - The type of the store's state
- * @template A - The type of the action dispatched
- * @template D - The type of the store's `dispatch` function
- */
-export interface EnhancersMiddleware<S = any, A extends Action = AnyAction, D extends Dispatch = Dispatch> {
-    /**
-     * A middleware function that receives the store's `dispatch` and `getState` functions
-     * and returns a function that receives the `next` function and returns a function that
-     * receives the action to dispatch
-     *
-     * @param {MiddlewareAPI<D, S>} api - An object containing the store's `dispatch` and `getState` functions
-     * @returns {function(next: Dispatch<AnyAction>): (action: A) => any} - A function that receives the `next` function
-     * and returns a function that receives the action to dispatch
-     */
-    (api: MiddlewareAPI<D, S>): (next: Dispatch<AnyAction>) => (action: A) => any;
-}
+import type { Action, AnyAction } from 'redux';
 
 /**
  * Represents the next middleware function in the middleware chain.
@@ -60,17 +40,3 @@ export interface Middleware<S = any, A extends Action = AnyAction> {
      */
     (state: S, action: A, next: NextMiddleware<A>): S;
 }
-
-/**
- * A type representing a revocable proxy object.
- *
- * @template T The type of the proxy object.
- * @property {T} proxy - The proxy object.
- * @property {Function} revoke - A function that revokes the proxy object.
- * @returns {Object} A revocable proxy object.
- */
-
-export type RevocableProxy<T> = {
-    proxy: T;
-    revoke: () => void;
-};

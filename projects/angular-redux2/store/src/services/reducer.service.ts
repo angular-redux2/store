@@ -8,13 +8,14 @@ import type { AnyAction, Reducer } from 'redux';
  * Angular-redux
  */
 
-import { shallowCopy } from '../components/object.component';
+import { ACTION_KEY } from '../interfaces/fractal.interface';
+import { get, set, shallowCopy } from '../components/object.component';
 
 /**
- * Import types
+ * Angular-redux types
  */
 
-import type { Middleware } from '../interfaces/reducer.interface';
+import type { Middleware, NextMiddleware } from '../interfaces/reducer.interface';
 
 /**
  * Service class for composing reducers and applying middleware to them.
@@ -65,6 +66,17 @@ export class ReducerService {
     private rootReducer: Reducer;
 
     /**
+     * A map of Reducers indexed by their hash signatures.
+     *
+     * @private
+     * @type {Object.<string, Reducer>}
+     */
+
+    private readonly map: {
+        [id: string]: Reducer
+    } = {};
+
+    /**
      * Returns the single instance of the `Singleton` class.
      * If the instance has not yet been created, a new instance is created and returned.
      *
@@ -91,6 +103,7 @@ export class ReducerService {
         this.rootReducer = rootReducer;
 
         const middlewareList = middlewares.concat([
+            this.subStoreRootReducer,
             (state: any, action: AnyAction) => {
                 return this.produce(state, action, this.rootReducer);
             }
@@ -110,6 +123,91 @@ export class ReducerService {
 
     replaceReducer(nextReducer: Reducer): void {
         this.rootReducer = nextReducer;
+    }
+
+    /**
+     * Calculates the hash signature of the given string using the djb2 algorithm.
+     *
+     * @param {string} string - The string to calculate the hash signature of.
+     * @returns {number} - The calculated hash signature.
+     */
+
+    hashSignature(string: string): number {
+        let hash = 0;
+        let index = string.length;
+
+        while (index > 0) {
+            hash = (hash << 5) - hash + string.charCodeAt(--index) | 0;
+        }
+
+        return hash;
+    }
+
+    /**
+     * Registers a local sub reducer with the Fractal Reducer Registry under the specified hash signature.
+     * If a reducer is already registered under the same hash signature, the new reducer is not added.
+     *
+     * @param {number} hashReducer - The hash signature of the reducer to be registered.
+     * @param {Reducer} localReducer - The local reducer to be registered.
+     * @returns {void}
+     */
+
+    registerSubReducer(
+        hashReducer: number,
+        localReducer: Reducer
+    ): void {
+        const existingFractalReducer = this.map[hashReducer];
+
+        if (!existingFractalReducer) {
+            this.map[hashReducer] = localReducer;
+        }
+    }
+
+    /**
+     * Replaces a registered sub-reducer with a new one based on the hash signature.
+     *
+     * @param {number} hashReducer - The hash signature of the registered sub-reducer.
+     * @param {Reducer} nextLocalReducer - The new sub-reducer to replace the existing one.
+     * @returns {void}
+     */
+
+    replaceSubReducer(
+        hashReducer: number,
+        nextLocalReducer: Reducer
+    ): void {
+        if (this.map[hashReducer]) {
+            this.map[hashReducer] = nextLocalReducer;
+        }
+    }
+
+    /**
+     * The root reducer function for sub-stores.
+     *
+     * @private
+     * @param {any} state - The current state of the sub-store.
+     * @param {AnyAction} action - The current action dispatched to the sub-store.
+     * @param {NextMiddleware} next - The next middleware to call.
+     * @returns {void} If the sub-store state is not changed. If the sub-store state is changed, returns the new state.
+     */
+
+    private subStoreRootReducer(state: any, action: AnyAction, next: NextMiddleware): AnyAction {
+        const fractalKey = action[ACTION_KEY];
+
+        if (fractalKey) {
+            const fractalPath = fractalKey.path;
+            const localReducer = this.map[fractalKey.hash];
+
+            if (fractalPath && localReducer) {
+                const fractalState = get(state, fractalPath);
+                const newState = this.produce(fractalState, action, localReducer);
+
+                if (newState !== fractalState) {
+                    return set(state, fractalPath, newState);
+                }
+            }
+        }
+
+        return next(state, action);
     }
 
     /**
@@ -177,12 +275,17 @@ export class ReducerService {
      * @param {any} state The base state object to be modified.
      * @param {any} action The action object to be applied to the state.
      * @param {Reducer} producer The reducer function that applies the action to the draft state.
+     * @throws {Error} If the state is not object
      * @returns {any} The cleaned up state object after the modifications have been made.
      */
 
     private produce<State extends object>(state: State, action: any, producer: Reducer): any {
         let result = state;
         let hasChanged = false;
+
+        if (typeof state !== 'object') {
+            throw new Error('the state is not an object.');
+        }
 
         const proxy = new Proxy(shallowCopy(state), {
             get(target: any, prop: string | symbol): any {
@@ -205,7 +308,7 @@ export class ReducerService {
 
         const newState = producer(proxy, action);
 
-        if (newState && !newState._isProxy){
+        if (newState && !newState._isProxy) {
             result = this.cleanup(newState);
         } else if (hasChanged) {
             result = this.cleanup(proxy._target);

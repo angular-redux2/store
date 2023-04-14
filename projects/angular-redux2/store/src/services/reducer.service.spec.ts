@@ -4,7 +4,12 @@
 
 import { ReducerService } from './reducer.service';
 import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { Middleware } from '../interfaces/reducer.interface';
+
+/**
+ * Angular-redux types
+ */
+
+import type { Middleware } from '../interfaces/reducer.interface';
 
 let reducerService: ReducerService;
 
@@ -112,8 +117,7 @@ describe('cleanup', () => {
             prop5: {},
         };
 
-        // @ts-ignore
-        const cleanedObj = reducerService.cleanup(obj);
+        const cleanedObj = (reducerService as any).cleanup(obj);
 
         expect(cleanedObj.prop1).toEqual({});
         expect(cleanedObj.prop2.prop3.prop4).toEqual({});
@@ -129,9 +133,7 @@ describe('produce', () => {
         };
         const action = {};
         const producer = (state: any) => state;
-
-        // @ts-ignore
-        const newState = reducerService.produce(state, action, producer);
+        const newState = (reducerService as any).produce(state, action, producer);
 
         expect(newState).toEqual(state);
     });
@@ -146,8 +148,7 @@ describe('produce', () => {
             state.counter += 1;
         };
 
-        // @ts-ignore
-        const newState = reducerService.produce(state, {}, incrementCounter);
+        const newState = (reducerService as any).produce(state, {}, incrementCounter);
 
         expect(newState.counter).toBe(1);
         expect(newState.items).toEqual([ 'apple', 'banana', 'orange' ]);
@@ -163,8 +164,7 @@ describe('produce', () => {
             state.counter += 1;
         };
 
-        // @ts-ignore
-        reducerService.produce(state, {}, incrementCounter);
+        (reducerService as any).produce(state, {}, incrementCounter);
 
         expect(state.counter).toBe(0);
         expect(state.items).toEqual([ 'apple', 'banana', 'orange' ]);
@@ -172,11 +172,10 @@ describe('produce', () => {
 
     test('should throw error if state is not an object', () => {
         const action = { type: 'SOME_ACTION' };
-        const producer = (state: any, action: any) => state;
+        const producer = (state: any) => state;
 
         expect(() => {
-            // @ts-ignore
-            reducerService.produce('not an object', action, producer);
+            (reducerService as any).produce(<any>'not an object', action, producer);
         }).toThrowError('the state is not an object.');
     });
 });
@@ -196,12 +195,12 @@ describe('Immutable state created by js proxy', () => {
                 {
                     type: 'test',
                     visible: true,
-                    categories: [ { name: 'phone' } ],
+                    categories: [{ name: 'phone' }],
                 },
                 {
                     type: 'number',
                     visible: true,
-                    categories: [ { name: 'phone' } ],
+                    categories: [{ name: 'phone' }],
                 },
             ],
         };
@@ -333,8 +332,7 @@ describe('Complex nested object with js proxy', () => {
 
 describe('Utility function', () => {
     test('Should clean object from proxy rerun if is not an object.', () => {
-        // @ts-ignore
-        const result = reducerService.cleanup('test');
+        const result = (reducerService as any).cleanup('test');
 
         expect(result).toBe('test');
     });
@@ -362,15 +360,15 @@ describe('hashSignature', () => {
 
 describe('registerSubReducer', () => {
     test('should add a reducer to the map if it does not exist', () => {
-        const reducer = (state: any, action: any) => state;
+        const reducer = (state: any) => state;
         reducerService.registerSubReducer(12345, reducer);
 
         expect(reducerService['map'][12345]).toEqual(reducer);
     });
 
     test('should not add a reducer to the map if it already exists', () => {
-        const reducer1 = (state: any, action: any) => state;
-        const reducer2 = (state: any, action: any) => state;
+        const reducer1 = (state: any) => state;
+        const reducer2 = (state: any) => state;
         reducerService.registerSubReducer(123456, reducer1);
         reducerService.registerSubReducer(123456, reducer2);
 
@@ -378,13 +376,12 @@ describe('registerSubReducer', () => {
     });
 
     test('should do nothing if the sub-reducer does not exist', () => {
-        // @ts-ignore
-        reducerService['map'] = {
+        (reducerService as any).map = {
             12345: (state: any) => state,
             123456: (state: any) => state,
         };
 
-        reducerService.replaceSubReducer(789, (state: any) => ({ foo: 'bar' }));
+        reducerService.replaceSubReducer(789, () => ({ foo: 'bar' }));
 
         expect(reducerService['map']['789']).toBeUndefined();
     });
@@ -422,7 +419,7 @@ describe('subStoreRootReducer', () => {
         },
     };
 
-    const next = jest.fn((state: any, action: any, next: any) => state);
+    const next = jest.fn((state: any) => state);
 
     test('should update state correctly for a matching action', () => {
         const localReducer = jest.fn((state, action) => {

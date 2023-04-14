@@ -2,7 +2,7 @@
  * Angular-redux
  */
 
-import { Action } from "./action.decorator";
+import { Action } from './action.decorator';
 
 describe('Action', () => {
     class ExampleReducer {

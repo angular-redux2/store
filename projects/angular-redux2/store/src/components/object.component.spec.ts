@@ -38,7 +38,7 @@ describe('shallowCopy', () => {
     });
 
     test('should create a shallow copy of an array', () => {
-        const arr = [ 1, 2, { a: 3 } ];
+        const arr = [ 1, 2, { a: 3 }];
         const copy = shallowCopy(arr);
         expect(copy).toEqual(arr);
         expect(copy).not.toBe(arr);
@@ -71,11 +71,11 @@ describe('get', () => {
 
     describe('should get a deeply nested property value from an object', () => {
         describe.each([
-            [ [ 'foo' ], 1 ],
-            [ [ 'level_1', 'bar' ], 2 ],
-            [ [ 'level_1', 'level_2', 'fooBar' ], 3 ],
+            [[ 'foo' ], 1 ],
+            [[ 'level_1', 'bar' ], 2 ],
+            [[ 'level_1', 'level_2', 'fooBar' ], 3 ],
         ])('get() should select a deeply nested property', (path, expected) => {
-            test(`path ${ JSON.stringify(path) } should return ${ expected }`, () => {
+            test(`path ${JSON.stringify(path)} should return ${expected}`, () => {
                 expect(get(storeStruct, path)).toEqual(expected);
             });
         });
@@ -86,7 +86,7 @@ describe('get', () => {
             [ 'c', '' ],
             [ 'd', undefined ],
         ])('get() should select falsy values properly', (prop, expected) => {
-            test(`property '${ prop }' should return ${ expected }`, () => {
+            test(`property '${prop}' should return ${expected}`, () => {
                 expect(get(storeStruct, [ prop ])).toEqual(expected);
             });
         });
@@ -97,7 +97,7 @@ describe('get', () => {
             [ 'c', '' ],
             [ 'd', undefined ],
         ])('get() should select nested falsy values properly', (prop, expected) => {
-            test(`property 'level_1.${ prop }' should return ${ expected }`, () => {
+            test(`property 'level_1.${prop}' should return ${expected}`, () => {
                 expect(get(storeStruct, [ 'level_1', prop ])).toEqual(expected);
             });
         });
@@ -119,14 +119,14 @@ describe('get', () => {
         });
 
         describe.each([
-            [ [ 0 ], 'foo' ],
-            [ [ '0' ], 'foo' ],
-            [ [ 1 ], 'bar' ],
-            [ [ '1' ], 'bar' ],
-            [ [ 2 ], undefined ],
-            [ [ '2' ], undefined ],
+            [[ 0 ], 'foo' ],
+            [[ '0' ], 'foo' ],
+            [[ 1 ], 'bar' ],
+            [[ '1' ], 'bar' ],
+            [[ 2 ], undefined ],
+            [[ '2' ], undefined ],
         ])('get() should select array elements properly', (path, expected) => {
-            test(`path ${ JSON.stringify(path) } should return ${ expected }`, () => {
+            test(`path ${JSON.stringify(path)} should return ${expected}`, () => {
                 const test = [ 'foo', 'bar' ];
                 expect(get(test, path)).toEqual(expected);
             });
@@ -134,14 +134,14 @@ describe('get', () => {
     });
 
     describe.each([
-        [ [ 'test', 0 ], 'foo' ],
-        [ [ 'test', '0' ], 'foo' ],
-        [ [ 'test', 1 ], 'bar' ],
-        [ [ 'test', '1' ], 'bar' ],
-        [ [ 'test', 2 ], undefined ],
-        [ [ 'test', '2' ], undefined ],
+        [[ 'test', 0 ], 'foo' ],
+        [[ 'test', '0' ], 'foo' ],
+        [[ 'test', 1 ], 'bar' ],
+        [[ 'test', '1' ], 'bar' ],
+        [[ 'test', 2 ], undefined ],
+        [[ 'test', '2' ], undefined ],
     ])('get() should select nested array elements properly', (path, expected) => {
-        test(`path ${ JSON.stringify(path) } should return ${ JSON.stringify(expected) }`, () => {
+        test(`path ${JSON.stringify(path)} should return ${JSON.stringify(expected)}`, () => {
             const test = { test: [ 'foo', 'bar' ] };
             expect(get(test, path)).toBe(expected);
         });
@@ -170,19 +170,17 @@ describe('set', () => {
 
     test('should return input object for undefined path', () => {
         const obj = { a: 1 };
-        // @ts-ignore
-        const copy = set(obj, undefined, 2);
+        const copy = set(obj, <any>undefined, 2);
         expect(copy).toBe(obj);
     });
 
     test('should return input object for null path', () => {
         const obj = { a: 1 };
-        // @ts-ignore
-        const copy = set(obj, null, 2);
+        const copy = set(obj, <any>null, 2);
         expect(copy).toBe(obj);
     });
 
-    test("should return input object for empty path", () => {
+    test('should return input object for empty path', () => {
         const obj = { a: 1 };
         const copy = set(obj, [], 2);
         expect(copy).toEqual(obj);
@@ -191,17 +189,17 @@ describe('set', () => {
     describe('Should sets a deeply-nested property value and return a new object.', () => {
         describe.each([
             [ undefined, [ 'foo', 'bar' ], 5, undefined ],
-            [ { arr: [ 1, 2, 3, 4 ] }, [ 'arr', '0' ], 2, { arr: [ 2, 2, 3, 4 ] } ],
-            [ { a: 1 }, [ 'b' ], 2, { a: 1, b: 2 } ],
-            [ { a: 1 }, [ 'b', 'c', 'd' ], 2, {
+            [{ arr: [ 1, 2, 3, 4 ] }, [ 'arr', '0' ], 2, { arr: [ 2, 2, 3, 4 ] }],
+            [{ a: 1 }, [ 'b' ], 2, { a: 1, b: 2 }],
+            [{ a: 1 }, [ 'b', 'c', 'd' ], 2, {
                 a: 1,
                 b: {
                     c: {
                         d: 2,
                     },
                 },
-            } ],
-            [ { a: 1, b: { wat: 3 } }, [ 'b', 'c', 'd' ], 2, {
+            }],
+            [{ a: 1, b: { wat: 3 } }, [ 'b', 'c', 'd' ], 2, {
                 a: 1,
                 b: {
                     wat: 3,
@@ -209,13 +207,13 @@ describe('set', () => {
                         d: 2,
                     },
                 },
-            } ],
+            }],
         ])('set', (original, path, value, expected) => {
-            test(`returns ${ JSON.stringify(expected) }`, () => {
+            test(`returns ${JSON.stringify(expected)}`, () => {
                 expect(set(original, path, value)).toEqual(expected);
             });
 
-            test(`does not mutate the original object`, () => {
+            test('does not mutate the original object', () => {
                 if (original) {
                     expect(set(original, path, value)).not.toBe(original);
                     expect(original).toEqual(original);

@@ -4,13 +4,19 @@
 
 import { AbstractReducer } from './reducer.abstract';
 import { Action } from '../decorators/action.decorator';
-import { PayloadAction, ReducerActions } from '../interfaces/store.interface';
+
+/**
+ * Angular-redux type
+ */
+
+import type { PayloadAction, ReducerActions } from '../interfaces/store.interface';
 
 interface BugPayload {
     name: string;
     active?: boolean;
     assign?: string;
 }
+
 describe('AbstractReducer', () => {
     const initialState = [{ name: 'init state' }];
     const payload = { name: 'payload test' };
@@ -20,12 +26,13 @@ describe('AbstractReducer', () => {
 
         addBug(state: BugPayload[], action: PayloadAction): BugPayload[] {
             const payload: BugPayload = action.payload;
-            return [payload];
+
+            return [ payload ];
         }
     }
 
-    let addBugSpy = jest.spyOn(TestReducer.prototype, 'addBug');
-    let reducer = TestReducer.createReducer<BugPayload[]>(initialState);
+    const addBugSpy = jest.spyOn(TestReducer.prototype, 'addBug');
+    const reducer = TestReducer.createReducer<BugPayload[]>(initialState);
 
     beforeEach(() => {
         addBugSpy.mockReset();
@@ -47,7 +54,7 @@ describe('AbstractReducer', () => {
             const initialState = { bugs: [] };
             const state = reducer(initialState, TestReducer.actions.addBug({ id: 1, description: 'Test bug' }));
 
-            expect(state).toEqual({ bugs: [ { id: 1, description: 'Test bug' } ] });
+            expect(state).toEqual({ bugs: [{ id: 1, description: 'Test bug' }] });
         });
     });
 
