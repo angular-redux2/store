@@ -284,7 +284,6 @@ export class ReducerService {
         let hasChanged = false;
 
         if (typeof state !== 'object') {
-            // throw new Error('the state is not an object.');
             return reducer(state, action);
         }
 

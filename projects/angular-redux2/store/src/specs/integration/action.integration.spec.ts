@@ -1,26 +1,17 @@
 /**
- * Abstracts
- */
-
-import { AbstractReducer } from '../../abstract/reducer.abstract';
-
-/**
- * Interfaces
- */
-
-import { ActionPayload } from '../../interfaces/store.interface';
-
-/**
- * Decorator's
+ * Angular-redux
  */
 
 import { Action } from '../../decorators/action.decorator';
+import { AbstractReducer } from '../../abstract/reducer.abstract';
 
 /**
- * Mock class reducer
+ * Angular-redux types
  */
 
-export interface Bug {
+import type { ActionCreator, ReducerActions } from '../../interfaces/store.interface';
+
+interface Bug {
     name: string;
     active?: boolean;
     assign?: string;
@@ -31,13 +22,11 @@ class TestReducer extends AbstractReducer {
      * Action types
      */
 
-    static override actions: {
-        addBug: ActionPayload<Bug>
-    };
+    static override actions: ReducerActions<TestReducer>;
 
     @Action
-    addBug(state: Array<Bug>, payload: ActionPayload<Bug>): Array<Bug> {
-        return [ payload ];
+    addBug(state: Bug[], payload: ActionCreator<Bug>): Bug[] {
+        return [ ...state, payload ];
     }
 }
 
@@ -51,7 +40,7 @@ describe('Test auto generate action struct.', () => {
      */
 
     let addBugSpy: any;
-    let reducer = TestReducer.createReducer<Array<Bug>>([ { name: 'x' } ]);
+    const reducer = TestReducer.createReducer<Bug[]>([{ name: 'name' }]);
 
     beforeAll(() => {
         addBugSpy = jest.spyOn(TestReducer.prototype, 'addBug');
@@ -62,13 +51,13 @@ describe('Test auto generate action struct.', () => {
     });
 
     test('Access to method in reducer class by action.', () => {
-        reducer([ { name: 'y' } ], TestReducer.actions.addBug({
-            name: 'x',
+        TestReducer.actions;
+
+        reducer([{ name: 'x' }], TestReducer.actions.addBug(<any>{
             assign: 'test'
         }));
 
-        expect(addBugSpy).toBeCalledWith([ { name: 'y' } ], {
-            name: 'x',
+        expect(addBugSpy).toBeCalledWith([{ name: 'x' }], {
             assign: 'test'
         });
     });

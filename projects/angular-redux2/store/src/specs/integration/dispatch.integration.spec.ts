@@ -3,40 +3,27 @@
  */
 
 import { NgZone } from '@angular/core';
-import { Reducer, Action, AnyAction } from 'redux';
 
 /**
- * Services
+ * Import third-party types
+ */
+
+import type { Reducer, Action, AnyAction } from 'redux';
+
+/**
+ * Angular-redux
  */
 
 import { NgRedux } from '../../services/ng-redux.service';
-
-/**
- * Decorator's
- */
-
 import { Substore } from '../../decorators/substore.decorator';
-
-/**
- * Interfaces
- */
-
-import { ACTION_KEY } from "../../interfaces/fractal.interface";
-import { Dispatch } from "../../decorators/dispatch.decorator";
-
-/**
- * Zone
- */
+import { Dispatch } from '../../decorators/dispatch.decorator';
+import { ACTION_KEY } from '../../interfaces/fractal.interface';
 
 class MockNgZone extends NgZone {
     override run<T>(fn: (...args: any[]) => T): T {
         return fn() as T;
     }
 }
-
-/**
- * Initialize global test invariant variable
- */
 
 interface IAppState {
     value: string;
@@ -45,18 +32,10 @@ interface IAppState {
 
 type PayloadAction = Action & { payload?: IAppState };
 
-/**
- * Initialize global test mocks
- */
-
 let ngRedux;
 let defaultState: IAppState;
 let rootReducer: Reducer<IAppState, AnyAction>;
 const mockNgZone = new MockNgZone({ enableLongStackTrace: false }) as NgZone;
-
-/**
- * Before each test
- */
 
 beforeEach(() => {
     /**
@@ -73,10 +52,13 @@ beforeEach(() => {
      */
 
     rootReducer = (state = defaultState, action: PayloadAction) => {
+        let value = null;
+        let instanceProperty = null;
+
         switch (action.type) {
             case 'TEST':
-                const { value = null, instanceProperty = null } =
-                action.payload || {};
+                ({ value = null, instanceProperty = null } = action.payload || {});
+
                 return Object.assign({}, state, { value, instanceProperty });
 
             case 'CONDITIONAL_DISPATCH_TEST':
@@ -89,7 +71,7 @@ beforeEach(() => {
 
     ngRedux = new NgRedux<any>(mockNgZone);
     ngRedux.configureStore(rootReducer, defaultState);
-    jest.spyOn(NgRedux.store, "dispatch");
+    jest.spyOn(NgRedux.store, 'dispatch');
 });
 
 describe('Should test root store dispatch.', () => {
@@ -99,10 +81,9 @@ describe('Should test root store dispatch.', () => {
      */
 
     class TestClass {
-        instanceProperty = 'test';
+        @Dispatch externalFunction: (value: string) => PayloadAction;
 
-        @Dispatch
-        externalFunction: (value: string) => PayloadAction;
+        instanceProperty = 'test';
 
         @Dispatch
         classMethod(value: string): PayloadAction {
@@ -129,8 +110,7 @@ describe('Should test root store dispatch.', () => {
             }
         }
 
-        @Dispatch
-        boundProperty = (value: string): PayloadAction => ({
+        @Dispatch boundProperty = (value: string): PayloadAction => ({
             type: 'TEST',
             payload: { value, instanceProperty: this.instanceProperty },
         });
@@ -175,7 +155,7 @@ describe('Should test root store dispatch.', () => {
 
     test('Should call dispatch with result of function normally.', () => {
 
-        const result = <PayloadAction> instance.conditionalDispatchMethod(true);
+        const result = <PayloadAction>instance.conditionalDispatchMethod(true);
         expect(result.type).toBe('CONDITIONAL_DISPATCH_TEST');
         expect(result.payload && result.payload.value).toBe(
             'Conditional Dispatch Action'
@@ -221,7 +201,7 @@ describe('Should test root store dispatch.', () => {
                     instanceProperty,
                 },
             };
-        }
+        };
 
         const result = instance.externalFunction('external function');
         const expectedArgs = {
@@ -250,15 +230,14 @@ describe('Should test sub-store dispatch.', () => {
 
     @Substore(localReducer)
     class TestClass {
-        getBasePath = () => [ 'bar', 'foo' ];
-
-        @Dispatch
-        decoratedActionCreator(value: string): PayloadAction {
+        @Dispatch decoratedActionCreator(value: string): PayloadAction {
             return {
                 type: 'TEST',
                 payload: { value },
             };
         }
+
+        basePath = () => [ 'bar', 'foo' ];
     }
 
     /**
@@ -278,10 +257,10 @@ describe('Should test sub-store dispatch.', () => {
             type: 'TEST',
             payload: { value: 'hello' },
             [ACTION_KEY]: {
-                "hash": -1216151093,
-                "path": [
-                    "bar",
-                    "foo",
+                'hash': -1216151093,
+                'path': [
+                    'bar',
+                    'foo',
                 ],
             },
         });

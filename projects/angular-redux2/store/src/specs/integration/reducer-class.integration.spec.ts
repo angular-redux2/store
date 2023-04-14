@@ -1,24 +1,15 @@
 /**
- * Abstracts
+ * Angular-redux
  */
 
-import { AbstractReducer } from "../../abstract/reducer.abstract";
+import { Action } from '../../decorators/action.decorator';
+import { AbstractReducer } from '../../abstract/reducer.abstract';
 
 /**
- * Interfaces
+ * Angular-redux types
  */
 
-import { ActionsReducer } from "../../interfaces/store.interface";
-
-/**
- * Decorators
- */
-
-import { Action } from "../../decorators/action.decorator";
-
-/**
- * Initialize global test invariant variable
- */
+import type { ReducerActions } from '../../interfaces/store.interface';
 
 export interface Payload {
     name: string;
@@ -31,7 +22,7 @@ class UserReducer extends AbstractReducer {
      * Action payload types
      */
 
-    static override actions: ActionsReducer<UserReducer>
+    static override actions: ReducerActions<UserReducer>;
 
     @Action
     isLogin(state: any, payload: Payload) {
@@ -45,7 +36,7 @@ class AuthReducer extends AbstractReducer {
      * Action payload types
      */
 
-    static override actions: ActionsReducer<AuthReducer>;
+    static override actions: ReducerActions<AuthReducer>;
 
     @Action
     isLogin(state: any, payload: Payload) {

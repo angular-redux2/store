@@ -2,25 +2,23 @@
  * Import third-party libraries
  */
 
+import { createStore } from 'redux';
+import { combineLatest } from 'rxjs';
 import { NgZone } from '@angular/core';
-import { combineLatest, Observable } from "rxjs";
-import { createStore, Reducer, Action, AnyAction, Store } from 'redux';
 
 /**
- * Services
+ * Import third-party types
+ */
+
+import type { Observable } from 'rxjs';
+import type { Reducer, Action, AnyAction, Store } from 'redux';
+
+/**
+ * Angular-redux
  */
 
 import { NgRedux } from '../../services/ng-redux.service';
-
-/**
- * Import Decorators
- */
-
 import { Select } from '../../decorators/select.decorator';
-
-/**
- * Initialize global test invariant variable
- */
 
 type PayloadAction = Action & { payload?: string | number };
 
@@ -30,16 +28,7 @@ class MockNgZone extends NgZone {
     }
 }
 
-
-/**
- * Root store
- */
-
 describe('NgRedux Observable Store', () => {
-    /**
-     * Initialize scope test invariant variable
-     */
-
     interface IAppState {
         foo: string;
         bar: string;
@@ -51,10 +40,6 @@ describe('NgRedux Observable Store', () => {
     let rootReducer: Reducer<IAppState, AnyAction>;
     let defaultState: IAppState;
     const mockNgZone = new MockNgZone({ enableLongStackTrace: false }) as NgZone;
-
-    /**
-     * Before each test
-     */
 
     beforeEach(() => {
         defaultState = {
@@ -81,11 +66,6 @@ describe('NgRedux Observable Store', () => {
         ngRedux.configureStore(rootReducer, defaultState);
     });
 
-    /**
-     * Configured once in beforeEach, now we try to configure,
-     * test is a second time.
-     */
-
     test('Should throw when the store is configured twice.', () => {
         expect(
             ngRedux.configureStore.bind(ngRedux, rootReducer, defaultState)
@@ -108,14 +88,12 @@ describe('NgRedux Observable Store', () => {
     });
 
     test('Should replay subject on data change.', () => {
-        let fooData = '';
-
         const spy = jest.fn();
 
         ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 0 });
         ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 1 });
+        ngRedux.select<any>('foo').subscribe(spy);
 
-        const foo$ = ngRedux.select<any>('foo').subscribe(spy);
         expect(spy).toBeCalledTimes(1);
     });
 
@@ -307,16 +285,13 @@ describe('Chained actions in subscriptions', () => {
 
     describe('Dispatching an action in a keyword$ before length$ happens.', () => {
         test('Should subscribe to be called twice.', () => {
-            let lenSub;
-            let keywordSub;
-
             const lengthSpy = jest.fn();
             const keywordSpy = jest.fn();
             const keyword$ = ngRedux.select((n: any) => n.keyword);
             const length$ = ngRedux.select((n: any) => n.keywordLength);
 
-            lenSub = length$.subscribe(lengthSpy);
-            keywordSub = keyword$.subscribe(keywordSpy);
+            const lenSub = length$.subscribe(lengthSpy);
+            const keywordSub = keyword$.subscribe(keywordSpy);
 
             expect(lengthSpy).toBeCalledWith(-1);
             expect(keywordSpy).toBeCalledWith('');
