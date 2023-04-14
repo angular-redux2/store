@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 describe('getInstance', () => {
-    it('should return the same instance of the ReducerService class', () => {
+    test('should return the same instance of the ReducerService class', () => {
         const instance1 = ReducerService.getInstance();
         const instance2 = ReducerService.getInstance();
         expect(instance1).toBe(instance2);
@@ -170,13 +170,13 @@ describe('produce', () => {
         expect(state.items).toEqual([ 'apple', 'banana', 'orange' ]);
     });
 
-    test('should throw error if state is not an object', () => {
+    test('should not use proxy if state is not an object', () => {
         const action = { type: 'SOME_ACTION' };
-        const producer = (state: any) => state;
+        const producer = jest.fn((state: any) => state);
+        const produce = (reducerService as any).produce;
 
-        expect(() => {
-            (reducerService as any).produce(<any>'not an object', action, producer);
-        }).toThrowError('the state is not an object.');
+        expect(produce(<any>'not an object', action, producer)).toBe('not an object');
+        expect(producer).toBeCalledWith('not an object', action);
     });
 });
 
@@ -363,7 +363,7 @@ describe('registerSubReducer', () => {
         const reducer = (state: any) => state;
         reducerService.registerSubReducer(12345, reducer);
 
-        expect(reducerService['map'][12345]).toEqual(reducer);
+        expect(reducerService['mapSubReducers'][12345]).toEqual(reducer);
     });
 
     test('should not add a reducer to the map if it already exists', () => {
@@ -372,7 +372,7 @@ describe('registerSubReducer', () => {
         reducerService.registerSubReducer(123456, reducer1);
         reducerService.registerSubReducer(123456, reducer2);
 
-        expect(reducerService['map'][123456]).toEqual(reducer1);
+        expect(reducerService['mapSubReducers'][123456]).toEqual(reducer1);
     });
 
     test('should do nothing if the sub-reducer does not exist', () => {
@@ -383,7 +383,7 @@ describe('registerSubReducer', () => {
 
         reducerService.replaceSubReducer(789, () => ({ foo: 'bar' }));
 
-        expect(reducerService['map']['789']).toBeUndefined();
+        expect(reducerService['mapSubReducers']['789']).toBeUndefined();
     });
 
     test('should replace the sub-reducer with the given hash key', () => {
@@ -391,13 +391,13 @@ describe('registerSubReducer', () => {
         const nextLocalReducer = jest.fn();
 
         // Adding a mock reducer to map
-        reducerService['map'][hashReducer] = jest.fn();
+        reducerService['mapSubReducers'][hashReducer] = jest.fn();
 
         // Replacing the reducer with the given hash key
         reducerService.replaceSubReducer(hashReducer, nextLocalReducer);
 
         // Expect the reducer to be replaced
-        expect(reducerService['map'][hashReducer]).toBe(nextLocalReducer);
+        expect(reducerService['mapSubReducers'][hashReducer]).toBe(nextLocalReducer);
     });
 });
 

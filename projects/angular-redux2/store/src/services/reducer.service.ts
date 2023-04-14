@@ -66,13 +66,13 @@ export class ReducerService {
     private rootReducer: Reducer;
 
     /**
-     * A map of Reducers indexed by their hash signatures.
+     * A mapSubReducers is map of Reducers indexed by their hash signatures.
      *
      * @private
      * @type {Object.<string, Reducer>}
      */
 
-    private readonly map: {
+    private readonly mapSubReducers: {
         [id: string]: Reducer
     } = {};
 
@@ -103,7 +103,7 @@ export class ReducerService {
         this.rootReducer = rootReducer;
 
         const middlewareList = middlewares.concat([
-            this.subStoreRootReducer,
+            this.subStoreRootReducer.bind(this),
             (state: any, action: AnyAction) => {
                 return this.produce(state, action, this.rootReducer);
             }
@@ -156,10 +156,10 @@ export class ReducerService {
         hashReducer: number,
         localReducer: Reducer
     ): void {
-        const existingFractalReducer = this.map[hashReducer];
+        const existingFractalReducer = this.mapSubReducers[hashReducer];
 
         if (!existingFractalReducer) {
-            this.map[hashReducer] = localReducer;
+            this.mapSubReducers[hashReducer] = localReducer;
         }
     }
 
@@ -175,8 +175,8 @@ export class ReducerService {
         hashReducer: number,
         nextLocalReducer: Reducer
     ): void {
-        if (this.map[hashReducer]) {
-            this.map[hashReducer] = nextLocalReducer;
+        if (this.mapSubReducers[hashReducer]) {
+            this.mapSubReducers[hashReducer] = nextLocalReducer;
         }
     }
 
@@ -195,7 +195,7 @@ export class ReducerService {
 
         if (fractalKey) {
             const fractalPath = fractalKey.path;
-            const localReducer = this.map[fractalKey.hash];
+            const localReducer = this.mapSubReducers[fractalKey.hash];
 
             if (fractalPath && localReducer) {
                 const fractalState = get(state, fractalPath);
@@ -274,17 +274,18 @@ export class ReducerService {
      * @template State The type of the state object.
      * @param {any} state The base state object to be modified.
      * @param {any} action The action object to be applied to the state.
-     * @param {Reducer} producer The reducer function that applies the action to the draft state.
+     * @param {Reducer} reducer The reducer function that applies the action to the draft state.
      * @throws {Error} If the state is not object
      * @returns {any} The cleaned up state object after the modifications have been made.
      */
 
-    private produce<State extends object>(state: State, action: any, producer: Reducer): any {
+    private produce<State extends object>(state: State, action: any, reducer: Reducer): any {
         let result = state;
         let hasChanged = false;
 
         if (typeof state !== 'object') {
-            throw new Error('the state is not an object.');
+            // throw new Error('the state is not an object.');
+            return reducer(state, action);
         }
 
         const proxy = new Proxy(shallowCopy(state), {
@@ -306,7 +307,7 @@ export class ReducerService {
             },
         });
 
-        const newState = producer(proxy, action);
+        const newState = reducer(proxy, action);
 
         if (newState && !newState._isProxy) {
             result = this.cleanup(newState);
