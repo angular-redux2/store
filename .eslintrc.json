@@ -122,7 +122,6 @@
     ],
     "ignorePatterns": [
         "**/*.js",
-        "**/*.spec.ts",
         "src/specs/*",
         "src/assets/*"
     ]
