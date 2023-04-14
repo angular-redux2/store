@@ -21,7 +21,7 @@ describe('DecoratorFlagComponent', () => {
     });
 
     describe('basePath getter', () => {
-        it('should return the base path selector when basePath is a function', () => {
+        test('should return the base path selector when basePath is a function', () => {
             const basePathFn = jest.fn(() => ['foo', 'bar']);
             const instance = { basePath: basePathFn };
             const component = new DecoratorFlagComponent(instance);
@@ -30,7 +30,7 @@ describe('DecoratorFlagComponent', () => {
             expect(result).toEqual(['foo', 'bar']);
         });
 
-        it('should return undefined when basePath is not a function', () => {
+        test('should return undefined when basePath is not a function', () => {
             const instance = { basePath: ['foo', 'bar'] };
             const component = new DecoratorFlagComponent(instance);
             const result = component.basePath;
@@ -39,7 +39,7 @@ describe('DecoratorFlagComponent', () => {
     });
 
     describe('selections getter', () => {
-        it('should return the selection object associated with the decorated instance', () => {
+        test('should return the selection object associated with the decorated instance', () => {
             const decoratedInstance = {
                 [SELECTION_KEY]: {
                     prop1: 'value1',
@@ -75,7 +75,7 @@ describe('DecoratorFlagComponent', () => {
             jest.clearAllMocks();
         });
 
-        it('should return the global store when there is no reducer or base path', () => {
+        test('should return the global store when there is no reducer or base path', () => {
             const decoratedInstance = {};
             const component = new DecoratorFlagComponent(decoratedInstance);
             ngStoreSpy.mockReturnValueOnce(ngReduxStoreMock)
@@ -84,7 +84,7 @@ describe('DecoratorFlagComponent', () => {
             expect(ngReduxStoreMock.configureSubStore).not.toHaveBeenCalled();
         });
 
-        it('should return a substore instance when there is a reducer and base path', () => {
+        test('should return a substore instance when there is a reducer and base path', () => {
             const reducer = jest.fn();
             const basePath = jest.fn(() => ['some', 'path']);
             const substoreMock = {};
