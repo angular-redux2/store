@@ -2,7 +2,7 @@
  * Angular-redux types
  */
 
-import type { NgRedux } from '../services/ng-redux.service';
+import type { AbstractStore } from '../abstract/store.abstract';
 
 /**
  * Key used to store the action type in the Redux store's state tree.
@@ -43,12 +43,12 @@ export const SELECTION_KEY = '&_SELECTION';
  * Represents a flag used to store information related to a substore.
  *
  * @typedef {Object} SubstoreFlag
- * @property {NgRedux<any>} instance - The instance of the substore.
+ * @property {AbstractStore<any>} instance - The instance of the substore.
  * @property {string} cachePath - The path of the substore that is cached.
  */
 
 export type SubstoreFlag = {
-    instance: NgRedux<any>;
+    instance: AbstractStore<any>;
     cachePath: string;
 }
 
