@@ -5,7 +5,7 @@
     "gaID": "G-9F6QRKZML0",
     "entryPoints": [
         "projects/angular-redux2/store/src/public-api.ts",
-        "projects/angular-redux2/store/testing/public-api.ts"
+        "projects/angular-redux2/store/mocks/public-api.ts"
     ],
     "compilerOptions": {
         "skipLibCheck": true
