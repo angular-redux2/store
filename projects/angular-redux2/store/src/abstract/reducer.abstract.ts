@@ -2,7 +2,6 @@
  * Import third-party types
  */
 
-
 import type { AnyAction, Reducer } from 'redux';
 
 /**
