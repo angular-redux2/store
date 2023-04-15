@@ -15,6 +15,7 @@ export * from './services/reducer.service';
 
 // Interfaces
 export * from './interfaces/store.interface';
+export * from './interfaces/reducer.interface';
 
 // Decorators
 export * from './decorators/action.decorator';
