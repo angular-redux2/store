@@ -1,12 +1,12 @@
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { AbstractReducer } from './reducer.abstract';
 import { Action } from '../decorators/action.decorator';
 
 /**
- * Angular-redux type
+ * Angular-redux2 types
  */
 
 import type { PayloadAction, ReducerActions } from '../interfaces/store.interface';

@@ -6,7 +6,7 @@ The dispatch function returns the dispatched action object.
 Here's an example of how to use the `dispatch` method:
 ```typescript
 import { Component } from '@angular/core';
-import { NgRedux } from '@angular-redux/store';
+import { NgRedux } from '@angular-redux2/store';
 import { increment } from './actions';
 
 interface AppState {
@@ -41,7 +41,7 @@ When the `onClick()` method is called, it dispatches the `increment()` action ob
 
 ```typescript
 import { Component } from '@angular/core';
-import { NgRedux } from '@angular-redux/store';
+import { NgRedux } from '@angular-redux2/store';
 import { increment } from './actions';
 
 interface AppState {
@@ -71,7 +71,7 @@ export class AppComponent {
 The `@Dispatch` decorator is used to automatically dispatch the return value of a decorated function to the Redux store using `ngRedux.dispatch()`.
 Here is an example of how to use the decorator:
 ```typescript
-import { Dispatch } from '@angular-redux/store';
+import { Dispatch } from '@angular-redux2/store';
 
 @Component({
   selector: 'my-component',

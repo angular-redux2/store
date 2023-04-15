@@ -1,12 +1,12 @@
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux } from '../services/ng-redux.service';
 import { LOCAL_REDUCER_KEY, SELECTION_KEY, SUBSTORE_KEY } from '../interfaces/fractal.interface';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { AnyAction, Reducer } from 'redux';

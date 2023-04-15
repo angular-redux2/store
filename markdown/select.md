@@ -8,7 +8,7 @@ It returns an observable of the selected value, which will emit each time the va
 Example:
 ```typescript
 import { Component } from '@angular/core';
-import { NgRedux } from '@angular-redux/store';
+import { NgRedux } from '@angular-redux2/store';
 import { Observable } from 'rxjs';
 
 interface State {
@@ -36,7 +36,7 @@ export class CounterComponent {
 ```
 
 ## Angular-redux2 select types
-In Angular-redux, select is a method that retrieves a specific slice of the store state and returns it as an observable.
+In Angular-redux2, select is a method that retrieves a specific slice of the store state and returns it as an observable.
 It accepts an optional selector function as its argument and returns an Observable of the selected state.
 The selector function can be of three types:
 
@@ -51,7 +51,7 @@ which can be used to compare the previous and current values of the selected sli
 
 Here is an example usage of the `select` method with a `PropertySelector`:
 ```typescript
-import { NgRedux } from '@angular-redux/store';
+import { NgRedux } from '@angular-redux2/store';
 
 // Assume we have a store state object like this:
 const storeState = {
@@ -71,7 +71,7 @@ const name$ = ngRedux.select('name');
 
 Here is an example usage of the `select` method with a `PathSelector`:
 ```typescript
-import { NgRedux } from '@angular-redux/store';
+import { NgRedux } from '@angular-redux2/store';
 
 // Assume we have a store state object like this:
 const storeState = {
@@ -92,7 +92,7 @@ const city$ = ngRedux.select(['address', 'city']);
 
 Here is an example usage of the select method with a FunctionSelector:
 ```typescript
-import { NgRedux } from '@angular-redux/store';
+import { NgRedux } from '@angular-redux2/store';
 
 // Assume we have a store state object like this:
 const storeState = {
@@ -157,7 +157,7 @@ The transformed observable is then attached to the decorated property, and is ru
 
 Here's an example of how to use the `Select$` function:
 ```typescript
-import { Select$ } from 'angular-redux2/store';
+import { Select$ } from '@angular-redux2/store';
 import { debounceTime, map } from 'rxjs/operators';
 
 export const debounceAndTriple = obs$ => obs$

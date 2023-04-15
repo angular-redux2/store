@@ -14,17 +14,12 @@ import { TestBed } from '@angular/core/testing';
 import type { Observable } from 'rxjs';
 
 /**
- * Angular-redux
- */
-
-import { Dispatch } from '../../src/decorators/dispatch.decorator';
-import { Select, Select$ } from '../../src/decorators/select.decorator';
-
-/**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux } from '../../src/services/ng-redux.service';
+import { Dispatch } from '../../src/decorators/dispatch.decorator';
+import { Select, Select$ } from '../../src/decorators/select.decorator';
 
 /**
  * Mocks

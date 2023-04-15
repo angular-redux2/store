@@ -13,7 +13,7 @@ import { compose, createStore } from 'redux';
 import type { Reducer, Store, StoreEnhancer } from 'redux';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux } from './ng-redux.service';
@@ -21,7 +21,7 @@ import { ReducerService } from './reducer.service';
 import { SubStoreService } from './sub-store.service';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { Middleware } from '../interfaces/reducer.interface';

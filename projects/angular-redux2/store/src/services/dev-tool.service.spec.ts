@@ -1,5 +1,5 @@
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { DevToolsExtension } from './dev-tool.service';

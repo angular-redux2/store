@@ -1,5 +1,5 @@
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux } from './ng-redux.service';
@@ -9,7 +9,7 @@ import { SubStoreService } from './sub-store.service';
 import { ACTION_KEY } from '../interfaces/fractal.interface';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { NextMiddleware } from '../interfaces/reducer.interface';

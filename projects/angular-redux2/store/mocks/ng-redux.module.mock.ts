@@ -5,7 +5,7 @@
 import { NgModule } from '@angular/core';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux, DevToolsExtension } from '../src/public-api';
@@ -21,6 +21,7 @@ import { MockDevToolsExtension } from './services/dev-tool.service.mock';
  * Mock factory
  * @hidden
  */
+
 export function _mockNgReduxFactory() {
     return MockNgRedux.store;
 }

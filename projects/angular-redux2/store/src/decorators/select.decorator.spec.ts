@@ -5,7 +5,7 @@
 import { BehaviorSubject } from 'rxjs';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { Select, Select$ } from './select.decorator';
