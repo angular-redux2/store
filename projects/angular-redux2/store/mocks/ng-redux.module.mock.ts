@@ -19,8 +19,8 @@ import { MockDevToolsExtension } from './services/dev-tool.service.mock';
 
 /**
  * Mock factory
+ * @hidden
  */
-
 export function _mockNgReduxFactory() {
     return MockNgRedux.store;
 }
