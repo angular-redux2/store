@@ -1,0 +1,13 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "name": "@Angular-redux2/store",
+    "out": "docs",
+    "gaID": "G-9F6QRKZML0",
+    "entryPoints": [
+        "projects/angular-redux2/store/src/public-api.ts",
+        "projects/angular-redux2/store/mocks/public-api.ts"
+    ],
+    "compilerOptions": {
+        "skipLibCheck": true
+    }
+}
