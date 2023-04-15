@@ -122,6 +122,7 @@
     ],
     "ignorePatterns": [
         "**/*.js",
+        "docs/*",
         "src/specs/*",
         "src/assets/*"
     ]
