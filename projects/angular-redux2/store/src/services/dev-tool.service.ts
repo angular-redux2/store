@@ -4,19 +4,19 @@
 
 import { NgZone } from '@angular/core';
 import { Injectable } from '@angular/core';
+import { ApplicationRef } from '@angular/core';
 
 /**
  * Import third-party types
  */
 
 import type { Unsubscribe } from 'redux';
-import type { ApplicationRef } from '@angular/core';
 
 /**
- * Angular-redux types
+ * Angular-redux
  */
 
-import type { NgRedux } from './ng-redux.service';
+import { NgRedux } from './ng-redux.service';
 
 /**
  * Declare window const
