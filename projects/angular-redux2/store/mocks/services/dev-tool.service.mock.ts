@@ -5,7 +5,7 @@
 import { Injectable } from '@angular/core';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { DevToolsExtension } from '../../src/public-api';

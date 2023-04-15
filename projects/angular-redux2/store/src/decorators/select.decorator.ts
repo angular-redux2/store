@@ -11,13 +11,13 @@ import { distinctUntilChanged } from 'rxjs';
 import type { Observable } from 'rxjs';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { Transformer } from '../interfaces/store.interface';
@@ -64,7 +64,7 @@ export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator):
  * instead of values.`
  *
  * ```ts
- * import { select$ } from 'angular-redux2/store';
+ * import { select$ } from '@angular-redux2/store';
  *
  * export const debounceAndTriple = obs$ => obs$
  *  .debounce(300)

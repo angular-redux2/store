@@ -14,7 +14,7 @@ import type { Observable } from 'rxjs';
 import type { Reducer, Action, AnyAction, Store } from 'redux';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux } from '../../services/ng-redux.service';

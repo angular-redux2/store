@@ -5,7 +5,7 @@
 import type { AnyAction, Reducer } from 'redux';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
@@ -21,7 +21,7 @@ import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
  *     @Input() userId: String;
  *
  *     // The substore will be created from the return value of this function.
- *     getBasePath(): Array<string | String> | null {
+ *     basePath(): Array<string | String> | null {
  *         return this.userId ? ['users', this.userId] : null;
  *     }
  * }

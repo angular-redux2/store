@@ -1,5 +1,5 @@
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { get } from './object.component';

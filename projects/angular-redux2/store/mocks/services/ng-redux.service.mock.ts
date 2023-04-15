@@ -12,15 +12,14 @@ import type { Observable, Subject } from 'rxjs';
 import type { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
 
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { NgRedux } from '../../src/services/ng-redux.service';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
-
 import type { Comparator, PathSelector, Selector } from '../../src/interfaces/store.interface';
 
 /**

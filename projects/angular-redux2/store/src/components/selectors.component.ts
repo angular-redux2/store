@@ -1,11 +1,11 @@
 /**
- * Angular-redux
+ * angular-redux2
  */
 
 import { get } from './object.component';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { FunctionSelector, PathSelector, PropertySelector, Selector } from '../interfaces/store.interface';

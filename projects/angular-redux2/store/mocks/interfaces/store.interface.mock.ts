@@ -5,7 +5,7 @@
 import type { Subject } from 'rxjs';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { MockNgRedux } from '../services/ng-redux.service.mock';

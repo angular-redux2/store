@@ -5,7 +5,7 @@
 import type { AnyAction, Reducer } from 'redux';
 
 /**
- * Angular-redux types
+ * angular-redux2 types
  */
 
 import type { ActionCreator } from '../interfaces/store.interface';
