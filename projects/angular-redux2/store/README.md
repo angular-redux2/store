@@ -1,35 +1,26 @@
 # angular-redux2/store
-> Please note that **function names are changed** from the `@angular-redux/store` version (this is a new code source) and  need to adjust accordingly
->
-> **like**: `select => Select`, `withsubstore => Substore`, `dispatch => Dispatch`<br>
-> **Docs**: https://angular-redux2.github.io/store/modules/src.html
 
+Angular-redux2/store is a powerful library for building Angular applications with Redux.
+Redux is a state management pattern that has become very popular in the JavaScript community for its simplicity and predictability.
+It provides a single source of truth for your application's state and uses a unidirectional data flow to manage data changes.
+
+Angular-redux2/store builds upon Redux to provide seamless integration with Angular.
+It provides a set of services and decorators that make it easy to manage your application's state and bind it to your Angular components.
+
+[![Discord](https://img.shields.io/discord/1050521693795405874?logo=Angular-redux2)](https://discord.gg/cSRtr4Wv)
 [![npm version](https://img.shields.io/npm/v/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 [![downloads per month](https://img.shields.io/npm/dm/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 
-## What is Redux?
+## Changes from @angular-redux/store
 
-Redux is a popular approach to managing state in applications. It emphasises:
-
-- A single, immutable data store.
-- One-way data flow.
-- An approach to change based on pure functions and a stream of actions.
-
-You can find lots of excellent documentation here: [Redux](http://redux.js.org/).
-
-## What is @angular-redux2 ?
-
-We provide a set of npm packages that help you integrate your redux store
-into your Angular 2+ applications. Our approach helps you by bridging the gap
-with some of Angular advanced features, including:
-
-- Change processing with RxJS observables.
-- Compile time optimizations with `NgModule` and Ahead-of-Time compilation.
-- Integration with the Angular change detector.
+Please note that function names have been changed in this version of the library (as it is a new codebase).
+You'll need to adjust accordingly when using it, e.g. select => Select, withsubstore => Substore, dispatch => Dispatch etc.
+> [API docs](https://angular-redux2.github.io/store) 
+> [Markdown](markdown/)
 
 ## Getting Started
 
-- I already know what Redux and RxJS are. [Give me the TL;DR](docs/quickstart.md).
+- I already know what Redux and RxJS are. [Give me the TL;DR](markdown/quickstart.md).
 - Take me to the [API docs](https://angular-redux2.github.io/store).
 
 ## Resources
@@ -40,10 +31,6 @@ with some of Angular advanced features, including:
 ## Hacking on angular-redux/store
 
 Want to hack on angular-redux2/store or any of the related packages? Feel free to do so, but please test your changes before making any PRs.
-
 Here's how to do that:
-
-1.  Write unit tests. You can check that they work by running
-    `ng test`.
-2.  Run the linter. If your editor doesn't do it automatically, do it
-    manually with `ng lint`.
+1.  Write unit tests. You can check that they work by running `ng test`.
+2.  Run the linter. If your editor doesn't do it automatically, do it manually with `ng lint`.
