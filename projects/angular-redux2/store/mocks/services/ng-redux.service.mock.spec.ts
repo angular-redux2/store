@@ -96,10 +96,10 @@ describe('NgReduxMock angular component', () => {
     test('should reset stubs used by @select', (done) => {
         const instance = TestBed.createComponent(TestComponent).componentInstance;
 
-        const stub1 = MockNgRedux.getSelectorStub('foo');
-        stub1.next(1);
-        stub1.next(2);
-        stub1.complete();
+        const stub_foo = MockNgRedux.getSelectorStub('foo');
+        stub_foo.next(1);
+        stub_foo.next(2);
+        stub_foo.complete();
 
         instance.obs$.pipe(toArray()).subscribe((values: number[]) => {
             expect(values).toEqual([ 1, 2 ]);
@@ -109,11 +109,11 @@ describe('NgReduxMock angular component', () => {
         MockNgRedux.reset();
 
         // Reset should result in a new stub getting created.
-        const stub2 = MockNgRedux.getSelectorStub('foo');
-        expect(stub1 === stub2).toBe(false);
+        const stub1_foo = MockNgRedux.getSelectorStub('foo');
+        expect(stub_foo === stub1_foo).toBe(false);
 
-        stub2.next(3);
-        stub2.complete();
+        stub1_foo.next(3);
+        stub1_foo.complete();
 
         instance.obs$.pipe(toArray()).subscribe((values: number[]) => {
             expect(values).toEqual([ 3 ]);
@@ -125,10 +125,10 @@ describe('NgReduxMock angular component', () => {
         const instance = TestBed.createComponent(TestComponent).debugElement
             .componentInstance;
 
-        const stub1 = MockNgRedux.getSelectorStub('bar');
-        stub1.next(1);
-        stub1.next(2);
-        stub1.complete();
+        const stub_bar = MockNgRedux.getSelectorStub('bar');
+        stub_bar.next(1);
+        stub_bar.next(2);
+        stub_bar.complete();
 
         instance.barTimesTwo$.pipe(toArray()).subscribe((values: number[]) => {
             expect(values).toEqual([ 2, 4 ]);
@@ -138,11 +138,11 @@ describe('NgReduxMock angular component', () => {
         MockNgRedux.reset();
 
         // Reset should result in a new stub getting created.
-        const stub2 = MockNgRedux.getSelectorStub('bar');
-        expect(stub1 === stub2).toBe(false);
+        const stub2_bar = MockNgRedux.getSelectorStub('bar');
+        expect(stub_bar === stub2_bar).toBe(false);
 
-        stub2.next(3);
-        stub2.complete();
+        stub2_bar.next(3);
+        stub2_bar.complete();
 
         instance.obs$.pipe(toArray()).subscribe((values: number[]) => {
             expect(values).toEqual([ 6 ]);
@@ -154,10 +154,10 @@ describe('NgReduxMock angular component', () => {
         const instance = TestBed.createComponent(TestComponent).debugElement
             .componentInstance;
 
-        const stub1 = MockNgRedux.getSelectorStub('baz');
-        stub1.next(1);
-        stub1.next(2);
-        stub1.complete();
+        const stub_baz = MockNgRedux.getSelectorStub('baz');
+        stub_baz.next(1);
+        stub_baz.next(2);
+        stub_baz.complete();
 
         instance.baz$.pipe(toArray()).subscribe((values: number[]) => {
             expect(values).toEqual([ 1, 2 ]);
@@ -167,11 +167,11 @@ describe('NgReduxMock angular component', () => {
         MockNgRedux.reset();
 
         // Reset should result in a new stub getting created.
-        const stub2 = MockNgRedux.getSelectorStub('baz');
-        expect(stub1 === stub2).toBe(false);
+        const stub2_baz = MockNgRedux.getSelectorStub('baz');
+        expect(stub_baz === stub2_baz).toBe(false);
 
-        stub2.next(3);
-        stub2.complete();
+        stub2_baz.next(3);
+        stub2_baz.complete();
 
         instance.obs$.pipe(toArray()).subscribe((values: number[]) => {
             expect(values).toEqual([ 3 ]);
