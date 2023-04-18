@@ -80,7 +80,7 @@ export class SubStoreService<State> extends AbstractStore<State> {
      * Configures a sub-store with a specified base path and local reducer.
      * Carves off a 'subStore' or 'fractal' store from this one.
      *
-     * The returned object is itself an observable store, however any
+     * The returned object is itself an observable store, however, any
      * selections, dispatches, or invocations of localReducer will be
      * specific to that sub-store and will not know about the parent
      * ObservableStore from which it was created.

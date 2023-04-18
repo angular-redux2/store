@@ -129,7 +129,7 @@ function createSelectDecorator(
 }
 
 /**
- * Call store (root or substore) select with path.
+ * Call store (root or substore) selects with a path.
  *
  * @param {*} decoratedInstance - decorator instance
  * @param {string | symbol} name - string | symbol are use in select decorator (foo$) @Select(['foo','bar']) `foo$`: Observable<string>.

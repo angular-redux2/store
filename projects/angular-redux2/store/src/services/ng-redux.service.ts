@@ -89,15 +89,14 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
     /**
      * Configures the store with the provided reducer, initial state, middleware, and enhancers.
      * `This should only be called once for the lifetime of your app, for
-     * example in the constructor of your root component.`
+     *  example, in the constructor of your root component.`
      *
      * @example
      * ```typescript
      * export class AppModule {
      *   constructor(ngRedux: NgRedux<IAppState>) {
      *     // Tell @angular-redux2/store about our rootReducer and our initial state.
-     *     // It will use this to create a redux store for us and wire up all the
-     *     // events.
+     *     // It will use this to create a redux store for us and wire up all events.
      *     ngRedux.configureStore(rootReducer, INITIAL_STATE);
      *   }
      * }
@@ -134,7 +133,7 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
      * Configures a sub-store with a specified base path and local reducer.
      * Carves off a 'subStore' or 'fractal' store from this one.
      *
-     * The returned object is itself an observable store, however any
+     * The returned object is itself an observable store, however, any
      * selections, dispatches, or invocations of localReducer will be
      * specific to that sub-store and will not know about the parent
      * ObservableStore from which it was created.
@@ -172,8 +171,8 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
 
     /**
      * Accepts a Redux store, then sets it in NgRedux and allows NgRedux to observe and dispatch to it.
-     * This should only be called once for the lifetime of your app, for example in the constructor of your root component.
-     * If configureStore has been used this cannot be used.
+     * This should only be called once for the lifetime of your app, for example, in the constructor of your root component.
+     * If configureStore has been used, this cannot be used.
      *
      * @example
      * ```typescript

@@ -1,5 +1,5 @@
 /**
- * Import third-party library
+ * Import third-party libraries
  */
 
 import { map } from 'rxjs';

@@ -1,5 +1,5 @@
 /**
- * Import third-party library
+ * Import a third-party library
  */
 
 import { distinctUntilChanged, ReplaySubject } from 'rxjs';
@@ -31,7 +31,7 @@ import type { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../in
 
 /**
  * This is the public of `@angular-redux2/store`.
- * It wraps the global redux store and adds a few others add-on methods.
+ * It wraps the global redux store and adds a few other add-on methods.
  * It's what you'll inject into your Angular application as a service.
  *
  * `Convenience mock to make it easier to control selector behaviour in unit tests.`
@@ -105,7 +105,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      * Returns a mock substore that allows you to set up selectorStubs for
      * any 'fractal' stores your app creates with NgRedux.configureSubStore.
      *
-     * If your app creates deeply nested sub stores from other sub store,
+     * If your app creates deeply nested sub stores from another sub store,
      * pass the chain of pathSelectors in as ordered arguments to mock
      * the nested sub store out.
      *
@@ -176,7 +176,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      * Returns a mock substore that allows you to set up selectorStubs for
      * any 'fractal' stores your app creates with NgRedux.configureSubStore.
      *
-     * If your app creates deeply nested sub stores from other sub store,
+     * If your app creates deeply nested sub stores from another sub store,
      * pass the chain of pathSelectors in as ordered arguments to mock
      * the nested sub store out.
      *
@@ -221,7 +221,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      *
      * >Configures a Redux store and allows NgRedux to observe and dispatch to it.
      *`This should only be called once for the lifetime of your app, for
-     * example in the constructor of your root component.`
+     *  example, in the constructor of your root component.`
      */
 
     override configureStore(): void {
@@ -232,7 +232,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      * `Config mock sub-store`
      * Carves off a 'subStore' or 'fractal' store from this one.
      *
-     * >The returned object is itself an observable store, however any
+     * >The returned object is itself an observable store, however, any
      * selections, dispatches, or invocations of localReducer will be
      * specific to that sub-store and will not know about the parent
      * ObservableStore from which it was created.
@@ -246,8 +246,7 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
      * `Mock provideStore`
      *
      * > Accepts a Redux store, then sets it in NgRedux and allows NgRedux to observe and dispatch to it.
-     * This should only be called once for the lifetime of your app, for example in the constructor of your root component.
-     * If configureStore has been used this cannot be used.
+     * This should only be called once for the lifetime of your app, for example, in the constructor of your root component.
      */
 
     override provideStore(_: any, __: Store<any>): void {

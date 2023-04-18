@@ -284,7 +284,7 @@ describe('Complex nested object with js proxy', () => {
                     age: 28,
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'Any-town',
                         state: 'CA',
                         zip: '12345'
                     }
@@ -294,7 +294,7 @@ describe('Complex nested object with js proxy', () => {
                     age: 32,
                     address: {
                         street: '456 Oak St',
-                        city: 'Othertown',
+                        city: 'Other-town',
                         state: 'CA',
                         zip: '67890'
                     }
@@ -319,13 +319,13 @@ describe('Complex nested object with js proxy', () => {
             payload: {
                 name: 'John',
                 address: {
-                    city: 'Newtown'
+                    city: 'New-town'
                 }
             }
         });
 
         expect(newState).not.toBe(state);
-        expect(newState.users[0].address.city).toBe('Newtown');
+        expect(newState.users[0].address.city).toBe('New-town');
         expect(newState.users[0]._isProxy).toBeUndefined();
     });
 });
@@ -390,7 +390,7 @@ describe('registerSubReducer', () => {
         const hashReducer = 1;
         const nextLocalReducer = jest.fn();
 
-        // Adding a mock reducer to map
+        // Adding a mock reducer to the map
         reducerService['mapSubReducers'][hashReducer] = jest.fn();
 
         // Replacing the reducer with the given hash key

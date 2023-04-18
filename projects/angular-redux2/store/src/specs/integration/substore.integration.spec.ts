@@ -127,8 +127,8 @@ describe('Substore', () => {
         });
 
         /**
-         * This looks odd, but it's because @select turns the property into a
-         * getter. In theory that getter could return a new Observable instance
+         * This looks odd, but it's because @select turns the property into a getter.
+         * In theory, that getter could return a new Observable instance
          * each time, which would be bad because it would leak memory like crazy.
          * This test is just checking that it's a stable reference to the same
          * instance.

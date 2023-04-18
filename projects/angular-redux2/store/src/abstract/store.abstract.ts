@@ -34,7 +34,7 @@ import type { Comparator, Selector } from '../interfaces/store.interface';
 export abstract class AbstractStore<State> implements Store<State> {
     /**
      * Angular subject store
-     * correspond to store change event and trigger rxjs change event
+     * corresponds to store change event and trigger rxjs change event
      */
 
     protected readonly _store$: ReplaySubject<State> = new ReplaySubject<State>(1);
@@ -83,10 +83,9 @@ export abstract class AbstractStore<State> implements Store<State> {
      * 1. The subscriptions are snapshotted just before every dispatch() call.
      * If you subscribe or unsubscribe while the listeners are being invoked,
      * this will not have any effect on the dispatch() that is currently in progress.
-     * However, the next dispatch() call, whether nested or not,
-     * will use a more recent snapshot of the subscription list.
+     * However, the next dispatch() call, whether nested or not it will use a more recent snapshot of the subscription list.
      *
-     * 2. The listener should not expect to see all states changes,
+     * 2. The listener should not expect to see all-states changes,
      * as the state might have been updated multiple times during a nested dispatch() before the listener is called.
      * It is, however, guaranteed that all subscribers registered before the dispatch()
      * started will be called with the latest state by the time it exits.

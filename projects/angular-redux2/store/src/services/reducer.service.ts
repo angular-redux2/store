@@ -66,7 +66,7 @@ export class ReducerService {
     private rootReducer: Reducer;
 
     /**
-     * A mapSubReducers is map of Reducers indexed by their hash signatures.
+     * A mapSubReducers is a map of Reducers indexed by their hash signatures.
      *
      * @private
      * @type {Object.<string, Reducer>}
@@ -187,7 +187,7 @@ export class ReducerService {
      * @param {any} state - The current state of the sub-store.
      * @param {AnyAction} action - The current action dispatched to the sub-store.
      * @param {NextMiddleware} next - The next middleware to call.
-     * @returns {void} If the sub-store state is not changed. If the sub-store state is changed, returns the new state.
+     * @returns {void} If the sub-store state is not changed. If the sub-store state is changed, return the new state.
      */
 
     private subStoreRootReducer(state: any, action: AnyAction, next: NextMiddleware): AnyAction {
@@ -248,7 +248,7 @@ export class ReducerService {
      *
      * @private
      * @param {any} object - The object to be cleaned up.
-     * @returns {any} - The cleaned up object.
+     * @returns {any} - The cleaned-up object.
      */
 
     private cleanup(object: any): any {
@@ -267,8 +267,8 @@ export class ReducerService {
 
     /**
      * Produces a new state object based on the given base state object and an action object.
-     * Uses a Proxy object to allow for "draft" modifications to the state object, and returns
-     * the cleaned up state object without any Proxy objects after the modifications have been made.
+     * Uses a Proxy object to allow for "draft" modifications to the state object, and return
+     * the cleaned-up state object without any Proxy objects after the modifications have been made.
      *
      * @private
      * @template State The type of the state object.
@@ -276,7 +276,7 @@ export class ReducerService {
      * @param {any} action The action object to be applied to the state.
      * @param {Reducer} reducer The reducer function that applies the action to the draft state.
      * @throws {Error} If the state is not object
-     * @returns {any} The cleaned up state object after the modifications have been made.
+     * @returns {any} The cleaned-up state object after the modifications have been made.
      */
 
     private produce<State extends object>(state: State, action: any, reducer: Reducer): any {

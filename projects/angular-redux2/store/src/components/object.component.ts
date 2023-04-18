@@ -1,5 +1,5 @@
 /**
- * Shallow copies an array or object.
+ * Shallowly copies an array or object.
  * @param {any} object - The array or object to copy.
  * @returns {any} A shallow copy of the input array or object.
  */
