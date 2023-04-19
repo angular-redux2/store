@@ -15,13 +15,17 @@ It provides a set of services and decorators that make it easy to manage your ap
 
 Please note that function names have been changed in this version of the library (as it is a new codebase).
 You'll need to adjust accordingly when using it, e.g. select => Select, withsubstore => Substore, dispatch => Dispatch etc.
-> [API docs](https://angular-redux2.github.io/store) 
-> [Markdown](markdown/)
 
 ## Getting Started
 
 - I already know what Redux and RxJS are. [Give me the TL;DR](markdown/quickstart.md).
 - Take me to the [API docs](https://angular-redux2.github.io/store).
+- [Select](markdown/select.md).
+- [Dispatch](markdown/dispatch.md).
+- [Reducer](markdown/reducer.md).
+- [Sub store](markdown/sub-store.md).
+- [Middleware](markdown/middleware.md).
+- [Mocks](markdown/mock.md).
 
 ## Resources
 
