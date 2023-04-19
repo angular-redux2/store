@@ -7,14 +7,15 @@ It provides a single source of truth for your application's state and uses a uni
 Angular-redux2/store builds upon Redux to provide seamless integration with Angular.
 It provides a set of services and decorators that make it easy to manage your application's state and bind it to your Angular components.
 
-[![Discord](https://img.shields.io/discord/1050521693795405874?logo=Angular-redux2)](https://discord.gg/cSRtr4Wv)
+[![Discord](https://img.shields.io/discord/1050521693795405874?logo=Angular-redux2)](https://discord.com/invite/7BnsAqst6W)
 [![npm version](https://img.shields.io/npm/v/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 [![downloads per month](https://img.shields.io/npm/dm/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 
 ## Changes from @angular-redux/store
 
 Please note that function names have been changed in this version of the library (as it is a new codebase).
-You'll need to adjust accordingly when using it, e.g. select => Select, withsubstore => Substore, dispatch => Dispatch etc.
+You'll need to adjust accordingly when using it, e.g. select => Select,
+with substore => Substore, dispatch => Dispatch etc.
 
 ## Getting Started
 
@@ -26,6 +27,11 @@ You'll need to adjust accordingly when using it, e.g. select => Select, withsubs
 - [Sub store](markdown/sub-store.md).
 - [Middleware](markdown/middleware.md).
 - [Mocks](markdown/mock.md).
+
+## Plugins
+
+- [Undo](https://github.com/angular-redux2/undo).
+- [Sync](https://github.com/angular-redux2/sync).
 
 ## Resources
 
