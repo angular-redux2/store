@@ -105,3 +105,4 @@ In this example, the `Middleware` function is defined with three parameters: `st
 
 > Note that middleware can also modify the `action` or `state` before it is sent to the next reducer.
 > To modify the `action` or `state`, simply modify the `action` parameter before calling `next(state, action)`.
+> The root reducer is the last member of the middleware chain.
