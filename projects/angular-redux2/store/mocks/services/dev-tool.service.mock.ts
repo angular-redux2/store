@@ -8,7 +8,7 @@ import { Injectable } from '@angular/core';
  * angular-redux2
  */
 
-import { DevToolsExtension } from '../../src/public-api';
+import { DevToolsExtension } from '@angular-redux2/store';
 
 /**
  * MockDevToolsExtension

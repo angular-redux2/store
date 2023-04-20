@@ -15,18 +15,18 @@ import type { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
  * angular-redux2
  */
 
-import { NgRedux } from '../../src/services/ng-redux.service';
+import { NgRedux } from '@angular-redux2/store';
 
 /**
  * angular-redux2 types
  */
-import type { Comparator, PathSelector, Selector } from '../../src/interfaces/store.interface';
+import type { Comparator, PathSelector, Selector } from '@angular-redux2/store';
 
 /**
  * Mocks type
  */
 
-import type { SubStoreService } from '../../src/services/sub-store.service';
+import type { SubStoreService } from '@angular-redux2/store';
 import type { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfaces/store.interface.mock';
 
 /**

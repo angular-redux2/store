@@ -8,8 +8,8 @@ import type { Subject } from 'rxjs';
  * angular-redux2 types
  */
 
+import type { Comparator } from '@angular-redux2/store';
 import type { MockNgRedux } from '../services/ng-redux.service.mock';
-import type { Comparator } from '../../src/interfaces/store.interface';
 
 /**
  * Represents a selector stub record.
