@@ -16,6 +16,7 @@ import type { AnyAction, Reducer, Store, StoreEnhancer , Unsubscribe } from 'red
  */
 
 import { ReducerService } from './reducer.service';
+import { SubStoreService } from './sub-store.service';
 import { AbstractStore } from '../abstract/store.abstract';
 
 /**
@@ -23,8 +24,7 @@ import { AbstractStore } from '../abstract/store.abstract';
  */
 
 import type { Middleware } from '../interfaces/reducer.interface';
-import { PathSelector } from "../interfaces/store.interface";
-import { SubStoreService } from "./sub-store.service";
+import type { PathSelector } from '../interfaces/store.interface';
 
 /**
  * The NgRedux class is a Redux store implementation that can be used in Angular applications.
@@ -319,7 +319,6 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
     replaceReducer(nextReducer: Reducer<RootState>): void {
         ReducerService.getInstance().replaceReducer(nextReducer);
     }
-
 
     /**
      * Sets the store instance for this service.
