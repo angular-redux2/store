@@ -11,6 +11,11 @@ It provides a set of services and decorators that make it easy to manage your ap
 [![npm version](https://img.shields.io/npm/v/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 [![downloads per month](https://img.shields.io/npm/dm/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
 
+## support
+We currently provide support for `Angular` versions `14` and `15`, as well as `Redux` version `4.2.1` and `RxJS` version `7.8.0`.
+In the near future, our support will be extended to include backwards compatibility with `RxJS` version `7.5.0`,
+and support for `Angular` versions `12` and `13`, while continuing to support `Redux` version `4.2.1`.
+
 ## Changes from @angular-redux/store
 
 Please note that function names have been changed in this version of the library (as it is a new codebase).
