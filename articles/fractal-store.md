@@ -8,16 +8,16 @@ For example, imagine your store looked like this:
 
 ```json
 {
-  users: {
-    bob: {
-      name: 'Bob Smith',
-      occupation: 'Programmer',
-      loc: 1023,
+  "users": {
+    "bob": {
+      "name": "Bob Smith",
+      "occupation": "Programmer",
+      "loc": 1023
     },
-    alice: {
-      name: 'Alice Jones',
-      occupation: 'DevOps Specialist',
-      loc: 2314,
+    "alice": {
+      "name": "Alice Jones",
+      "occupation": "DevOps Specialist",
+      "loc": 2314
     }
   }
 }

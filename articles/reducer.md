@@ -1,6 +1,6 @@
 # ClassReducer
 
-You can create a class reducer improve readability and maintenance.
+You can create a class reducer to improve readability and maintenance.
 
 ```typescript
 /**
