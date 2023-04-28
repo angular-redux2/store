@@ -1,51 +1,58 @@
 /**
- * Import components
+ * angular-redux2
  */
 
 import { get } from './object.component';
 
 /**
- * Interfaces
+ * angular-redux2 types
  */
 
-import { FunctionSelector, PathSelector, PropertySelector, Selector } from '../interfaces/store.interface';
+import type { FunctionSelector, PathSelector, PropertySelector, Selector } from '../interfaces/store.interface';
 
 /**
- * Get selector type of `ngRedux.select`.
- * `(property | function | path | nil)`
+ * Determines the type of selector.
  *
+ * @example
  * ```typescript
  * getSelectorType('propName') // property
  * getSelectorType(state => state) // function
  * getSelectorType([ 'one', 'two' ]) // path
  * getSelectorType() // nil
  * ```
+ *
+ * @template RootState - The type of the root state object.
+ * @template S - The type of the selected subset of the RootState object.
+ * @param {Selector} selector - The selector to detect the type of.
+ * @returns {('property'|'path'|'function'|'nil')} The type of the selector
  */
 
 export function getSelectorType<RootState, S>(selector?: Selector<RootState, S>): string {
-    switch (true) {
-        case (!selector):
-            return 'nil';
-
-        case (Array.isArray(selector)):
-            return 'path';
-
-        case ('function' === typeof selector):
-            return 'function';
-
-        default:
-            return 'property';
+    if (!selector) {
+        return 'nil';
     }
+    if (Array.isArray(selector)) {
+        return 'path';
+    }
+    if (typeof selector === 'function') {
+        return 'function';
+    }
+
+    return 'property';
 }
 
 /**
- * Resolver map property by selector type.
+ * Resolves a selector and returns a function to extract the selected data from a state object.
  *
+ * @example
  * ```typescript
  * resolver([ 'one', 'two' ])
  * ```
  *
- * @param selector - selector type.
+ * @template RootState - The type of the root state object.
+ * @template State - The type of the selected subset of the RootState object.
+ * @param {Selector} selector - The selector to resolve.
+ * @returns {Function} A function that takes a state object and returns the selected data.
  */
 
 export function resolver<RootState, State>(selector?: Selector<RootState, State>): any {
@@ -53,17 +60,15 @@ export function resolver<RootState, State>(selector?: Selector<RootState, State>
 
     switch (type) {
         case 'property':
-            return (state: any) => state ? state[selector as PropertySelector] : undefined;
+            return (state: any): any => state ? state[selector as PropertySelector] : undefined;
 
         case 'path':
-            return (state: RootState) => get(state, selector as PathSelector);
+            return (state: RootState): any => get(state, selector as PathSelector);
 
         case 'function':
             return selector as FunctionSelector<RootState, State>;
 
         case 'nil':
-            return (state: RootState) => state;
+            return (state: RootState): any => state;
     }
-
-    return undefined;
 }
