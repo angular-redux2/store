@@ -19,7 +19,7 @@
         "lint": "ng lint",
         "ci:clean": "rimraf ./dist",
         "ci:test": "ng test",
-        "ci:build": "ng build --prod"
+        "ci:build": "ng build --configuration production"
     },
     "dependencies": {
         "rxjs": "~7.8.0",
