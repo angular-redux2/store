@@ -1,8 +1,8 @@
 {
     "name": "@angular-redux2/store",
     "author": "Garfild (https://github.com/Garefild)",
-    "license": "MIT",
     "version": "4.0.4",
+    "license": "Mozilla Public License Version 2.0",
     "homepage": "https://github.com/angular-redux2/store",
     "description": "Angular bindings for Redux",
     "repository": {
