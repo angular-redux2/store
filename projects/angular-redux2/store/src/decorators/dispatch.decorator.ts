@@ -1,13 +1,12 @@
 /**
- * Import decorators
+ * angular-redux2
  */
 
-import { getBaseStore } from './fractal.decorator';
+import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
 /**
- * Auto-dispatches the return value of the decorated function.
- * Decorate a function creator method with @Dispatch and its return
- * value will automatically be passed to ngRedux.dispatch() for you.
+ * Decorator that automatically dispatches the return value of a decorated function
+ * to the Redux store using `ngRedux.dispatch()`.
  *
  * ```typescript
  * // These dispatches will be scoped to the substore as well, as if you
@@ -20,16 +19,32 @@ import { getBaseStore } from './fractal.decorator';
  *     return { type: 'ADD_LOC', payload: numLines };
  * }
  * ```
+ *
+ * In the above example, the `addCode` function is decorated with `@Dispatch`.
+ * Anytime the `addCode` function is called, its return value will automatically
+ * be dispatched to the Redux store using `ngRedux.dispatch()`.
+ *
+ * @remarks
+ * This decorator assumes that the component instance has an `ngRedux` property
+ * that refers to a valid `NgRedux` instance. If the component instance does not
+ * have an `ngRedux` property, an error will be thrown.
+ *
+ * @param {any} target - The target class instance.
+ * @param {string | symbol | number} functionName - The name of the decorated function.
+ * @param {PropertyDescriptor} descriptor - The object PropertyDescriptor.
+ * @return The PropertyDescriptor.
  */
 
-export function Dispatch(target: any, key: string | symbol | number, descriptor?: PropertyDescriptor): any {
-    let originalMethod: Function;
+export function Dispatch(target: any, functionName: string | symbol | number, descriptor?: PropertyDescriptor): any {
+    let originalMethod: any;
+    descriptor = descriptor || Object.getOwnPropertyDescriptor(target, functionName);
 
     const wrapped = function (this: any, ...args: any[]) {
         const result = originalMethod.apply(this, args);
 
         if (result !== false) {
-            const store = getBaseStore(this);
+            const instanceManager = new DecoratorFlagComponent(this);
+            const store = instanceManager.store;
 
             if (store) {
                 store.dispatch(result);
@@ -39,7 +54,19 @@ export function Dispatch(target: any, key: string | symbol | number, descriptor?
         return result;
     };
 
-    descriptor = descriptor || Object.getOwnPropertyDescriptor(target, key);
+    /**
+     * User for boundProperty | externalFunction
+     * that can be undefined
+     *
+     *     @Dispatch
+     *     externalFunction: (value: string) => any;
+     *
+     *     @Dispatch
+     *     boundProperty = (value: string): any => ({
+     *         type: 'TEST',
+     *         payload: { value },
+     *     });
+     */
 
     if (descriptor === undefined) {
         const dispatchDescriptor: PropertyDescriptor = {
@@ -47,13 +74,13 @@ export function Dispatch(target: any, key: string | symbol | number, descriptor?
             set: setMethod => (originalMethod = setMethod),
         };
 
-        Object.defineProperty(target, key, dispatchDescriptor);
+        Object.defineProperty(target, functionName, dispatchDescriptor);
 
         return dispatchDescriptor;
-    } else {
-        originalMethod = descriptor.value;
-        descriptor.value = wrapped;
-
-        return descriptor;
     }
+
+    originalMethod = descriptor.value;
+    descriptor.value = wrapped;
+
+    return descriptor;
 }

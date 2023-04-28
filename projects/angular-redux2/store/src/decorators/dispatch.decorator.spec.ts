@@ -1,277 +1,96 @@
 /**
- * Imports third-party libraries
+ * angular-redux2
  */
 
-import { NgZone } from '@angular/core';
-import { Reducer, Action, AnyAction } from 'redux';
+import { Dispatch } from './dispatch.decorator';
+import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
 /**
- * NgRedux
+ * Initialize global test mocks
  */
 
-import { NgRedux } from "../services/ng-redux.service";
+jest.mock('../components/decorator-flag.component');
 
-/**
- * Decorator
- */
+class TestClass {
+    @Dispatch
+    addBug(numberOfLines: number): any {
+        return { type: 'ADD_LOC', payload: numberOfLines };
+    }
 
-import { Dispatch } from "./dispatch.decorator";
-import { Substore } from "./substore.decorator";
+    @Dispatch
+    emptyBug(): any {
+        return null;
+    }
 
-/**
- * Zone
- */
-
-class MockNgZone extends NgZone {
-    override run<T>(fn: (...args: any[]) => T): T {
-        return fn() as T;
+    @Dispatch
+    trueBug(): any {
+        return true;
     }
 }
 
-/**
- * Main store
- */
+describe('Dispatch', () => {
+    let targetClass: any;
+    const mockDispatch = jest.fn();
 
-interface IAppState {
-    value: string;
-    instanceProperty?: string;
-}
-
-type PayloadAction = Action & { payload?: IAppState };
-
-/**
- * Dispatch
- */
-
-/**
- * Create mock store
- */
-
-let ngRedux;
-let defaultState: IAppState;
-let rootReducer: Reducer<IAppState, AnyAction>;
-const mockNgZone = new MockNgZone({ enableLongStackTrace: false }) as NgZone;
-
-/**
- * Before each test
- */
-
-beforeEach(() => {
-    /**
-     * Init store
-     */
-
-    defaultState = {
-        value: 'init-value',
-        instanceProperty: 'init-instanceProperty',
-    };
-
-    /**
-     * Root reducer
-     */
-
-    rootReducer = (state = defaultState, action: PayloadAction) => {
-        switch (action.type) {
-            case 'TEST':
-                const { value = null, instanceProperty = null } =
-                action.payload || {};
-                return Object.assign({}, state, { value, instanceProperty });
-
-            case 'CONDITIONAL_DISPATCH_TEST':
-                return { ...state, ...action.payload };
-
-            default:
-                return state;
-        }
-    };
-
-    ngRedux = new NgRedux<any>(mockNgZone);
-    ngRedux.configureStore(rootReducer, defaultState);
-    jest.spyOn(NgRedux.store, "dispatch");
-});
-
-describe('On the root store', () => {
-    /**
-     * Test class
-     */
-
-    class TestClass {
-        instanceProperty = 'test';
-
-        @Dispatch externalFunction: (value: string) => PayloadAction;
-
-        @Dispatch
-        classMethod(value: string): PayloadAction {
-            return {
-                type: 'TEST',
-                payload: { value, instanceProperty: this.instanceProperty },
-            };
-        }
-
-        @Dispatch
-        conditionalDispatchMethod(
-            shouldDispatch: boolean
-        ): PayloadAction | false {
-            if (shouldDispatch) {
-                return {
-                    type: 'CONDITIONAL_DISPATCH_TEST',
-                    payload: {
-                        value: 'Conditional Dispatch Action',
-                        instanceProperty: this.instanceProperty,
-                    },
-                };
-            } else {
-                return false;
+    beforeEach(() => {
+        targetClass = new TestClass();
+        (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
+            store: {
+                dispatch: mockDispatch
             }
-        }
-
-        @Dispatch
-        boundProperty = (value: string): PayloadAction => ({
-            type: 'TEST',
-            payload: { value, instanceProperty: this.instanceProperty },
-        });
-    }
-
-    /**
-     * Before each test
-     */
-
-    let instance: TestClass;
-
-    beforeEach(() => {
-        instance = new TestClass();
+        }));
     });
 
-    test('should call dispatch with the result of the function', () => {
-        const result = instance.classMethod('class method');
-
-        const expectedArgs = {
-            type: 'TEST',
-            payload: {
-                value: 'class method',
-                instanceProperty: 'test',
-            },
-        };
-
-        expect(result.type).toBe('TEST');
-        expect(result.payload && result.payload.value).toBe('class method');
-        expect(result.payload && result.payload.instanceProperty).toBe('test');
-        expect(NgRedux.store).toBeTruthy();
-        expect(NgRedux.store.dispatch).toHaveBeenCalledWith(expectedArgs);
+    afterEach(() => {
+        jest.clearAllMocks();
     });
 
-    test('should not call dispatch', () => {
-        const stateBeforeAction = NgRedux.store.getState();
-        const result = instance.conditionalDispatchMethod(false);
+    test('should dispatch the result to the store when returning an object', () => {
+        const result = targetClass.addBug(5);
 
-        expect(result).toBe(false);
-        expect(NgRedux.store).toBeTruthy();
-        expect(NgRedux.store.getState()).toEqual(stateBeforeAction);
+
+        expect(result).toEqual({ type: 'ADD_LOC', payload: 5 });
+        expect(mockDispatch).toHaveBeenCalledWith({ type: 'ADD_LOC', payload: 5 });
     });
 
-    test('should call dispatch with result of function normally', () => {
-        const result = <PayloadAction> instance.conditionalDispatchMethod(true);
-        expect(result.type).toBe('CONDITIONAL_DISPATCH_TEST');
-        expect(result.payload && result.payload.value).toBe(
-            'Conditional Dispatch Action'
-        );
-        expect(result.payload && result.payload.instanceProperty).toBe('test');
-        expect(NgRedux.store).toBeTruthy();
-        expect(
-            NgRedux.store.dispatch
-        ).toHaveBeenCalledWith({
-            type: 'CONDITIONAL_DISPATCH_TEST',
-            payload: {
-                value: 'Conditional Dispatch Action',
-                instanceProperty: 'test',
-            },
-        });
+    test('should dispatch the result to the store when returning a falsy value', () => {
+        const result = targetClass.emptyBug();
+
+        expect(result).toBeNull();
+        expect(mockDispatch).toHaveBeenCalledWith(null);
     });
 
-    test('should work with property initializers', () => {
-        const result = instance.boundProperty('bound property');
-        const expectedArgs = {
-            type: 'TEST',
-            payload: {
-                value: 'bound property',
-                instanceProperty: 'test',
-            },
-        };
+    test('should dispatch the result to the store when returning a truthy value that is not an object', () => {
+        const result = targetClass.trueBug();
 
-        expect(result.type).toBe('TEST');
-        expect(result.payload?.value).toBe('bound property');
-        expect(result.payload?.instanceProperty).toBe('test');
-        expect(NgRedux.store).toBeTruthy();
-        expect(NgRedux.store.dispatch).toHaveBeenCalledWith(expectedArgs);
+        expect(result).toBe(true);
+        expect(mockDispatch).toHaveBeenCalledWith(true);
     });
 
-    test('work with props bound to function defined outside of class', () => {
-        const instanceProperty = 'test';
+    test('should dispatch the result to the store when using an external function', () => {
+        const functionName = 'testFunction';
+        const externalFunction = jest.fn(() => ({ type: 'TEST', payload: { value: 'test' } }));
 
-        instance.externalFunction = (value: string) => {
-            return {
-                type: 'TEST',
-                payload: {
-                    value,
-                    instanceProperty,
-                },
-            };
-        }
+        Dispatch(targetClass, functionName);
+        targetClass[functionName] = externalFunction;
+        const result = targetClass[functionName]();
 
-        const result = instance.externalFunction('external function');
-        const expectedArgs = {
-            type: 'TEST',
-            payload: {
-                value: 'external function',
-                instanceProperty: 'test',
-            },
-        };
 
-        expect(result.type).toBe('TEST');
-        expect(result.payload && result.payload.value).toBe('external function');
-        expect(result.payload && result.payload.instanceProperty).toBe('test');
-        expect(NgRedux.store).toBeTruthy();
-        expect(NgRedux.store.dispatch).toHaveBeenCalledWith(expectedArgs);
-    });
-});
-
-describe('On a substore', () => {
-    /**
-     * Test class
-     */
-
-    const localReducer = (state: any, _: Action) => state;
-
-    @Substore(localReducer)
-    class TestClass {
-        getBasePath = () => [ 'bar', 'foo' ];
-
-        @Dispatch
-        decoratedActionCreator(value: string): PayloadAction {
-            return {
-                type: 'TEST',
-                payload: { value },
-            };
-        }
-    }
-
-    /**
-     * Before each test
-     */
-
-    let instance: TestClass;
-
-    beforeEach(() => {
-        instance = new TestClass();
+        expect(result).toEqual({ type: 'TEST', payload: { value: 'test' } });
+        expect(externalFunction).toHaveBeenCalled();
+        expect(mockDispatch).toHaveBeenCalledWith({ type: 'TEST', payload: { value: 'test' } });
     });
 
-    test('scopes decorated actions to the base path', () => {
-        instance.decoratedActionCreator('hello');
+    test('should dispatch the result to the store when using a bound property', () => {
+        const functionName = 'testFunction';
+        const boundProperty = jest.fn(() => ({ type: 'TEST', payload: { value: 'test' } }));
 
-        expect(NgRedux.store.dispatch).toHaveBeenCalledWith({
-            type: 'TEST',
-            payload: { value: 'hello' },
-            '@angular-redux2::fractalKey': '["bar","foo"]',
-        });
+        Dispatch(targetClass, functionName);
+        targetClass[functionName] = boundProperty;
+        const result = targetClass[functionName]();
+
+        expect(result).toEqual({ type: 'TEST', payload: { value: 'test' } });
+        expect(boundProperty).toHaveBeenCalled();
+        expect(mockDispatch).toHaveBeenCalledWith({ type: 'TEST', payload: { value: 'test' } });
     });
 });
