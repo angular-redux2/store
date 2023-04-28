@@ -1,11 +1,11 @@
 /**
- * Imports third-party libraries
+ * Import third-party libraries
  */
 
 import { NgModule } from '@angular/core';
 
 /**
- * Import services
+ * Services
  */
 
 import { DevToolsExtension } from './services/dev-tool.service';
