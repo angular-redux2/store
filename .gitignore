@@ -20,14 +20,13 @@ yarn-error.log
 .settings/
 *.sublime-workspace
 
-# IDE
+# Visual Studio Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 .history/*
-.idea/*
 
 # Miscellaneous
 /.angular/cache
@@ -37,6 +36,7 @@ yarn-error.log
 /libpeerconnection.log
 testem.log
 /typings
+coverage
 
 # System files
 .DS_Store

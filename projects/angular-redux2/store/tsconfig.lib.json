@@ -4,14 +4,11 @@
     "compilerOptions": {
         "outDir": "../../../out-tsc/lib",
         "declaration": true,
-        "declarationMap": true,
         "inlineSources": true,
-        "types": [
-            "node"
-        ]
+        "declarationMap": true,
+        "types": []
     },
     "exclude": [
-        "src/test.ts",
         "**/*.spec.ts"
     ]
 }

@@ -39,8 +39,9 @@
             }
         }
     },
-    "defaultProject": "@angular-redux2/store",
     "cli": {
-        "defaultCollection": "@angular-eslint/schematics"
+        "schematicCollections": [
+            "@angular-eslint/schematics"
+        ]
     }
 }

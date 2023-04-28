@@ -2,40 +2,41 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
-        "paths": {
-            "@angular-redux2/store": [
-                "./projects/angular-redux2/store/src",
-            ],
-            "@angular-redux2/store/testing": [
-                "./projects/angular-redux2/store/testing",
-            ]
-        },
         "baseUrl": "./",
+        "target": "ES2022",
+        "module": "ES2022",
         "outDir": "./dist/out-tsc",
-        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "node",
         "strict": true,
-        "noImplicitOverride": true,
-        "noPropertyAccessFromIndexSignature": true,
-        "strictPropertyInitialization": false,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
         "sourceMap": true,
         "declaration": false,
+        "importHelpers": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
         "downlevelIteration": true,
         "experimentalDecorators": true,
-        "moduleResolution": "node",
-        "importHelpers": true,
-        "target": "es2017",
-        "module": "es2020",
+        "useDefineForClassFields": false,
+        "noFallthroughCasesInSwitch": true,
+        "strictPropertyInitialization": false,
+        "forceConsistentCasingInFileNames": true,
+        "noPropertyAccessFromIndexSignature": true,
         "lib": [
-            "es2020",
+            "ES2022",
             "dom"
-        ]
+        ],
+        "paths": {
+            "@angular-redux2/store": [
+                "./projects/angular-redux2/store/src/public-api",
+            ],
+            "@angular-redux2/store/mocks": [
+                "./projects/angular-redux2/store/mocks/public-api",
+            ]
+        }
     },
     "angularCompilerOptions": {
-        "enableI18nLegacyMessageIdFormat": false,
+        "strictTemplates": true,
         "strictInjectionParameters": true,
         "strictInputAccessModifiers": true,
-        "strictTemplates": true
+        "enableI18nLegacyMessageIdFormat": false
     }
 }
