@@ -1,339 +1,297 @@
 /**
- * Imports third-party libraries
+ * Import third-party libraries
  */
 
+import { of } from 'rxjs';
 import { NgZone } from '@angular/core';
-import { combineLatest, Observable, ReplaySubject } from 'rxjs';
-import { createStore, Reducer, Action, AnyAction, Store } from 'redux';
+import { compose, createStore } from 'redux';
 
 /**
- * NgRedux
+ * Import third-party types
+ */
+
+import type { Reducer, Store, StoreEnhancer } from 'redux';
+
+/**
+ * angular-redux2
  */
 
 import { NgRedux } from './ng-redux.service';
+import { ReducerService } from './reducer.service';
+import { SubStoreService } from './sub-store.service';
 
 /**
- * Import Decorators
+ * angular-redux2 types
  */
 
-import { Select } from '../decorators/select.decorator';
+import type { Middleware } from '../interfaces/reducer.interface';
 
-/**
- * Zone
- */
-
-class MockNgZone extends NgZone {
-    override run<T>(fn: (...args: any[]) => T): T {
-        return fn() as T;
-    }
-}
-
-/**
- * Action
- */
-
-type PayloadAction = Action & { payload?: string | number };
-
-/**
- * Root store
- */
-
-describe('NgRedux Observable Store', () => {
-    /**
-     * Interfaces
-     */
-
-    interface IAppState {
-        foo: string;
-        bar: string;
-        baz: number;
-    }
-
-    /**
-     * Create test store
-     */
-
-    let defaultState: IAppState;
-    let rootReducer: Reducer<IAppState, AnyAction>;
-    let store: Store<IAppState>;
-    let ngRedux: NgRedux<IAppState>;
-    const mockNgZone = new MockNgZone({ enableLongStackTrace: false }) as NgZone;
-
-    /**
-     * Before each test
-     */
+describe('NgRedux', () => {
+    let ngRedux: NgRedux;
+    let mockReduxCompose: jest.Mock;
 
     beforeEach(() => {
-        defaultState = {
-            foo: 'bar',
-            bar: 'foo',
-            baz: -1,
-        };
-
-        rootReducer = (state = defaultState, action: PayloadAction) => {
-            switch (action.type) {
-                case 'UPDATE_FOO':
-                    return Object.assign({}, state, { foo: action.payload });
-                case 'UPDATE_BAZ':
-                    return Object.assign({}, state, { baz: action.payload });
-                case 'UPDATE_BAR':
-                    return Object.assign({}, state, { bar: action.payload });
-                default:
-                    return state;
-            }
-        };
-
-        store = createStore(rootReducer);
-        ngRedux = new NgRedux<IAppState>(mockNgZone);
-        ngRedux.configureStore(rootReducer, defaultState);
+        ngRedux = new NgRedux();
+        mockReduxCompose = jest.fn().mockReturnValue(createStore);
     });
 
-    /**
-     * Configured once in beforeEach, now we try to configure,
-     * test is a second time.
-     */
-
-    test('should throw when the store is configured twice', () => {
-        expect(
-            ngRedux.configureStore.bind(ngRedux, rootReducer, defaultState)
-        ).toThrowError(Error);
+    afterEach(() => {
+        jest.resetAllMocks();
     });
 
-    test('should get the initial state', (done) => {
-        ngRedux.select<any>().subscribe((state: IAppState) => {
-            expect(state.foo).toBe('bar');
-            expect(state.baz).toBe(-1);
-            done();
+    describe('store', () => {
+        test('should throw an error if instance is not initialized', () => {
+            // Arrange
+            (NgRedux as any).instance = undefined;
+
+            // Act & Assert
+            expect(() => NgRedux.store).toThrowError('NgRedux failed: instance not initialize.');
+        });
+
+        test('should return the instance of NgRedux if it is initialized', () => {
+            // Arrange
+            (NgRedux as any).instance = ngRedux;
+
+            // Act
+            const result = NgRedux.store;
+
+            // Assert
+            expect(result).toEqual(ngRedux);
         });
     });
 
-    test('should accept a key-name for a selector', (done) => {
-        ngRedux.select<any>('foo').subscribe(stateSlice => {
-            expect(stateSlice).toBe('bar');
-            done();
+    describe('configureStore', () => {
+        const reducer: Reducer = (state = {}) => state;
+        const initState = {};
+        const middleware: Middleware[] = [];
+        const enhancers: Array<StoreEnhancer<any>> = [];
+
+        test('should throw an error if store is already initialized', () => {
+            // Arrange
+            ngRedux['_store'] = {} as any; // set the private _store property to an object
+
+            // Act and assert
+            expect(() => ngRedux.configureStore(reducer, initState, middleware, enhancers)).toThrowError(
+                'Store already initialize!'
+            );
+        });
+
+        test('should call setStore with the created store', () => {
+            // Arrange
+            const setStoreSpy = jest.spyOn(ngRedux as any, 'setStore');
+            const expectedStore = {} as any;
+
+            jest.spyOn(ReducerService.getInstance(), 'composeReducers').mockReturnValue(() => expectedStore);
+            jest.spyOn<any, any>(compose, 'apply').mockReturnValue(mockReduxCompose);
+
+            // Act
+            ngRedux.configureStore(reducer, initState, middleware, enhancers);
+
+            // Assert
+            expect(mockReduxCompose).toHaveBeenCalledWith(createStore);
+            expect(ReducerService.getInstance().composeReducers).toHaveBeenCalledWith(reducer, middleware);
+            expect(setStoreSpy).toHaveBeenCalled();
         });
     });
 
-    test('NgRedux ReplaySubject', () => {
-        let fooData = '';
+    describe('configureSubStore', () => {
+        test('should create a new SubStoreService instance', () => {
+            const reducer = (state = {}) => state;
+            const initState = {};
 
-        const spy = jest.fn();
+            jest.spyOn(ReducerService.getInstance(), 'composeReducers').mockReturnValue(() => initState);
+            jest.spyOn<any, any>(compose, 'apply').mockReturnValue(mockReduxCompose);
+            jest.spyOn<any, any>(compose, 'apply').mockReturnValue(mockReduxCompose);
 
-        ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 0 });
-        ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 1 });
+            ngRedux.configureStore(reducer, initState);
 
-        const foo$ = ngRedux.select<any>('foo').subscribe(spy);
-        expect(spy).toBeCalledTimes(1);
+            const subStore = ngRedux.configureSubStore([ 'path' ], reducer);
+            expect(subStore).toBeInstanceOf(SubStoreService);
+        });
     });
 
-    test('should not trigger selector if that slice of state wasnt changed', () => {
-        let fooData = '';
+    describe('provideStore', () => {
+        let spyReplaceReducer: jest.SpyInstance;
+        const reducer = (state = {}) => state;
 
-        const spy = jest.fn((foo: string) => {
-            fooData = foo;
+        beforeEach(() => {
+            spyReplaceReducer = jest.spyOn(
+                ReducerService.getInstance(),
+                'composeReducers'
+            ).mockReturnValueOnce(reducer);
         });
 
-        const foo$ = ngRedux.select<any>('foo').subscribe(spy);
-        expect(spy).toBeCalled();
+        test('should replace the store reducer and initialize the store', () => {
+            const store = createStore(reducer);
 
-        ngRedux.dispatch({ type: 'UPDATE_BAR', payload: 0 });
-        expect(spy).toBeCalledTimes(1);
-        expect(fooData).toBe('bar');
+            const mockReplaceReducer = jest.spyOn(
+                store,
+                'replaceReducer'
+            );
 
-        ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 'changeFoo' });
-        expect(spy).toBeCalledTimes(2);
-        expect(fooData).toBe('changeFoo');
-        foo$.unsubscribe();
-    });
+            ngRedux.provideStore(reducer, store);
 
-    test('should not trigger a selector if the action payload is the same', () => {
-        let fooData = '';
-
-        const spy = jest.fn((foo: string) => {
-            fooData = foo;
+            expect(spyReplaceReducer).toHaveBeenCalledWith(reducer);
+            expect(mockReplaceReducer).toHaveBeenCalled();
+            expect(ngRedux['_store']).toBe(store);
         });
 
-        const foo$ = ngRedux.select<any>('foo').subscribe(spy);
+        test('should throw an error if the store is already initialized', () => {
+            const store = createStore(reducer);
+            ngRedux.provideStore(reducer, store);
 
-        expect(spy).toBeCalled();
-        expect(fooData).toBe('bar');
-        ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 'bar' });
-        expect(spy).toBeCalledTimes(1);
-        expect(fooData).toBe('bar');
-        foo$.unsubscribe();
+            expect(() => ngRedux.provideStore(reducer, store)).toThrow('Store already initialize!');
+        });
     });
 
-    test('should not call sub if the result of the function is the same', () => {
-        let fooData = '';
+    describe('getState', () => {
+        test('should call getState on the store and return the state', () => {
+            const expectedState = { count: 0 };
+            (ngRedux as any)._store = {
+                getState: jest.fn().mockReturnValueOnce(expectedState)
+            };
 
-        const spy = jest.fn((foo: string) => {
-            fooData = foo;
+            const result = ngRedux.getState();
+
+            expect((ngRedux as any)._store.getState).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expectedState);
+        });
+    });
+
+    describe('dispatch', () => {
+        let store: Store<any, any>;
+        const reducer = (state = {}) => state;
+
+        beforeEach(() => {
+            jest.spyOn(
+                ReducerService.getInstance(),
+                'composeReducers'
+            ).mockReturnValueOnce(reducer);
+
+            store = createStore(() => ({}));
+            ngRedux.provideStore(() => ({}), store);
         });
 
-        ngRedux.select<any>((state: any) => `${ state.foo }-${ state.baz }`).subscribe(spy);
+        test('dispatches an action to the store', () => {
+            const action = { type: 'TEST_ACTION' };
+            const dispatchSpy = jest.spyOn(store, 'dispatch');
 
-        expect(spy).toBeCalled();
-        expect(fooData).toBe('bar--1');
+            ngRedux.dispatch(action);
 
-        expect(spy).toBeCalledTimes(1);
-        expect(fooData).toBe('bar--1');
+            expect(dispatchSpy).toHaveBeenCalledWith(action);
+        });
 
-        ngRedux.dispatch({ type: 'UPDATE_BAR', payload: 'bar' });
-        expect(spy).toBeCalledTimes(1);
-        expect(fooData).toBe('bar--1');
+        test('throws an error when the store is not initialized', () => {
+            ngRedux = new NgRedux(); // initialize without store
+            const action = { type: 'TEST_ACTION' };
 
-        ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 'update' });
-        expect(fooData).toBe('update--1');
-        expect(spy).toBeCalledTimes(2);
+            expect(() => ngRedux.dispatch(action)).toThrow('Dispatch failed: store instance not initialize.');
+        });
 
-        ngRedux.dispatch({ type: 'UPDATE_BAZ', payload: 2 });
-        expect(fooData).toBe('update-2');
-        expect(spy).toBeCalledTimes(3);
-    });
-
-    test('should only call provided select function if state changed', () => {
-        const selectSpy = jest.fn((state: IAppState) => state.foo);
-        ngRedux.select().subscribe(<any>selectSpy);
-
-        // called once to get the initial value
-        expect(selectSpy).toBeCalledTimes(1);
-
-        // not called since no state was updated
-        ngRedux.dispatch({ type: 'NOT_A_STATE_CHANGE' });
-        expect(selectSpy).toBeCalledTimes(1);
-
-        ngRedux.dispatch({ type: 'UPDATE_FOO', payload: 'update' });
-        expect(selectSpy).toBeCalledTimes(2);
-
-        ngRedux.dispatch({ type: 'NOT_A_STATE_CHANGE' });
-        expect(selectSpy).toBeCalledTimes(2);
-    });
-
-    /**
-     * Configured once in beforeEach, now we try to provide a store when
-     * we already have configured one.
-     */
-
-    test('should throw if store is provided after it has been configured', () => {
-        expect(ngRedux.provideStore.bind(store)).toThrowError();
-    });
-
-    test('should wait until store is configured before emitting values', () => {
-        class SomeService {
-            foo!: string;
-            bar!: string;
-            baz!: number;
-
-            constructor(_ngRedux: NgRedux<any>) {
-                _ngRedux.select((n: any) => n.foo).subscribe((foo: any) => (this.foo = foo));
-                _ngRedux.select((n: any) => n.bar).subscribe((bar: any) => (this.bar = bar));
-                _ngRedux.select((n: any) => n.baz).subscribe((baz: any) => (this.baz = baz));
-            }
-        }
-
-        ngRedux = new NgRedux<IAppState>(mockNgZone);
-        const someService = new SomeService(ngRedux);
-        ngRedux.configureStore(rootReducer, defaultState);
-
-        expect(someService.foo).toBe('bar');
-        expect(someService.bar).toBe('foo');
-        expect(someService.baz).toBe(-1);
-    });
-
-    test('should have select decorators work before store is configured', () => {
-        class SomeService {
-            @Select() foo$: Observable<string>;
-            @Select() bar$: Observable<string>;
-            @Select() baz$: Observable<string>;
-        }
-
-        ngRedux = new NgRedux<IAppState>(mockNgZone);
-        const someService = new SomeService();
-
-        combineLatest([ someService.foo$, someService.bar$, someService.baz$ ])
-            .subscribe(([ foo, bar, baz ]) => {
-                expect(foo).toBe('bar');
-                expect(bar).toBe('foo');
-                expect(baz).toBe(-1);
+        test('runs the dispatch inside NgZone if it exists and is outside the zone', () => {
+            const action = { type: 'TEST_ACTION' };
+            const dispatchSpy = jest.spyOn(store, 'dispatch');
+            const runMock = jest.fn((callback) => {
+                callback();
             });
 
-        ngRedux.configureStore(rootReducer, defaultState);
-    });
-});
+            (ngRedux as any).ngZone = { run: runMock } as any;
+            NgZone.isInAngularZone = jest.fn(() => false);
 
-describe('Chained actions in subscriptions', () => {
-    /**
-     * Interfaces
-     */
+            ngRedux.dispatch(action);
 
-    interface IAppState {
-        keyword: string;
-        keywordLength: number;
-    }
-
-    let defaultState: IAppState;
-    let rootReducer: Reducer<IAppState, AnyAction>;
-    let ngRedux: NgRedux<IAppState>;
-    const mockNgZone = new MockNgZone({ enableLongStackTrace: false }) as NgZone;
-
-    /**
-     * Create test store
-     */
-
-    const doSearch = (word: string) =>
-        ngRedux.dispatch({ type: 'SEARCH', payload: word });
-    const doFetch = (word: string) =>
-        ngRedux.dispatch({ type: 'SEARCH_RESULT', payload: word.length });
-
-    /**
-     * Before each test
-     */
-
-    beforeEach(() => {
-        defaultState = {
-            keyword: '',
-            keywordLength: -1,
-        };
-
-        rootReducer = (state = defaultState, action: PayloadAction) => {
-            switch (action.type) {
-                case 'SEARCH':
-                    return Object.assign({}, state, { keyword: action.payload });
-                case 'SEARCH_RESULT':
-                    return Object.assign({}, state, { keywordLength: action.payload });
-                default:
-                    return state;
-            }
-        };
-
-        ngRedux = new NgRedux<IAppState>(mockNgZone);
-        ngRedux.configureStore(rootReducer, defaultState);
+            expect(runMock).toHaveBeenCalled();
+            expect(dispatchSpy).toHaveBeenCalledWith(action);
+        });
     });
 
-    describe('dispatching an action in a keyword$ before length$ happens', () => {
-        test('length sub should be called twice', () => {
-            let lenSub;
-            let keywordSub;
+    describe('subscribe', () => {
+        test('should subscribe a listener to the store', () => {
+            const mockListener = jest.fn();
+            const mockUnsubscribe = jest.fn();
+            const mockStore = {
+                getState: jest.fn().mockReturnValue({}),
+                subscribe: jest.fn(() => mockUnsubscribe),
+            };
 
-            const lengthSpy = jest.fn();
-            const keywordSpy = jest.fn();
-            const keyword$ = ngRedux.select((n: any) => n.keyword);
-            const length$ = ngRedux.select((n: any) => n.keywordLength);
+            (ngRedux as any).setStore(mockStore as any);
 
-            lenSub = length$.subscribe(lengthSpy);
-            keywordSub = keyword$.subscribe(keywordSpy);
+            const result = ngRedux.subscribe(mockListener);
 
-            expect(lengthSpy).toBeCalledWith(-1);
-            expect(keywordSpy).toBeCalledWith('');
+            expect(result).toBe(mockUnsubscribe);
+            expect(mockStore.subscribe).toHaveBeenCalledWith(mockListener);
+        });
+    });
 
-            doSearch('test');
-            doFetch('test');
+    describe('replaceReducer', () => {
+        beforeEach(() => {
+            ReducerService.getInstance().replaceReducer = jest.fn();
+        });
 
-            expect(lengthSpy).toBeCalledWith(4);
-            expect(keywordSpy).toBeCalledWith('test');
+        test('should call ReducerService replaceReducer with nextReducer', () => {
+            const nextReducer = jest.fn();
+            ngRedux.replaceReducer(nextReducer);
 
-            keywordSub.unsubscribe();
-            lenSub.unsubscribe();
+            expect(ReducerService.getInstance().replaceReducer).toHaveBeenCalledWith(nextReducer);
+        });
+    });
+
+    describe('setStore', () => {
+        let store: Store<any>;
+
+        beforeEach(() => {
+            store = createStore(() => ({}));
+        });
+
+        test('should set the store and subscribe to changes', () => {
+            const spy = jest.spyOn(store, 'subscribe');
+            (ngRedux as any).setStore(store);
+            expect((ngRedux as any)['_store']).toBe(store);
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('should update store$ when store changes', () => {
+            const spy = jest.spyOn(ngRedux['_store$'], 'next');
+            const state = { count: 0 };
+            store = createStore(() => state);
+            (ngRedux as any).setStore(store);
+            expect(spy).toHaveBeenCalledWith(state);
+        });
+    });
+
+    describe('select', () => {
+        let mockStore: any;
+
+        beforeEach(() => {
+
+            // Mock store
+            mockStore = {
+                getState: jest.fn(),
+                subscribe: jest.fn(),
+            };
+            (ngRedux as any).setStore(mockStore);
+        });
+
+        test('should return an observable that emits the selected value when it changes', () => {
+            // Set up mock data
+            const selectedValue = 'selected value';
+            const selector = jest.fn().mockReturnValue(selectedValue);
+            const comparator = jest.fn().mockReturnValue(false);
+
+            // Create an observable that emits values on every call
+            const mockObservable = of('some value');
+
+            // Spy on _store$
+            jest.spyOn(ngRedux['_store$'], 'pipe').mockReturnValueOnce(mockObservable);
+
+            // Call the method and subscribe to the resulting observable
+            const result = ngRedux.select(selector, comparator);
+            result.subscribe(value => {
+                expect(value).toBe(selectedValue);
+            });
+
+            // Check that the _store$ pipe was called with the correct operators
+            expect(ngRedux['_store$'].pipe).toHaveBeenCalled();
         });
     });
 });
