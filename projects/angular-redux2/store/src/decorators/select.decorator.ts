@@ -1,14 +1,27 @@
 /**
- * Import interfaces
+ * Import third-party libraries
  */
 
-import { Comparator, Selector, Transformer } from '../interfaces/store.interface';
+import { distinctUntilChanged } from 'rxjs';
 
 /**
- * Imports decorators
+ * Import third-party types
  */
 
-import { getInstanceSelection } from './fractal.decorator';
+import type { Observable } from 'rxjs';
+
+/**
+ * angular-redux2
+ */
+
+import { DecoratorFlagComponent } from '../components/decorator-flag.component';
+
+/**
+ * angular-redux2 types
+ */
+
+import type { Transformer } from '../interfaces/store.interface';
+import type { Comparator, Selector } from '../interfaces/store.interface';
 
 /**
  * Selects an observable from the store, and attaches it to the decorated property.
@@ -21,21 +34,22 @@ import { getInstanceSelection } from './fractal.decorator';
  * }
  * ```
  *
- * @param selector -
+ * @param {Selector<any, T>} selector -
  * A selector function, property name string, or property name path
  * (array of strings/array indices) that locates the store data to be
  * selected
  *
- * @param comparator - Function used to determine if this selector has changed.
+ * @param {Comparator} comparator - Function used to determine if this selector has changed.
  */
 
 export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator): PropertyDecorator {
-    return (target: any, key: string | symbol): void => {
+    return (target: any, name: string | symbol): void => {
         if (!selector) {
-            selector = String(key).replace(/\$\s*$/, '');
+            // remove $ from the name.
+            selector = String(name).replace(/\$\s*$/, '');
         }
 
-        return decorate(selector, comparator)(target, key);
+        return createSelectDecorator(selector, comparator)(target, name);
     };
 }
 
@@ -50,7 +64,7 @@ export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator):
  * instead of values.`
  *
  * ```ts
- * import { select$ } from 'angular-redux2/store';
+ * import { select$ } from '@angular-redux2/store';
  *
  * export const debounceAndTriple = obs$ => obs$
  *  .debounce(300)
@@ -62,13 +76,13 @@ export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator):
  * }
  * ```
  *
- * @param selector -
+ * @param {Selector<any, T>} selector -
  * A selector function, property name string, or property name path
  * (array of strings/array indices) that locates the store data to be
  * selected
  *
- * @param comparator - Function used to determine if this selector has changed.
- * @param transformer - transformer that operates on observables instead of values.
+ * @param {Transformer<any, T>} transformer - transformer that operates on observables instead of values.
+ * @param {Comparator} comparator - Function used to determine if this selector has changed.
  */
 
 export function Select$<T>(
@@ -76,42 +90,41 @@ export function Select$<T>(
     transformer: Transformer<any, T>,
     comparator?: Comparator
 ): PropertyDecorator {
-    return decorate(selector, comparator, transformer);
+    return createSelectDecorator(selector, comparator, transformer);
 }
 
 /**
- * @hidden
  * Selects an observable using the given path selector, and runs it through the
  * given transformer function. A transformer function takes the store
  * observable as an input and returns a derived observable from it.
  *
- * @param selector -
+ * @param {Selector<any, any>} selector -
  * A selector function, property name string, or property name path
  * (array of strings/array indices) that locates the store data to be
  * selected
  *
- * @param comparator - Function used to determine if this selector has changed.
- * @param transformer - transformer that operates on observables instead of values.
+ * @param {Comparator} comparator - Function used to determine if this selector has changed.
+ * @param {Transformer<any, any>} transformer - transformer that operates on observables instead of values.
+ * @hidden
  */
 
-function decorate(
+function createSelectDecorator(
     selector: Selector<any, any>,
     comparator?: Comparator,
     transformer?: Transformer<any, any>,
 ): PropertyDecorator {
-    return function decorator(target: any, key): void {
+    return function decorator(target: any, name: string | symbol): void {
         function getter(this: any) {
-            return getInstanceSelection(this, key, selector, <any>transformer, comparator);
+            return getInstanceSelection(this, name, selector, transformer, comparator);
         }
 
-        // Replace decorated property with a getter that returns the observable.
-        if (delete target[key]) {
-            Object.defineProperty(target, key, {
-                get: getter,
-                enumerable: true,
-                configurable: true,
-            });
-        }
+        delete target[name];
+
+        Object.defineProperty(target, name, {
+            get: getter,
+            enumerable: true,
+            configurable: true,
+        });
     };
 }
 
