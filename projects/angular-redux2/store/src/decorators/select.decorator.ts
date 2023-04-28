@@ -114,3 +114,42 @@ function decorate(
         }
     };
 }
+
+/**
+ * Call store (root or substore) selects with a path.
+ *
+ * @param {*} decoratedInstance - decorator instance
+ * @param {string | symbol} name - string | symbol are use in select decorator (foo$) @Select(['foo','bar']) `foo$`: Observable<string>.
+ * @param {Selector<any, T>} selector - select path in decorator.
+ * @param {Transformer<any, T>} transformer - transformer that operates on observables instead of values.
+ * @param {Comparator} comparator - Function used to determine if this selector has changed.
+ * @hidden
+ */
+
+function getInstanceSelection<T>(
+    decoratedInstance: any,
+    name: string | symbol,
+    selector: Selector<any, T>,
+    transformer?: Transformer<any, T>,
+    comparator?: Comparator
+): Observable<any> | undefined {
+    const { store, selections } = new DecoratorFlagComponent(decoratedInstance);
+
+    if (selections[name]) {
+        return selections[name];
+    }
+
+    if (!store) {
+        return undefined;
+    }
+
+    const selection$ = transformer
+        ? store.select(selector).pipe(
+            (obs$: any) => transformer(obs$, decoratedInstance),
+            distinctUntilChanged(comparator)
+        ) : store.select(selector, comparator);
+
+    selections[name] = selection$;
+
+    return selection$;
+}
