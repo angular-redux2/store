@@ -1,6 +1,6 @@
 # angular-redux2/store
 > Please note that **function names are changed** from the `@angular-redux/store` version (this is a new code source) and  need to adjust accordingly
-> 
+>
 > **like**: `select => Select`, `withsubstore => Substore`, `dispatch => Dispatch`<br>
 > **Docs**: https://angular-redux2.github.io/store/modules/src.html
 
@@ -29,7 +29,7 @@ with some of Angular advanced features, including:
 
 ## Getting Started
 
-- I already know what Redux and RxJS are. [Give me the TL;DR](articles/quickstart.md).
+- I already know what Redux and RxJS are. [Give me the TL;DR](docs/quickstart.md).
 - Take me to the [API docs](https://angular-redux2.github.io/store).
 
 ## Resources
