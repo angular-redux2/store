@@ -15,7 +15,10 @@
         "build": "ng build",
         "watch": "ng build --watch --configuration development",
         "test": "ng test",
-        "lint": "ng lint"
+        "lint": "ng lint",
+        "ci:clean": "rimraf ./dist",
+        "ci:test": "ng test",
+        "ci:build": "ng build --prod"
     },
     "private": true,
     "dependencies": {
