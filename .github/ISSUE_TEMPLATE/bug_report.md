@@ -16,9 +16,7 @@ assignees: ''
 ### What toolchain are you using for transpilation/bundling?
 
 * [ ] @angular/cli
-* [ ] Custom @ngTools/webpack
 * [ ] Raw `ngc`
-* [ ] SystemJS
 * [ ] Rollup
 * [ ] Other
 
@@ -27,7 +25,7 @@ assignees: ''
 NodeJS Version:
 Typescript Version:
 Angular Version:
-@angular-redux/store version:
+@angular-redux2/store version:
 @angular/cli version: (if applicable)
 OS:
 
@@ -36,15 +34,9 @@ OS:
 
 ### Expected Behaviour:
 
-
-
 ### Actual Behaviour:
 
-
-
 ### Stack Trace/Error Message:
-
-
 
 ### Additional Notes:
 (optional)
