@@ -10,7 +10,7 @@
  * @param objectData - object to copy to new one.
  */
 
-export function deepCopy(objectData: any): Object {
+export function deepCopy<T>(objectData: any): T {
     let outObject: any, value, key;
 
     if (typeof objectData !== 'object' || objectData === null) {
