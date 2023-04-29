@@ -9,7 +9,7 @@ import { Injectable, NgZone } from '@angular/core';
  * Import third-party types
  */
 
-import type { AnyAction, Reducer, Store, StoreEnhancer , Unsubscribe } from 'redux';
+import type { AnyAction, Reducer, Store, StoreEnhancer, Unsubscribe } from 'redux';
 
 /**
  * angular-redux2

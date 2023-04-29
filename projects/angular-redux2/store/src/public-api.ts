@@ -22,3 +22,6 @@ export * from './decorators/action.decorator';
 export * from './decorators/select.decorator';
 export * from './decorators/dispatch.decorator';
 export * from './decorators/substore.decorator';
+
+// components
+export * from './components/object.component';

@@ -61,11 +61,13 @@ export abstract class AbstractReducer {
             const actionName = action.type.replace(namespace, '');
             const fn = instance[actionName];
 
-            if (fn) {
-                return fn.apply(instance, [ lastState, action['payload'] ]);
+            if (!fn) {
+                return lastState;
             }
 
-            return lastState;
+            const newState = fn.apply(instance, [ lastState, action['payload'] ]);
+
+            return newState !== undefined ? newState : lastState;
         };
     }
 }
