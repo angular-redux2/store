@@ -63,7 +63,7 @@ export function get(object: any, path: Array<string | number>): any {
  * @returns A shallow copy of the object with the new value set at the given path.
  */
 
-export function set(object: any, path: Array<string | number>, value: any): any {
+export function set(object: any, path: Array<string | number | symbol>, value: any): any {
     if (!object || !Array.isArray(path) || path.length < 1) {
         return object;
     }
