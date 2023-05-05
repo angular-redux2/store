@@ -308,7 +308,7 @@ export class ReducerService {
 
                 hasChanged = true;
 
-                const stack = shallowCopy((this as any).stack || []);
+                const stack = shallowCopy((this as any)._stack || []);
                 const lastObject = stack.pop();
                 const parent = get(state, stack);
                 parent[lastObject] = shallowCopy(parent[lastObject]);
