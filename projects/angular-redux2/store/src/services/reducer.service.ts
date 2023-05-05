@@ -280,40 +280,53 @@ export class ReducerService {
      */
 
     private produce<State extends object>(state: State, action: any, reducer: Reducer): any {
-        let result = state;
+        const newState = shallowCopy(state);
         let hasChanged = false;
 
         if (typeof state !== 'object') {
             return reducer(state, action);
         }
 
-        const proxy = new Proxy(shallowCopy(state), {
-            get(target: any, prop: string | symbol): any {
+        const proxy = new Proxy(newState, {
+            get(target: any, prop: string | symbol, receiver: any): any {
                 if (prop === '_target') return target;
                 if (prop === '_isProxy') return true;
 
                 if (typeof target[prop] === 'object' && !target[prop]._isProxy) {
-                    target[prop] = new Proxy(shallowCopy(target[prop]), this);
+                    const currentStack = receiver._stack || [];
+                    (this as any)._stack = [ ...currentStack, prop ];
+
+                    target[prop] = new Proxy(target[prop], this);
                 }
 
-                return target[prop];
+                return Reflect.get(target, prop, receiver);
             },
-            set(target: any, prop: string | symbol, value: any): boolean {
-                hasChanged = true;
-                target[prop] = value;
+            set(target: any, prop: string | symbol, value: any, receiver: any): any {
+                if (prop === 'length') {
+                    return true;
+                }
 
-                return true;
+                hasChanged = true;
+
+                const stack = shallowCopy((this as any).stack || []);
+                const lastObject = stack.pop();
+                const parent = get(state, stack);
+                parent[lastObject] = shallowCopy(parent[lastObject]);
+
+                return Reflect.set(parent[lastObject], prop, value, receiver);
             },
         });
 
-        const newState = reducer(proxy, action);
+        const proxyState = reducer(proxy, action);
 
-        if (newState && !newState._isProxy) {
-            result = this.cleanup(newState);
-        } else if (hasChanged) {
-            result = this.cleanup(proxy._target);
+        if (proxyState && !proxyState._isProxy) {
+            return this.cleanup(proxyState);
         }
 
-        return result;
+        if (hasChanged) {
+            return this.cleanup(newState);
+        }
+
+        return state;
     }
 }
