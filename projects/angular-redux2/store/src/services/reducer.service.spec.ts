@@ -27,6 +27,28 @@ describe('getInstance', () => {
 });
 
 describe('composeReducers', () => {
+    test('should handle initial null state when composing reducers', () => {
+        const state = {
+            foo: 'bar',
+            baz: null
+        };
+
+        const composeReducers = reducerService.composeReducers((state, action) => {
+            switch (action.type) {
+                case 'SAMPLE_ACTION': {
+                    state.baz = 'baz';
+                    state.foo = null;
+                }
+                default:
+                    return state;
+            }
+        });
+
+        let newState = composeReducers(state, {type: 'SAMPLE_ACTION'});
+
+        expect(newState.baz).toEqual('baz');
+        expect(newState.foo).toBeNull();
+    })
     test('should return a new reducer function that applies the middleware chain to the root reducer', () => {
         // Define a root reducer and middleware functions
         const rootReducer = (state: any) => state;
