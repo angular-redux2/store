@@ -27,28 +27,6 @@ describe('getInstance', () => {
 });
 
 describe('composeReducers', () => {
-    test('should handle initial null state when composing reducers', () => {
-        const state = {
-            foo: 'bar',
-            baz: null
-        };
-
-        const composeReducers = reducerService.composeReducers((state, action) => {
-            switch (action.type) {
-                case 'SAMPLE_ACTION': {
-                    state.baz = 'baz';
-                    state.foo = null;
-                }
-                default:
-                    return state;
-            }
-        });
-
-        let newState = composeReducers(state, {type: 'SAMPLE_ACTION'});
-
-        expect(newState.baz).toEqual('baz');
-        expect(newState.foo).toBeNull();
-    })
     test('should return a new reducer function that applies the middleware chain to the root reducer', () => {
         // Define a root reducer and middleware functions
         const rootReducer = (state: any) => state;
@@ -454,6 +432,36 @@ describe('subStoreRootReducer', () => {
 
         reducerService.registerSubReducer(1234, localReducer);
         const state = (reducerService as any).subStoreRootReducer(initialState, action, next);
+
+        expect(state).toEqual({
+            foo: {
+                bar: {
+                    test: { baz: 'name' },
+                },
+            },
+        });
+
+        expect(localReducer).toHaveBeenCalledWith(initialState.foo.bar, action);
+    });
+
+    test('should update state correctly for initial state with null value', () => {
+        const testState = {
+            foo: {
+                bar: {
+                    test: null,
+                },
+            },
+        };
+        const localReducer = jest.fn((state, action) => {
+            return {
+                test: {
+                    baz: action.payload
+                }
+            };
+        });
+
+        reducerService.registerSubReducer(1234, localReducer);
+        const state = (reducerService as any).subStoreRootReducer(testState, action, next);
 
         expect(state).toEqual({
             foo: {
