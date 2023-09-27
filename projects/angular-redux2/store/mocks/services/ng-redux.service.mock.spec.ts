@@ -17,7 +17,8 @@ import type { Observable } from 'rxjs';
  * angular-redux2
  */
 
-import { NgRedux, Dispatch, Select, Select$ } from '@angular-redux2/store';
+import type { NgRedux } from '@angular-redux2/store';
+import { Dispatch, Select, Select$ } from '@angular-redux2/store';
 
 /**
  * Mocks
