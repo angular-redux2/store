@@ -2,14 +2,14 @@
  * Imports third-party types
  */
 
-import type { Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 
 /**
  * angular-redux2 types
  */
 
-import type { Comparator } from '@angular-redux3/store';
-import type { MockNgRedux } from '../services/ng-redux.service.mock';
+import { Comparator } from '@angular-redux3/store';
+import { MockNgRedux } from '../services/ng-redux.service.mock';
 
 /**
  * Represents a selector stub record.

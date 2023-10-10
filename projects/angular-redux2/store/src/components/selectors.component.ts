@@ -8,7 +8,7 @@ import { get } from './object.component';
  * angular-redux2 types
  */
 
-import type { FunctionSelector, PathSelector, PropertySelector, Selector } from '../interfaces/store.interface';
+import { FunctionSelector, PathSelector, PropertySelector, Selector } from '../interfaces/store.interface';
 
 /**
  * Determines the type of selector.

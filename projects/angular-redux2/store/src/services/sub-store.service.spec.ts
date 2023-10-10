@@ -12,7 +12,7 @@ import { ACTION_KEY } from '../interfaces/fractal.interface';
  * angular-redux2 types
  */
 
-import type { NextMiddleware } from '../interfaces/reducer.interface';
+import { NextMiddleware } from '../interfaces/reducer.interface';
 
 /**
  * Mocks

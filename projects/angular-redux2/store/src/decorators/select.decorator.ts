@@ -8,7 +8,7 @@ import { distinctUntilChanged } from 'rxjs';
  * Import third-party types
  */
 
-import type { Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 /**
  * angular-redux2
@@ -20,8 +20,8 @@ import { DecoratorFlagComponent } from '../components/decorator-flag.component';
  * angular-redux2 types
  */
 
-import type { Transformer } from '../interfaces/store.interface';
-import type { Comparator, Selector } from '../interfaces/store.interface';
+import { Transformer } from '../interfaces/store.interface';
+import { Comparator, Selector } from '../interfaces/store.interface';
 
 /**
  * Selects an observable from the store, and attaches it to the decorated property.

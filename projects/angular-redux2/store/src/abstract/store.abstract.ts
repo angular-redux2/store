@@ -8,8 +8,8 @@ import { distinctUntilChanged, map, ReplaySubject } from 'rxjs';
  * Import third-party types
  */
 
-import type { Observable } from 'rxjs';
-import type { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
+import { Observable } from 'rxjs';
+import { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
 
 /**
  * angular-redux2
@@ -21,7 +21,7 @@ import { resolver } from '../components/selectors.component';
  * angular-redux2 types
  */
 
-import type { Comparator, Selector } from '../interfaces/store.interface';
+import { Comparator, Selector } from '../interfaces/store.interface';
 
 /**
  * A store is an object that holds the application's state tree.

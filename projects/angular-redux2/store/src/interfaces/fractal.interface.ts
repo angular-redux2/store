@@ -2,7 +2,7 @@
  * angular-redux2 types
  */
 
-import type { AbstractStore } from '../abstract/store.abstract';
+import { AbstractStore } from '../abstract/store.abstract';
 
 /**
  * Key used to store the action type in the Redux store's state tree.

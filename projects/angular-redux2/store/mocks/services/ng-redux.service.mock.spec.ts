@@ -11,13 +11,13 @@ import { TestBed } from '@angular/core/testing';
  * Import third-party types
  */
 
-import type { Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 /**
  * angular-redux2
  */
 
-import type { NgRedux } from '@angular-redux3/store';
+import { NgRedux } from '@angular-redux3/store';
 import { Dispatch, Select, Select$ } from '@angular-redux3/store';
 
 /**

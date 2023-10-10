@@ -2,7 +2,7 @@
  * Import third-party types
  */
 
-import type { AnyAction, Reducer } from 'redux';
+import { AnyAction, Reducer } from 'redux';
 
 /**
  * angular-redux2
@@ -15,7 +15,7 @@ import { get, set, shallowCopy } from '../components/object.component';
  * angular-redux2 types
  */
 
-import type { Middleware, NextMiddleware } from '../interfaces/reducer.interface';
+import { Middleware, NextMiddleware } from '../interfaces/reducer.interface';
 
 /**
  * Service class for composing reducers and applying middleware to them.

@@ -8,8 +8,8 @@ import { distinctUntilChanged, ReplaySubject } from 'rxjs';
  * Import third-party types
  */
 
-import type { Observable, Subject } from 'rxjs';
-import type { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
+import { Observable, Subject } from 'rxjs';
+import { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
 
 /**
  * angular-redux2
@@ -20,14 +20,14 @@ import { NgRedux } from '@angular-redux3/store';
 /**
  * angular-redux2 types
  */
-import type { Comparator, PathSelector, Selector } from '@angular-redux3/store';
+import { Comparator, PathSelector, Selector } from '@angular-redux3/store';
 
 /**
  * Mocks type
  */
 
-import type { SubStoreService } from '@angular-redux3/store';
-import type { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfaces/store.interface.mock';
+import { SubStoreService } from '@angular-redux3/store';
+import { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfaces/store.interface.mock';
 
 /**
  * This is the public of `@angular-redux3/store`.

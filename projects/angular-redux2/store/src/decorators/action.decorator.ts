@@ -2,7 +2,7 @@
  * Import third-party types
  */
 
-import type { AnyAction } from 'redux';
+import { AnyAction } from 'redux';
 
 /**
  * A decorator function that generates an action creator for a specific function.

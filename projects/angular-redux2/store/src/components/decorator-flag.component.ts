@@ -9,10 +9,10 @@ import { LOCAL_REDUCER_KEY, SELECTION_KEY, SUBSTORE_KEY } from '../interfaces/fr
  * angular-redux2 types
  */
 
-import type { AnyAction, Reducer } from 'redux';
-import type { PathSelector } from '../interfaces/store.interface';
-import type { SubstoreFlag } from '../interfaces/fractal.interface';
-import type { AbstractStore } from '../abstract/store.abstract';
+import { AnyAction, Reducer } from 'redux';
+import { PathSelector } from '../interfaces/store.interface';
+import { SubstoreFlag } from '../interfaces/fractal.interface';
+import { AbstractStore } from '../abstract/store.abstract';
 
 /**
  * Class for managing the flag of a decorator instance.

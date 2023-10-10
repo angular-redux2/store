@@ -10,7 +10,7 @@ import { compose, createStore } from 'redux';
  * Import third-party types
  */
 
-import type { Reducer, Store, StoreEnhancer } from 'redux';
+import { Reducer, Store, StoreEnhancer } from 'redux';
 
 /**
  * angular-redux2
@@ -24,7 +24,7 @@ import { SubStoreService } from './sub-store.service';
  * angular-redux2 types
  */
 
-import type { Middleware } from '../interfaces/reducer.interface';
+import { Middleware } from '../interfaces/reducer.interface';
 
 describe('NgRedux', () => {
     let ngRedux: NgRedux;

@@ -2,8 +2,8 @@
  * Import third-party types
  */
 
-import type { Action } from 'redux';
-import type { Observable } from 'rxjs';
+import { Action } from 'redux';
+import { Observable } from 'rxjs';
 
 /**
  * An array of strings or numbers used to select a path in a state object.

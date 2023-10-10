@@ -9,7 +9,7 @@ import { ACTION_KEY } from '../interfaces/fractal.interface';
  * angular-redux2 types
  */
 
-import type { Middleware } from '../interfaces/reducer.interface';
+import { Middleware } from '../interfaces/reducer.interface';
 
 let reducerService: ReducerService;
 

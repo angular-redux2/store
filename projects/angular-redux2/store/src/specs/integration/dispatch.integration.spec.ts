@@ -8,7 +8,7 @@ import { NgZone } from '@angular/core';
  * Import third-party types
  */
 
-import type { Reducer, Action, AnyAction } from 'redux';
+import { Reducer, Action, AnyAction } from 'redux';
 
 /**
  * angular-redux2

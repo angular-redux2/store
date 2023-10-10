@@ -2,7 +2,7 @@
  * Import third-party types
  */
 
-import type { Action, AnyAction } from 'redux';
+import { Action, AnyAction } from 'redux';
 
 /**
  * Represents the next middleware function in the middleware chain.

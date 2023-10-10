@@ -10,8 +10,8 @@ import { NgZone } from '@angular/core';
  * Import third-party types
  */
 
-import type { Observable } from 'rxjs';
-import type { Reducer, Action, AnyAction, Store } from 'redux';
+import { Observable } from 'rxjs';
+import { Reducer, Action, AnyAction, Store } from 'redux';
 
 /**
  * angular-redux2

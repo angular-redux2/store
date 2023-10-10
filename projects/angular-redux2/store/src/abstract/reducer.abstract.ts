@@ -2,13 +2,13 @@
  * Import third-party types
  */
 
-import type { AnyAction, Reducer } from 'redux';
+import { AnyAction, Reducer } from 'redux';
 
 /**
  * angular-redux2 types
  */
 
-import type { ActionCreator } from '../interfaces/store.interface';
+import { ActionCreator } from '../interfaces/store.interface';
 
 export abstract class AbstractReducer {
 

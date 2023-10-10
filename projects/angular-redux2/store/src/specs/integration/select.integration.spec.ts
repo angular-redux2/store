@@ -9,9 +9,9 @@ import { take, toArray } from 'rxjs/operators';
  * Import third-party types
  */
 
-import type { Action } from 'redux';
-import type { Observable } from 'rxjs';
-import type { NgZone } from '@angular/core';
+import { Action } from 'redux';
+import { Observable } from 'rxjs';
+import { NgZone } from '@angular/core';
 
 /**
  * angular-redux2

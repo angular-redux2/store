@@ -9,7 +9,7 @@ import { AbstractReducer } from '../../abstract/reducer.abstract';
  * angular-redux2 types
  */
 
-import type { ActionCreator, ReducerActions } from '../../interfaces/store.interface';
+import { ActionCreator, ReducerActions } from '../../interfaces/store.interface';
 
 interface Bug {
     name: string;

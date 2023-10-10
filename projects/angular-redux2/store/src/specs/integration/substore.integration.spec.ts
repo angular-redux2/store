@@ -9,8 +9,8 @@ import { Component, Injectable, NgZone } from '@angular/core';
  * Import third-party types
  */
 
-import type { Observable } from 'rxjs';
-import type { Action, AnyAction } from 'redux';
+import { Observable } from 'rxjs';
+import { Action, AnyAction } from 'redux';
 
 /**
  * angular-redux2
@@ -26,8 +26,8 @@ import { Select, Select$ } from '../../decorators/select.decorator';
  * angular-redux2 types
  */
 
-import type { PathSelector } from '../../interfaces/store.interface';
-import type { SubStoreService } from '../../services/sub-store.service';
+import { PathSelector } from '../../interfaces/store.interface';
+import { SubStoreService } from '../../services/sub-store.service';
 
 /**
  * Zone

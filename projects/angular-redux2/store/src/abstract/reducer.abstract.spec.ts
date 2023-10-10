@@ -9,7 +9,7 @@ import { Action } from '../decorators/action.decorator';
  * Angular-redux2 types
  */
 
-import type { PayloadAction, ReducerActions } from '../interfaces/store.interface';
+import { PayloadAction, ReducerActions } from '../interfaces/store.interface';
 
 interface BugPayload {
     name: string;

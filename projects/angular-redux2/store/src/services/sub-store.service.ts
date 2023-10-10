@@ -2,8 +2,8 @@
  * Import third-party types
  */
 
-import type { Subscription } from 'rxjs';
-import type { AnyAction, Reducer } from 'redux';
+import { Subscription } from 'rxjs';
+import { AnyAction, Reducer } from 'redux';
 
 /**
  * angular-redux2
@@ -18,8 +18,8 @@ import { ACTION_KEY } from '../interfaces/fractal.interface';
  * angular-redux2 types
  */
 
-import type { NgRedux } from './ng-redux.service';
-import type { PathSelector } from '../interfaces/store.interface';
+import { NgRedux } from './ng-redux.service';
+import { PathSelector } from '../interfaces/store.interface';
 
 /**
  * A class representing a substore in the NgRedux store.

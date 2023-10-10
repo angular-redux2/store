@@ -9,7 +9,7 @@ import { AbstractReducer } from '../../abstract/reducer.abstract';
  * angular-redux2 types
  */
 
-import type { ReducerActions } from '../../interfaces/store.interface';
+import { ReducerActions } from '../../interfaces/store.interface';
 
 export interface Payload {
     name: string;

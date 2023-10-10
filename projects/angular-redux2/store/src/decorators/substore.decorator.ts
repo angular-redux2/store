@@ -2,7 +2,7 @@
  * Import third-party types
  */
 
-import type { AnyAction, Reducer } from 'redux';
+import { AnyAction, Reducer } from 'redux';
 
 /**
  * angular-redux2

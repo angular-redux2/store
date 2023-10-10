@@ -9,7 +9,7 @@ import { Injectable, NgZone } from '@angular/core';
  * Import third-party types
  */
 
-import type { AnyAction, Reducer, Store, StoreEnhancer, Unsubscribe } from 'redux';
+import { AnyAction, Reducer, Store, StoreEnhancer, Unsubscribe } from 'redux';
 
 /**
  * angular-redux2
@@ -23,8 +23,8 @@ import { AbstractStore } from '../abstract/store.abstract';
  * angular-redux2 types
  */
 
-import type { Middleware } from '../interfaces/reducer.interface';
-import type { PathSelector } from '../interfaces/store.interface';
+import { Middleware } from '../interfaces/reducer.interface';
+import { PathSelector } from '../interfaces/store.interface';
 
 /**
  * The NgRedux class is a Redux store implementation that can be used in Angular applications.
