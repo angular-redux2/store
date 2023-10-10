@@ -25,10 +25,10 @@
             "dom"
         ],
         "paths": {
-            "@angular-redux2/store": [
+            "@angular-redux3/store": [
                 "./projects/angular-redux2/store/src/public-api",
             ],
-            "@angular-redux2/store/mocks": [
+            "@angular-redux3/store/mocks": [
                 "./projects/angular-redux2/store/mocks/public-api",
             ]
         }

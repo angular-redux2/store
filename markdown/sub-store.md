@@ -77,7 +77,7 @@ Here's an example of how to use the Substore decorator:
 
 ```typescript
 import { Component, Input } from '@angular/core';
-import { Substore, configureSubStore } from '@angular-redux2/store';
+import { Substore, configureSubStore } from '@angular-redux3/store';
 
 export const userComponentReducer = (state, action) => {
     // ...

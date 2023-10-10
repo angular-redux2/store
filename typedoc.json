@@ -1,6 +1,6 @@
 {
     "$schema": "https://typedoc.org/schema.json",
-    "name": "@Angular-redux2/store",
+    "name": "@angular-redux3/store",
     "out": "docs",
     "gaID": "G-XQ325E8BEX",
     "entryPoints": [

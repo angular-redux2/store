@@ -3,7 +3,7 @@
     "version": 1,
     "newProjectRoot": "projects",
     "projects": {
-        "@angular-redux2/store": {
+        "@angular-redux3/store": {
             "projectType": "library",
             "root": "projects/angular-redux2/store",
             "sourceRoot": "projects/angular-redux2/store/src",

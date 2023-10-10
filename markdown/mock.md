@@ -8,7 +8,7 @@ For example:
 
 ```typescript
 import { TestBed } from '@angular/core/testing';
-import { MockNgReduxModule, MockNgRedux } from '@angular-redux2/store/mocks';
+import { MockNgReduxModule, MockNgRedux } from '@angular-redux3/store/mocks';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {

@@ -95,7 +95,7 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
      * ```typescript
      * export class AppModule {
      *   constructor(ngRedux: NgRedux<IAppState>) {
-     *     // Tell @angular-redux2/store about our rootReducer and our initial state.
+     *     // Tell @angular-redux3/store about our rootReducer and our initial state.
      *     // It will use this to create a redux store for us and wire up all events.
      *     ngRedux.configureStore(rootReducer, INITIAL_STATE);
      *   }

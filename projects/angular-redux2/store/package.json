@@ -1,5 +1,5 @@
 {
-    "name": "@angular-redux2/store",
+    "name": "@angular-redux3/store",
     "author": "Garfild (https://github.com/Garefild)",
     "license": "Mozilla Public License Version 2.0",
     "version": "5.0.2",
@@ -10,7 +10,7 @@
         "url": "https://github.com/angular-redux2/store.git"
     },
     "scripts": {
-        "test": "ng test @angular-redux2/store"
+        "test": "ng test @angular-redux3/store"
     },
     "bugs": {
         "url": "https://github.com/angular-redux2/store/issues"

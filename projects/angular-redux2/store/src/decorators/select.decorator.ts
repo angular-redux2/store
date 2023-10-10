@@ -27,7 +27,7 @@ import type { Comparator, Selector } from '../interfaces/store.interface';
  * Selects an observable from the store, and attaches it to the decorated property.
  *
  * ```ts
- *  import { select } from '@angular-redux2/store';
+ *  import { select } from '@angular-redux3/store';
  *
  *  class SomeClass {
  *      @Select(['foo','bar']) foo$: Observable<string>
@@ -64,7 +64,7 @@ export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator):
  * instead of values.`
  *
  * ```ts
- * import { select$ } from '@angular-redux2/store';
+ * import { select$ } from '@angular-redux3/store';
  *
  * export const debounceAndTriple = obs$ => obs$
  *  .debounce(300)

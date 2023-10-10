@@ -8,8 +8,8 @@ Angular-redux2/store builds upon Redux to provide seamless integration with Angu
 It provides a set of services and decorators that make it easy to manage your application's state and bind it to your Angular components.
 
 [![Discord](https://img.shields.io/discord/1050521693795405874?logo=Angular-redux2)](https://discord.com/invite/7BnsAqst6W)
-[![npm version](https://img.shields.io/npm/v/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
-[![downloads per month](https://img.shields.io/npm/dm/@angular-redux2/store.svg)](https://www.npmjs.com/package/@angular-redux2/store)
+[![npm version](https://img.shields.io/npm/v/@angular-redux3/store.svg)](https://www.npmjs.com/package/@angular-redux3/store)
+[![downloads per month](https://img.shields.io/npm/dm/@angular-redux3/store.svg)](https://www.npmjs.com/package/@angular-redux3/store)
 
 ## support 
 We currently provide support for `Angular` versions `14` and `15`, as well as `Redux` version `4.2.1` and `RxJS` version `7.8.0`.

@@ -8,7 +8,7 @@ It returns an observable of the selected value, which will emit each time the va
 Example:
 ```typescript
 import { Component } from '@angular/core';
-import { NgRedux } from '@angular-redux2/store';
+import { NgRedux } from '@angular-redux3/store';
 import { Observable } from 'rxjs';
 
 interface State {
@@ -51,7 +51,7 @@ which can be used to compare the previous and current values of the selected sli
 
 Here is an example usage of the `select` method with a `PropertySelector`:
 ```typescript
-import { NgRedux } from '@angular-redux2/store';
+import { NgRedux } from '@angular-redux3/store';
 
 // Assume we have a store state object like this:
 const storeState = {
@@ -71,7 +71,7 @@ const name$ = ngRedux.select('name');
 
 Here is an example usage of the `select` method with a `PathSelector`:
 ```typescript
-import { NgRedux } from '@angular-redux2/store';
+import { NgRedux } from '@angular-redux3/store';
 
 // Assume we have a store state object like this:
 const storeState = {
@@ -92,7 +92,7 @@ const city$ = ngRedux.select(['address', 'city']);
 
 Here is an example usage of the select method with a FunctionSelector:
 ```typescript
-import { NgRedux } from '@angular-redux2/store';
+import { NgRedux } from '@angular-redux3/store';
 
 // Assume we have a store state object like this:
 const storeState = {
@@ -123,7 +123,7 @@ They are similar to `select` method, but instead of returning an observable, the
 The `Select` decorator is used to select an observable from the store and attach it to a decorated property.
 Here's an example of how to use it:
 ```typescript
-import { Select } from '@angular-redux2/store';
+import { Select } from '@angular-redux3/store';
 
 class SomeClass {
   @Select(['foo','bar']) foo$: Observable<string>
@@ -142,7 +142,7 @@ the selector will not be considered changed, and the observable will not emit a 
 
 Here's an example of how to use the comparator parameter:
 ```typescript
-import { Select } from '@angular-redux2/store';
+import { Select } from '@angular-redux3/store';
 
 class SomeClass {
   @Select(['foo','bar'], (oldState, newState) => oldState.foo.bar === newState.foo.bar) foo$: Observable<string>
@@ -157,7 +157,7 @@ The transformed observable is then attached to the decorated property, and is ru
 
 Here's an example of how to use the `Select$` function:
 ```typescript
-import { Select$ } from '@angular-redux2/store';
+import { Select$ } from '@angular-redux3/store';
 import { debounceTime, map } from 'rxjs/operators';
 
 export const debounceAndTriple = obs$ => obs$

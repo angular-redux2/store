@@ -9,13 +9,13 @@ This quickstart guide will walk you through the basic steps of setting up Angula
 To install Angular-Redux2, you can use npm or yarn:
 
 ```bash
-npm install @angular-redux2/store redux
+npm install @angular-redux3/store redux
 ```
 
 or 
 
 ```bash
-yarn add @angular-redux2/store redux
+yarn add @angular-redux3/store redux
 ```
 
 Setup:
@@ -26,7 +26,7 @@ Setup:
 import { CommonModule } from '@angular/common';
 import { isDevMode, NgModule } from '@angular/core';
 import { INITIAL_STATE, rootReducer } from "./state";
-import { DevToolsExtension, NgRedux, NgReduxModule } from "@angular-redux2/store";
+import { DevToolsExtension, NgRedux, NgReduxModule } from "@angular-redux3/store";
 
 @NgModule({
     declarations: [],
@@ -52,7 +52,7 @@ export class StoreModule {
 * Import the `StoreModule` in your `AppModule`:
 
 ```typescript
-import { NgReduxModule } from '@angular-redux2/store';
+import { NgReduxModule } from '@angular-redux3/store';
 
 @NgModule({
     imports: [
@@ -112,7 +112,7 @@ export const rootReducer: Reducer<IAppState> = combineReducers({
 * In your component, inject `NgRedux`:
 
 ```typescript
-import { NgRedux } from '@angular-redux2/store';
+import { NgRedux } from '@angular-redux3/store';
 
 export class AppComponent {
     constructor(private ngRedux: NgRedux<any>) {
@@ -124,7 +124,7 @@ export class AppComponent {
 
 ```typescript
 import { Observable } from 'rxjs';
-import { select } from '@angular-redux2/store';
+import { select } from '@angular-redux3/store';
 import { AppState } from './app.state';
 
 export class AppComponent {
@@ -138,7 +138,7 @@ export class AppComponent {
 
 * Finally, dispatch actions to update the store:
 ```typescript
-import { NgRedux } from '@angular-redux2/store';
+import { NgRedux } from '@angular-redux3/store';
 import { increment } from './counter.actions';
 
 export class AppComponent {

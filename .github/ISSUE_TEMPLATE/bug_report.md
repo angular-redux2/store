@@ -25,7 +25,7 @@ assignees: ''
 NodeJS Version:
 Typescript Version:
 Angular Version:
-@angular-redux2/store version:
+@angular-redux3/store version:
 @angular/cli version: (if applicable)
 OS:
 

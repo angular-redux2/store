@@ -2,15 +2,15 @@
 A reducer is a function that describes how an application's state should be changed in response to an action.
 In Redux, reducers are pure functions that take in the current state and an action as arguments, and return the new state.
 
-In the context of `@angular-redux2/store`,
+In the context of `@angular-redux3/store`,
 a reducer is typically a class that extends the AbstractReducer class and defines a set of methods,
 each corresponding to a specific action that can be dispatched.
 These methods should be decorated with the Action decorator,
 which takes care of generating the action object when the method is called.
 
-Here's an example of a `@angular-redux2/store` reducer class:
+Here's an example of a `@angular-redux3/store` reducer class:
 ```typescript
-import { Action, AbstractReducer } from '@angular-redux2/store';
+import { Action, AbstractReducer } from '@angular-redux3/store';
 
 export interface Bug {
     name: string;
