@@ -1,19 +1,19 @@
 {
     "name": "@angular-redux3/store",
-    "author": "Garfild (https://github.com/Garefild)",
+    "author": "pakozlow",
     "license": "Mozilla Public License Version 2.0",
-    "version": "5.0.2",
-    "homepage": "https://github.com/angular-redux2/store",
+    "version": "5.0.5",
+    "homepage": "https://github.com/pakozlow/store",
     "description": "Angular bindings for Redux",
     "repository": {
         "type": "git",
-        "url": "https://github.com/angular-redux2/store.git"
+        "url": "https://github.com/pakozlow/store.git"
     },
     "scripts": {
         "test": "ng test @angular-redux3/store"
     },
     "bugs": {
-        "url": "https://github.com/angular-redux2/store/issues"
+        "url": "https://github.com/pakozlow/store/issues"
     },
     "keywords": [
         "angular",

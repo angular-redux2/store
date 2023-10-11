@@ -53,6 +53,8 @@ export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator):
     };
 }
 
+export const select = Select;
+
 /**
  * Selects an observable using the given path selector, and runs it through the
  * given transformer function. A transformer function takes the store
