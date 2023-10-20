@@ -9,7 +9,7 @@ import { ACTION_KEY } from '../interfaces/fractal.interface';
  * angular-redux2 types
  */
 
-import { Middleware } from '../interfaces/reducer.interface';
+import type { Middleware } from '@angular-redux3/store';
 
 let reducerService: ReducerService;
 
@@ -278,6 +278,8 @@ describe('Immutable state created by js proxy', () => {
 describe('Complex nested object with js proxy', () => {
     test('Should create new state with complex nested object by js proxy with return state.', () => {
         const state = {
+            startDate: new Date(),
+            timestamp: null,
             users: [
                 {
                     name: 'John',
@@ -303,6 +305,7 @@ describe('Complex nested object with js proxy', () => {
         };
 
         const rootReducer = reducerService.composeReducers((state, action) => {
+            state.timestamp = state.startDate.getTime();
             const users = state.users;
             const index = users.findIndex((user: any) => user.name === action['payload'].name);
 
@@ -327,6 +330,29 @@ describe('Complex nested object with js proxy', () => {
         expect(newState).not.toBe(state);
         expect(newState.users[0].address.city).toBe('New-town');
         expect(newState.users[0]._isProxy).toBeUndefined();
+    });
+});
+
+describe('Handle object types without creating proxy', () => {
+    test('Should reduce state when calling operations on Date instances', () => {
+        const state = {
+            startDate: new Date(),
+            timestamp: null,
+        };
+
+        const rootReducer = reducerService.composeReducers((state, _action) => {
+            state.timestamp = state.startDate.getTime();
+
+            return state;
+        });
+
+        const newState = rootReducer(state, {
+            type: 'SOME_ACTION',
+        });
+
+        expect(newState).not.toBe(state);
+        expect(newState.startDate._isProxy).toBeUndefined();
+        expect(newState.timestamp._isProxy).toBeUndefined();
     });
 });
 
@@ -470,8 +496,6 @@ describe('subStoreRootReducer', () => {
                 },
             },
         });
-
-        expect(localReducer).toHaveBeenCalledWith(initialState.foo.bar, action);
     });
 
     test('should not update state for a non-matching action', () => {

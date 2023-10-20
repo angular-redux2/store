@@ -2,20 +2,20 @@
  * Import third-party types
  */
 
-import { AnyAction, Reducer } from 'redux';
+import type {AnyAction, Reducer} from 'redux';
 
 /**
  * angular-redux2
  */
 
-import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { get, set, shallowCopy } from '../components/object.component';
+import {ACTION_KEY} from '../interfaces/fractal.interface';
+import {get, set, shallowCopy} from '../components/object.component';
 
 /**
  * angular-redux2 types
  */
 
-import { Middleware, NextMiddleware } from '../interfaces/reducer.interface';
+import type {Middleware, NextMiddleware} from '../interfaces/reducer.interface';
 
 /**
  * Service class for composing reducers and applying middleware to them.
@@ -180,6 +180,13 @@ export class ReducerService {
         }
     }
 
+    private static shouldCreateProxyForProperty(property: any): boolean {
+        return property != null
+            && !(property instanceof Date)
+            && typeof property === 'object'
+            && !property._isProxy;
+    }
+
     /**
      * The root reducer function for sub-stores.
      *
@@ -292,9 +299,9 @@ export class ReducerService {
                 if (prop === '_target') return target;
                 if (prop === '_isProxy') return true;
 
-                if (target[prop] !== null && typeof target[prop] === 'object' && !target[prop]._isProxy) {
+                if (ReducerService.shouldCreateProxyForProperty(target[prop])) {
                     const currentStack = receiver._stack || [];
-                    (this as any)._stack = [ ...currentStack, prop ];
+                    (this as any)._stack = [...currentStack, prop];
 
                     target[prop] = new Proxy(target[prop], this);
                 }
