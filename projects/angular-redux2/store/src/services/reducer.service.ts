@@ -295,7 +295,7 @@ export class ReducerService {
                 if (target[prop] !== null &&
                     !(target instanceof Date || (target[prop] instanceof Date)) &&
                     typeof target[prop] === 'object' && !target[prop]._isProxy) {
-                    
+
                     const currentStack = receiver._stack || [];
                     (this as any)._stack = [...currentStack, prop];
 
