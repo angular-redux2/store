@@ -10,7 +10,7 @@ import { compose, createStore } from 'redux';
  * Import third-party types
  */
 
-import { Reducer, Store, StoreEnhancer } from 'redux';
+import type { Reducer, Store, StoreEnhancer } from 'redux';
 
 /**
  * angular-redux2
@@ -24,7 +24,7 @@ import { SubStoreService } from './sub-store.service';
  * angular-redux2 types
  */
 
-import { Middleware } from '../interfaces/reducer.interface';
+import type { Middleware } from '../interfaces/reducer.interface';
 
 describe('NgRedux', () => {
     let ngRedux: NgRedux;
@@ -256,6 +256,25 @@ describe('NgRedux', () => {
             store = createStore(() => state);
             (ngRedux as any).setStore(store);
             expect(spy).toHaveBeenCalledWith(state);
+        });
+    });
+
+    describe('replaceStore', () => {
+        let store: Store<any>;
+        let ngRedux: NgRedux;
+
+        beforeEach(() => {
+            ngRedux = new NgRedux<any>();
+            store = createStore(() => ({}));
+        });
+
+        test('should call setStore', () => {
+            const setStoreMock = jest.fn();
+            ngRedux['setStore'] = setStoreMock;
+
+            ngRedux.replaceStore(store);
+
+            expect(setStoreMock).toHaveBeenCalledWith(store);
         });
     });
 
