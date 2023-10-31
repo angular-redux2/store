@@ -321,6 +321,18 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
     }
 
     /**
+     * Replace the store instance for this service.
+     *
+     * @param {Store<RootState>} store - The Redux store instance.
+     * @returns {void}
+     */
+
+    replaceStore(store: Store<RootState>): void {
+        this.setStore(store);
+    }
+
+
+    /**
      * Sets the store instance for this service.
      *
      * @param {Store<RootState>} store - The Redux store instance.
