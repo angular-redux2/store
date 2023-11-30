@@ -248,6 +248,7 @@ describe('NgRedux', () => {
             (ngRedux as any).setStore(store);
             expect((ngRedux as any)['_store']).toBe(store);
             expect(spy).toHaveBeenCalled();
+            expect(ngRedux['_unsubscribe']).not.toBeNull();
         });
 
         test('should update store$ when store changes', () => {
@@ -270,11 +271,14 @@ describe('NgRedux', () => {
 
         test('should call setStore', () => {
             const setStoreMock = jest.fn();
+            const unsubscribeMock = jest.fn();
             ngRedux['setStore'] = setStoreMock;
+            ngRedux['_unsubscribe'] = unsubscribeMock;
 
             ngRedux.replaceStore(store);
 
             expect(setStoreMock).toHaveBeenCalledWith(store);
+            expect(unsubscribeMock).toHaveBeenCalled();
         });
     });
 
