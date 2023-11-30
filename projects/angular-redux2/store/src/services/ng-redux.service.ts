@@ -25,6 +25,7 @@ import { AbstractStore } from '../abstract/store.abstract';
 
 import { Middleware } from '../interfaces/reducer.interface';
 import { PathSelector } from '../interfaces/store.interface';
+import {ReplaySubject} from "rxjs";
 
 /**
  * The NgRedux class is a Redux store implementation that can be used in Angular applications.
@@ -55,6 +56,7 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
      */
 
     private _store: Store<RootState, any>;
+    private _unsubscribe: Unsubscribe;
 
     /**
      * Constructor
@@ -328,6 +330,9 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
      */
 
     replaceStore(store: Store<RootState>): void {
+        if (this._unsubscribe) {
+            this._unsubscribe();
+        }
         this.setStore(store);
     }
 
@@ -343,7 +348,7 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
         this._store = store;
         this._store$.next(store.getState());
 
-        store.subscribe(() => {
+        this._unsubscribe = store.subscribe(() => {
             this._store$.next(store.getState());
         });
     }
