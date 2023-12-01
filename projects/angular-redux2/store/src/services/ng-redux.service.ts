@@ -45,6 +45,7 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
 
     protected static instance: NgRedux<any>;
 
+    protected _unsubscribe: Unsubscribe;
     /**
      * Private property that holds the application's store object.
      * The Store is an object that holds the application's state tree.
@@ -56,7 +57,6 @@ export class NgRedux<RootState = any> extends AbstractStore<any> {
      */
 
     private _store: Store<RootState, any>;
-    private _unsubscribe: Unsubscribe;
 
     /**
      * Constructor

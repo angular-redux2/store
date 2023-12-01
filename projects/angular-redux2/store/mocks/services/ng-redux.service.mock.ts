@@ -38,6 +38,8 @@ import { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfa
  */
 
 export class MockNgRedux<S = any> extends NgRedux<S> {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    override _unsubscribe: Unsubscribe = () => {};
     /**
      * Mock substore
      */
@@ -296,6 +298,18 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
 
     override subscribe(): Unsubscribe {
         return () => null;
+    }
+
+    /**
+     * `Mock replaceStore`
+     *
+     *       Replace the store instance for this service.
+     *
+     *       @returns {void}
+     * @param _store
+     *      */
+    override replaceStore(_store: Store<S>) {
+        return;
     }
 
     /**
