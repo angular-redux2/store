@@ -2,7 +2,7 @@
     "name": "@angular-redux3/store",
     "author": "pakozlow",
     "license": "Mozilla Public License Version 2.0",
-    "version": "17.0.0-alpha.0",
+    "version": "17.0.0-alpha.1",
     "homepage": "https://github.com/pakozlow/store",
     "description": "Angular bindings for Redux",
     "repository": {
