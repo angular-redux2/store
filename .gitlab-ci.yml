@@ -1,0 +1,24 @@
+stages:
+  - build
+
+build:
+  stage: build
+  tags: 
+    - angular
+  before_script:
+    - echo "Running script to use node 22 ($CI_PIPELINE_ID)"
+    - export NVM_DIR="$HOME/.nvm"
+    - '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' 
+    - nvm use 22
+  artifacts:
+    paths:
+      - /dist/*
+  script:
+    - echo "CI_PIPELINE_ID $CI_PIPELINE_ID"
+    - yarn cache clean
+    - yarn
+    - ./node_modules/.bin/ng build
+  only: 
+    - develop
+    - master
+    - main
