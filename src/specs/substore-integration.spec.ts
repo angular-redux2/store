@@ -1,33 +1,25 @@
 /**
- * Import third-party libraries
- */
-
-import { map, take, toArray } from 'rxjs/operators';
-import { Component, Injectable, NgZone } from '@angular/core';
-
-/**
- * Import third-party types
+ * Type-only imports erased during TypeScript compilation.
  */
 
 import type { Observable } from 'rxjs';
-import type { Action, AnyAction } from 'redux';
+import type { Action, UnknownAction } from 'redux';
+import type { SubStoreService } from '@services/sub-store.service';
+import type { PathSelectorType } from '@interfaces/store.interface';
 
 /**
- * angular-redux2
+ * Imports
  */
 
-import { NgRedux } from '../../services/ng-redux.service';
-import { Dispatch } from '../../decorators/dispatch.decorator';
-import { Substore } from '../../decorators/substore.decorator';
-import { ACTION_KEY } from '../../interfaces/fractal.interface';
-import { Select, Select$ } from '../../decorators/select.decorator';
-
-/**
- * angular-redux2 types
- */
-
-import type { PathSelector } from '../../interfaces/store.interface';
-import type { SubStoreService } from '../../services/sub-store.service';
+import 'zone.js';
+import { map, take, toArray } from 'rxjs/operators';
+import { NgRedux } from '@services/ng-redux.service';
+import { Dispatch } from '@decorators/dispatch.decorator';
+import { Substore } from '@decorators/substore.decorator';
+import { ACTION_KEY } from '@interfaces/fractal.interface';
+import { ReducerService } from '@services/reducer.service';
+import { Component, Injectable, NgZone } from '@angular/core';
+import { Select, Select$ } from '@decorators/select.decorator';
 
 /**
  * Zone
@@ -48,8 +40,8 @@ describe('Substore', () => {
         const defaultState = {
             foo: 'Root Foo!',
             a: {
-                b: { foo: 'Foo!' },
-            },
+                b: { foo: 'Foo!' }
+            }
         };
 
         ngRedux = new NgRedux<any>(mockNgZone);
@@ -61,7 +53,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select() foo: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -72,7 +64,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select() foo$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -83,7 +75,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select('foo') obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -93,9 +85,9 @@ describe('Substore', () => {
         test('Should use a substore for a function selector.', () => {
             @Substore(localReducer)
             class TestClass {
-                @Select(s => s.foo)
+                @Select((s: { foo: string }) => s.foo)
                     obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -107,7 +99,7 @@ describe('Substore', () => {
             class TestClass {
                 @Select([ 'b', 'foo' ])
                     obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a' ];
+                basePath = (): PathSelectorType => [ 'a' ];
             }
 
             const testInstance = new TestClass();
@@ -119,7 +111,7 @@ describe('Substore', () => {
             class TestClass {
                 @Select('foo', (x, y) => x !== y)
                     obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -127,7 +119,7 @@ describe('Substore', () => {
         });
 
         /**
-         * This looks odd, but it's because @select turns the property into a getter.
+         * This looks odd, but it's because `@Select` turns the property into a getter.
          * In theory, that getter could return a new Observable instance
          * each time, which would be bad because it would leak memory like crazy.
          * This test is just checking that it's a stable reference to the same
@@ -138,7 +130,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select('foo') obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -158,7 +150,7 @@ describe('Substore', () => {
                     return { type: 'nvm', newValue };
                 };
 
-                basePath = (): PathSelector => [ 'I', 'don\'t', 'exist', 'yet' ];
+                basePath = (): PathSelectorType => [ 'I', 'don\'t', 'exist', 'yet' ];
             }
 
             const testInstance = new TestClass();
@@ -176,7 +168,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select$('foo', o$ => o$.pipe(map((x: any) => x))) obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -186,9 +178,9 @@ describe('Substore', () => {
         test('Should use a substore for a function selector.', () => {
             @Substore(localReducer)
             class TestClass {
-                @Select$(s => s.foo, o$ => o$.pipe(map((x: any) => x)))
+                @Select$((s: { foo: string }) => s.foo, o$ => o$.pipe(map((x: string) => x)))
                     obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -200,7 +192,7 @@ describe('Substore', () => {
             class TestClass {
                 @Select$([ 'b', 'foo' ], o$ => o$.pipe(map((x: any) => x)))
                     obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a' ];
+                basePath = (): PathSelectorType => [ 'a' ];
             }
 
             const testInstance = new TestClass();
@@ -212,7 +204,7 @@ describe('Substore', () => {
             class TestClass {
                 @Select$('foo', o$ => o$.pipe(map((x: any) => x)), (x, y) => x !== y)
                     obs$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -222,21 +214,21 @@ describe('Substore', () => {
 
     describe('Should the class causes @dispatch to', () => {
         test('Should scope dispatches to substore.', () => {
-            jest.spyOn(NgRedux.store, 'dispatch');
+            xJet.spyOn(NgRedux.store, 'dispatch');
 
             @Substore(localReducer)
             class TestClass {
                 @Dispatch createFooAction = () => ({ type: 'FOO' });
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             new TestClass().createFooAction();
             expect(ngRedux.dispatch).toHaveBeenCalledWith({
                 type: 'FOO',
                 [ACTION_KEY]: {
-                    'hash': -1216151093,
+                    'hash': ReducerService.getInstance().hashSignature(localReducer.toString()),
                     path: [ 'a', 'b' ]
-                },
+                }
             });
         });
     });
@@ -247,7 +239,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select() foo$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -259,7 +251,7 @@ describe('Substore', () => {
             @Component({ template: '<p>Wat</p>' })
             class TestClass {
                 @Select() foo$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -271,7 +263,7 @@ describe('Substore', () => {
             @Substore(localReducer)
             class TestClass {
                 @Select() foo$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -283,7 +275,7 @@ describe('Substore', () => {
             @Injectable()
             class TestClass {
                 @Select() foo$: Observable<string>;
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new TestClass();
@@ -299,7 +291,7 @@ describe('Substore', () => {
             }
 
             class SubClass extends SuperClass {
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testInstance = new SubClass();
@@ -309,7 +301,7 @@ describe('Substore', () => {
         test('Should lets you select in a sub class against a path from the super class.', () => {
             @Substore(localReducer)
             class SuperClass {
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             class SubClass extends SuperClass {
@@ -327,7 +319,7 @@ describe('Substore', () => {
 
             @Substore(localReducer)
             class SubClass extends SuperClass {
-                basePath = (): PathSelector => [ 'a', 'b' ];
+                basePath = (): PathSelectorType => [ 'a', 'b' ];
             }
 
             const testSubInstance = new SubClass();
@@ -344,32 +336,32 @@ describe('Substore', () => {
 });
 
 describe('NgRedux Sub-store functional', () => {
-    interface ISubState {
+    interface SubStateInterface {
         level3: {
             level4: number;
         };
     }
 
-    interface IAppState {
+    interface AppStateInterface {
         foo: {
-            bar: ISubState;
+            bar: SubStateInterface;
         };
     }
 
     const basePath = [ 'foo', 'bar' ];
     const rootReducer = (state: any, _: Action) => state;
-    const defaultReducer = jest.fn();
+    const defaultReducer = xJet.fn();
 
-    let ngRedux: NgRedux<IAppState>;
-    let subStore: SubStoreService<ISubState>;
+    let ngRedux: NgRedux<AppStateInterface>;
+    let subStore: SubStoreService<SubStateInterface>;
 
     /**
      * Before each test
      */
 
     beforeAll(() => {
-        ngRedux = new NgRedux<IAppState>(new MockNgZone({
-            enableLongStackTrace: false,
+        ngRedux = new NgRedux<AppStateInterface>(new MockNgZone({
+            enableLongStackTrace: false
         }) as NgZone);
 
         ngRedux.configureStore(rootReducer, {
@@ -378,15 +370,15 @@ describe('NgRedux Sub-store functional', () => {
                     level3: {
                         level4: 3
                     }
-                },
-            },
+                }
+            }
         });
 
-        subStore = ngRedux.configureSubStore<ISubState>(basePath, defaultReducer);
+        subStore = ngRedux.configureSubStore<SubStateInterface>(basePath, <any> defaultReducer);
     });
 
     test('Should gets state rooted at the base path.', () => {
-        expect(subStore.getState()).toStrictEqual({
+        expect(subStore.getState()).toEqual({
             level3: {
                 level4: 3
             }
@@ -412,9 +404,9 @@ describe('NgRedux Sub-store functional', () => {
                 expect(v).toEqual([ undefined, 'now I exist' ]);
             });
 
-        nonExistentSubStore.dispatch<AnyAction>({
+        nonExistentSubStore.dispatch<UnknownAction>({
             type: 'nvm',
-            newValue: 'now I exist',
+            newValue: 'now I exist'
         });
     });
 
@@ -430,9 +422,9 @@ describe('NgRedux Sub-store functional', () => {
                 expect(v).toEqual([ undefined, 'now I exist' ]);
             });
 
-        nonExistentSubStore.dispatch<AnyAction>({
+        nonExistentSubStore.dispatch<UnknownAction>({
             type: 'nvm',
-            newValue: 'now I exist',
+            newValue: 'now I exist'
         });
     });
 
@@ -448,9 +440,9 @@ describe('NgRedux Sub-store functional', () => {
                 expect(v).toEqual([ undefined, 'now I exist' ]);
             });
 
-        nonExistentSubStore.dispatch<AnyAction>({
+        nonExistentSubStore.dispatch<UnknownAction>({
             type: 'nvm',
-            newValue: 'now I exist',
+            newValue: 'now I exist'
         });
     });
 
@@ -458,19 +450,19 @@ describe('NgRedux Sub-store functional', () => {
         const subSubStore = subStore.configureSubStore([ 'level3' ], defaultReducer);
 
         defaultReducer.mockImplementationOnce((localState: any, localAction: any) => {
-            expect(localState).toStrictEqual({ level4: 3 });
-            expect(localAction).toStrictEqual({
+            expect(localState).toEqual({ level4: 3 });
+            expect(localAction).toEqual({
                 type: 'MY_ACTION',
                 [ACTION_KEY]: {
-                    hash: -1826428781,
+                    hash: ReducerService.getInstance().hashSignature(defaultReducer.toString()),
                     path: [ 'foo', 'bar', 'level3' ]
-                },
+                }
             });
         });
 
         expect(subSubStore.getState()).toEqual({ level4: 3 });
-        subSubStore.dispatch<AnyAction>({ type: 'MY_ACTION' });
+        subSubStore.dispatch<UnknownAction>({ type: 'MY_ACTION' });
 
-        expect(defaultReducer).toBeCalled();
+        expect(defaultReducer).toHaveBeenCalled();
     });
 });

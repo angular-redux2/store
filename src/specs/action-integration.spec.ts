@@ -1,17 +1,17 @@
 /**
- * angular-redux2
+ * Type-only imports erased during TypeScript compilation.
  */
 
-import { Action } from '../../decorators/action.decorator';
-import { AbstractReducer } from '../../abstract/reducer.abstract';
+import type { ActionCreatorType, ReducerActionsType } from '@interfaces/store.interface';
 
 /**
- * angular-redux2 types
+ * Imports
  */
 
-import type { ActionCreator, ReducerActions } from '../../interfaces/store.interface';
+import { Action } from '@decorators/action.decorator';
+import { AbstractReducer } from '@abstract/reducer.abstract';
 
-interface Bug {
+interface BugInterface {
     name: string;
     active?: boolean;
     assign?: string;
@@ -22,10 +22,10 @@ class TestReducer extends AbstractReducer {
      * Action types
      */
 
-    static override actions: ReducerActions<TestReducer>;
+    static override actions: ReducerActionsType<TestReducer>;
 
     @Action
-    addBug(state: Bug[], payload: ActionCreator<Bug>): Bug[] {
+    addBug(state: BugInterface[], payload: ActionCreatorType<BugInterface>): BugInterface[] {
         return [ ...state, payload ];
     }
 }
@@ -40,24 +40,22 @@ describe('Test auto generate action struct.', () => {
      */
 
     let addBugSpy: any;
-    const reducer = TestReducer.createReducer<Bug[]>([{ name: 'name' }]);
+    const reducer = TestReducer.createReducer<BugInterface[]>([{ name: 'name' }]);
 
     beforeAll(() => {
-        addBugSpy = jest.spyOn(TestReducer.prototype, 'addBug');
+        addBugSpy = xJet.spyOn(TestReducer.prototype, 'addBug');
     });
 
     afterAll(() => {
-        jest.restoreAllMocks();
+        xJet.restoreAllMocks();
     });
 
     test('Access to method in reducer class by action.', () => {
-        TestReducer.actions;
-
         reducer([{ name: 'x' }], TestReducer.actions.addBug(<any>{
             assign: 'test'
         }));
 
-        expect(addBugSpy).toBeCalledWith([{ name: 'x' }], {
+        expect(addBugSpy).toHaveBeenCalledWith([{ name: 'x' }], {
             assign: 'test'
         });
     });

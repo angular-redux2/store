@@ -1,23 +1,20 @@
 /**
- * Import third-party libraries
+ * Type-only imports erased during TypeScript compilation.
  */
 
+import type { Reducer, Action, UnknownAction } from 'redux';
+
+/**
+ * Imports
+ */
+
+import 'zone.js';
 import { NgZone } from '@angular/core';
-
-/**
- * Import third-party types
- */
-
-import type { Reducer, Action, AnyAction } from 'redux';
-
-/**
- * angular-redux2
- */
-
-import { NgRedux } from '../../services/ng-redux.service';
-import { Substore } from '../../decorators/substore.decorator';
-import { Dispatch } from '../../decorators/dispatch.decorator';
-import { ACTION_KEY } from '../../interfaces/fractal.interface';
+import { NgRedux } from '@services/ng-redux.service';
+import { Dispatch } from '@decorators/dispatch.decorator';
+import { Substore } from '@decorators/substore.decorator';
+import { ACTION_KEY } from '@interfaces/fractal.interface';
+import { ReducerService } from '@services/reducer.service';
 
 class MockNgZone extends NgZone {
     override run<T>(fn: (...args: any[]) => T): T {
@@ -25,16 +22,16 @@ class MockNgZone extends NgZone {
     }
 }
 
-interface IAppState {
+interface AppStateInterface {
     value: string;
     instanceProperty?: string;
 }
 
-type PayloadAction = Action & { payload?: IAppState };
+type PayloadActionType = Action & { payload?: AppStateInterface };
 
 let ngRedux;
-let defaultState: IAppState;
-let rootReducer: Reducer<IAppState, AnyAction>;
+let defaultState: AppStateInterface;
+let rootReducer: Reducer<AppStateInterface, UnknownAction>;
 const mockNgZone = new MockNgZone({ enableLongStackTrace: false }) as NgZone;
 
 beforeEach(() => {
@@ -44,14 +41,14 @@ beforeEach(() => {
 
     defaultState = {
         value: 'init-value',
-        instanceProperty: 'init-instanceProperty',
+        instanceProperty: 'init-instanceProperty'
     };
 
     /**
      * Root reducer
      */
 
-    rootReducer = (state = defaultState, action: PayloadAction) => {
+    rootReducer = (state = defaultState, action: PayloadActionType) => {
         let value = null;
         let instanceProperty = null;
 
@@ -71,7 +68,7 @@ beforeEach(() => {
 
     ngRedux = new NgRedux<any>(mockNgZone);
     ngRedux.configureStore(rootReducer, defaultState);
-    jest.spyOn(NgRedux.store, 'dispatch');
+    xJet.spyOn(NgRedux.store, 'dispatch');
 });
 
 describe('Should test root store dispatch.', () => {
@@ -81,38 +78,38 @@ describe('Should test root store dispatch.', () => {
      */
 
     class TestClass {
-        @Dispatch externalFunction: (value: string) => PayloadAction;
+        @Dispatch externalFunction: (value: string) => PayloadActionType;
 
         instanceProperty = 'test';
 
         @Dispatch
-        classMethod(value: string): PayloadAction {
+        classMethod(value: string): PayloadActionType {
             return {
                 type: 'TEST',
-                payload: { value, instanceProperty: this.instanceProperty },
+                payload: { value, instanceProperty: this.instanceProperty }
             };
         }
 
         @Dispatch
         conditionalDispatchMethod(
             shouldDispatch: boolean
-        ): PayloadAction | false {
+        ): PayloadActionType | false {
             if (shouldDispatch) {
                 return {
                     type: 'CONDITIONAL_DISPATCH_TEST',
                     payload: {
                         value: 'Conditional Dispatch Action',
-                        instanceProperty: this.instanceProperty,
-                    },
+                        instanceProperty: this.instanceProperty
+                    }
                 };
             } else {
                 return false;
             }
         }
 
-        @Dispatch boundProperty = (value: string): PayloadAction => ({
+        @Dispatch boundProperty = (value: string): PayloadActionType => ({
             type: 'TEST',
-            payload: { value, instanceProperty: this.instanceProperty },
+            payload: { value, instanceProperty: this.instanceProperty }
         });
     }
 
@@ -133,8 +130,8 @@ describe('Should test root store dispatch.', () => {
             type: 'TEST',
             payload: {
                 value: 'class method',
-                instanceProperty: 'test',
-            },
+                instanceProperty: 'test'
+            }
         };
 
         expect(result.type).toBe('TEST');
@@ -155,7 +152,7 @@ describe('Should test root store dispatch.', () => {
 
     test('Should call dispatch with result of function normally.', () => {
 
-        const result = <PayloadAction>instance.conditionalDispatchMethod(true);
+        const result = <PayloadActionType>instance.conditionalDispatchMethod(true);
         expect(result.type).toBe('CONDITIONAL_DISPATCH_TEST');
         expect(result.payload && result.payload.value).toBe(
             'Conditional Dispatch Action'
@@ -168,8 +165,8 @@ describe('Should test root store dispatch.', () => {
             type: 'CONDITIONAL_DISPATCH_TEST',
             payload: {
                 value: 'Conditional Dispatch Action',
-                instanceProperty: 'test',
-            },
+                instanceProperty: 'test'
+            }
         });
     });
 
@@ -179,8 +176,8 @@ describe('Should test root store dispatch.', () => {
             type: 'TEST',
             payload: {
                 value: 'bound property',
-                instanceProperty: 'test',
-            },
+                instanceProperty: 'test'
+            }
         };
 
         expect(result.type).toBe('TEST');
@@ -198,8 +195,8 @@ describe('Should test root store dispatch.', () => {
                 type: 'TEST',
                 payload: {
                     value,
-                    instanceProperty,
-                },
+                    instanceProperty
+                }
             };
         };
 
@@ -208,8 +205,8 @@ describe('Should test root store dispatch.', () => {
             type: 'TEST',
             payload: {
                 value: 'external function',
-                instanceProperty: 'test',
-            },
+                instanceProperty: 'test'
+            }
         };
 
         expect(result.type).toBe('TEST');
@@ -230,10 +227,10 @@ describe('Should test sub-store dispatch.', () => {
 
     @Substore(localReducer)
     class TestClass {
-        @Dispatch decoratedActionCreator(value: string): PayloadAction {
+        @Dispatch decoratedActionCreator(value: string): PayloadActionType {
             return {
                 type: 'TEST',
-                payload: { value },
+                payload: { value }
             };
         }
 
@@ -257,12 +254,12 @@ describe('Should test sub-store dispatch.', () => {
             type: 'TEST',
             payload: { value: 'hello' },
             [ACTION_KEY]: {
-                'hash': -1216151093,
+                'hash': ReducerService.getInstance().hashSignature(localReducer.toString()),
                 'path': [
                     'bar',
-                    'foo',
-                ],
-            },
+                    'foo'
+                ]
+            }
         });
     });
 });

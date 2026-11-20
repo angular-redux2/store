@@ -1,12 +1,5 @@
 /**
- * Import third-party libraries
- */
-
-import { map } from 'rxjs';
-import { take, toArray } from 'rxjs/operators';
-
-/**
- * Import third-party types
+ * Type-only imports erased during TypeScript compilation.
  */
 
 import type { Action } from 'redux';
@@ -14,15 +7,17 @@ import type { Observable } from 'rxjs';
 import type { NgZone } from '@angular/core';
 
 /**
- * angular-redux2
+ * Imports
  */
 
-import { NgRedux } from '../../services/ng-redux.service';
-import { Select, Select$ } from '../../decorators/select.decorator';
+import { take, toArray } from 'rxjs/operators';
+import { NgRedux } from '@services/ng-redux.service';
+import { firstValueFrom, lastValueFrom, map } from 'rxjs';
+import { Select, Select$ } from '@decorators/select.decorator';
 
 describe('Select decorator', () => {
 
-    interface IAppState {
+    interface AppStateInterface {
         foo: string;
         baz: number;
     }
@@ -31,18 +26,18 @@ describe('Select decorator', () => {
         run = (fn: any) => fn();
     }
 
-    type PayloadAction = Action & { payload?: any };
+    type PayloadActionType = Action & { payload?: any };
 
     /**
      * Init store
      */
 
-    let ngRedux: NgRedux<IAppState>;
+    let ngRedux: NgRedux<AppStateInterface>;
 
     const mockNgZone = (new MockNgZone() as any) as NgZone;
     const defaultState = { foo: 'bar', baz: -1 };
 
-    const rootReducer = (state = defaultState, action: PayloadAction) =>
+    const rootReducer = (state = defaultState, action: PayloadActionType) =>
         action.payload ? Object.assign({}, state, { baz: action.payload }) : state;
 
     /**
@@ -50,68 +45,56 @@ describe('Select decorator', () => {
      */
 
     beforeEach(() => {
-        ngRedux = new NgRedux<IAppState>(mockNgZone);
+        ngRedux = new NgRedux<AppStateInterface>(mockNgZone);
         ngRedux.configureStore(rootReducer, defaultState);
     });
 
     describe('When passed no arguments.', () => {
-        test('Should bind to a store property that matches the name of the class property.', (done) => {
+        test('Should bind to a store property that matches the name of the class property.', async () => {
             class MockClass {
                 @Select() baz: Observable<number>;
             }
 
             const mockInstance = new MockClass();
 
-            mockInstance.baz
-                .pipe(take(2), toArray())
-                .subscribe({
-                    next: values => expect(values).toEqual([ -1, 1 ]),
-                    error: undefined,
-                    complete: done
-                });
+            const values = firstValueFrom(mockInstance.baz.pipe(take(2), toArray()));
             ngRedux.dispatch({ type: 'nvm', payload: 1 });
+
+            expect(await values).toEqual([ -1, 1 ]);
         });
 
-        test('Should bind by name ignoring any $ characters in the class property name.', (done) => {
+        test('Should bind by name ignoring any $ characters in the class property name.', async () => {
             class MockClass {
                 @Select() baz$: Observable<number>;
             }
 
             const mockInstance = new MockClass();
 
-            mockInstance.baz$
-                .pipe(take(2), toArray())
-                .subscribe({
-                    next: values => expect(values).toEqual([ -1, 4 ]),
-                    error: undefined,
-                    complete: done
-                });
+            const values = firstValueFrom(mockInstance.baz$.pipe(take(2), toArray()));
             ngRedux.dispatch({ type: 'nvm', payload: 4 });
+
+            expect(await values).toEqual([ -1, 4 ]);
         });
     });
 
     describe('when passed a string', () => {
-        test('Should bind to the store property whose name matches the string value.', (done) => {
+        test('Should bind to the store property whose name matches the string value.', async () => {
             class MockClass {
                 @Select('baz') obs$: Observable<number>;
             }
 
             const mockInstance = new MockClass();
 
-            mockInstance.obs$
-                .pipe(take(2), toArray())
-                .subscribe({
-                    next: values => expect(values).toEqual([ -1, 3 ]),
-                    error: undefined,
-                    complete: done
-                });
+            const values = firstValueFrom(mockInstance.obs$.pipe(take(2), toArray()));
             ngRedux.dispatch({ type: 'nvm', payload: 3 });
+
+            expect(await values).toEqual([ -1, 3 ]);
         });
     });
 
     describe('when passed a function', () => {
-        test('Should binds to the store property whose name matches the result of function.', (done) => {
-            const selector = (state: IAppState) => state.baz * 2;
+        test('Should binds to the store property whose name matches the result of function.', async () => {
+            const selector = (state: AppStateInterface) => state.baz * 2;
 
             class MockClass {
                 @Select(selector) obs$: Observable<number>;
@@ -119,14 +102,10 @@ describe('Select decorator', () => {
 
             const mockInstance = new MockClass();
 
-            mockInstance.obs$
-                .pipe(take(2), toArray())
-                .subscribe({
-                    next: values => expect(values).toEqual([ -2, 10 ]),
-                    error: undefined,
-                    complete: done
-                });
+            const values = firstValueFrom(mockInstance.obs$.pipe(take(2), toArray()));
             ngRedux.dispatch({ type: 'nvm', payload: 5 });
+
+            expect(await values).toEqual([ -2, 10 ]);
         });
     });
 
@@ -138,36 +117,29 @@ describe('Select decorator', () => {
                 baz$: Observable<number>;
         }
 
-        test('Should only trigger next when comparator returns true.', (done) => {
+        test('Should only trigger next when comparator returns true.', async () => {
             const mockInstance = new MockClass();
-            mockInstance.baz$
-                .pipe(take(2), toArray())
-                .subscribe({
-                    next: values => expect(values).toEqual([ -1, 2 ]),
-                    error: undefined,
-                    complete: done
-                });
+            const values = firstValueFrom(mockInstance.baz$.pipe(take(2), toArray()));
             ngRedux.dispatch({ type: 'nvm', payload: 1 });
             ngRedux.dispatch({ type: 'nvm', payload: 2 });
+
+            expect(await values).toEqual([ -1, 2 ]);
         });
 
-        test('Should receive previous and next value for comparison.', (done) => {
-            const spy = jest.fn();
+        test('Should receive previous and next value for comparison.', async () => {
+            const spy = xJet.fn();
 
             class LocalMockClass {
-                @Select('baz', spy)
+                @Select('baz', <any> spy)
                     baz$: Observable<number>;
             }
 
             const mockInstance = new LocalMockClass();
-            mockInstance.baz$.pipe(take(3)).subscribe({
-                next: undefined,
-                error: undefined,
-                complete: done
-            });
+            const completed = lastValueFrom(mockInstance.baz$.pipe(take(3)));
 
             ngRedux.dispatch({ type: 'nvm', payload: 1 });
             ngRedux.dispatch({ type: 'nvm', payload: 2 });
+            await completed;
 
             expect(spy).toHaveBeenCalledWith(-1, 1);
             expect(spy).toHaveBeenCalledWith(1, 2);
@@ -178,7 +150,7 @@ describe('Select decorator', () => {
         const transformer = (baz$: Observable<number>) =>
             baz$.pipe(map((baz: any) => 2 * baz));
 
-        test('Should applies a transformer to the observable.', (done) => {
+        test('Should applies a transformer to the observable.', async () => {
             class MockClass {
                 @Select$('baz', transformer)
                     baz$: Observable<number>;
@@ -186,14 +158,10 @@ describe('Select decorator', () => {
 
             const mockInstance = new MockClass();
 
-            mockInstance.baz$
-                .pipe(take(2), toArray())
-                .subscribe({
-                    next: values => expect(values).toEqual([ -2, 10 ]),
-                    error: undefined,
-                    complete: done
-                });
+            const values = firstValueFrom(mockInstance.baz$.pipe(take(2), toArray()));
             ngRedux.dispatch({ type: 'nvm', payload: 5 });
+
+            expect(await values).toEqual([ -2, 10 ]);
         });
 
         describe('when passed a comparator', () => {
@@ -204,36 +172,29 @@ describe('Select decorator', () => {
                     baz$: Observable<number>;
             }
 
-            test('Should only trigger next when the comparator returns true.', (done) => {
+            test('Should only trigger next when the comparator returns true.', async () => {
                 const mockInstance = new MockClass();
-                mockInstance.baz$
-                    .pipe(take(2), toArray())
-                    .subscribe({
-                        next: values => expect(values).toEqual([ -2, 2 ]),
-                        error: undefined,
-                        complete: done
-                    });
+                const values = firstValueFrom(mockInstance.baz$.pipe(take(2), toArray()));
                 ngRedux.dispatch({ type: 'nvm', payload: 1 });
                 ngRedux.dispatch({ type: 'nvm', payload: 2 });
+
+                expect(await values).toEqual([ -2, 2 ]);
             });
 
-            test('Should receive previous and next value for comparison.', (done) => {
-                const spy = jest.fn();
+            test('Should receive previous and next value for comparison.', async () => {
+                const spy = xJet.fn();
 
                 class SpyClass {
-                    @Select$('baz', transformer, spy)
+                    @Select$('baz', transformer, <any> spy)
                         baz$: Observable<number>;
                 }
 
                 const mockInstance = new SpyClass();
-                mockInstance.baz$.pipe(take(3)).subscribe({
-                    next: undefined,
-                    error: undefined,
-                    complete: done
-                });
+                const completed = lastValueFrom(mockInstance.baz$.pipe(take(3)));
 
                 ngRedux.dispatch({ type: 'nvm', payload: 1 });
                 ngRedux.dispatch({ type: 'nvm', payload: 2 });
+                await completed;
 
                 expect(spy).toHaveBeenCalledWith(-2, 2);
                 expect(spy).toHaveBeenCalledWith(2, 4);
