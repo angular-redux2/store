@@ -1,8 +1,8 @@
 /**
- * angular-redux2
+ * Imports
  */
 
-import { resolver } from '../../components/selectors.component';
+import { resolver } from '@components/selectors.component';
 
 test('Should get a string property from reducer calculate by object.get.', () => {
     const reducer = resolver([ 'level1', 'level2' ]);
@@ -12,7 +12,7 @@ test('Should get a string property from reducer calculate by object.get.', () =>
         }
     };
 
-    expect(reducer(state)).toStrictEqual('test');
+    expect(reducer(state)).toEqual('test');
 });
 
 test('Should get undefined property from reducer calculate by object.get.', () => {
@@ -23,5 +23,5 @@ test('Should get undefined property from reducer calculate by object.get.', () =
         }
     };
 
-    expect(reducer(state)).toStrictEqual(undefined);
+    expect(reducer(state)).toEqual(undefined);
 });

@@ -1,17 +1,17 @@
 /**
- * angular-redux2
+ * Type-only imports erased during TypeScript compilation.
  */
 
-import { Action } from '../../decorators/action.decorator';
-import { AbstractReducer } from '../../abstract/reducer.abstract';
+import type { ReducerActionsType } from '@interfaces/store.interface';
 
 /**
- * angular-redux2 types
+ * Imports
  */
 
-import type { ReducerActions } from '../../interfaces/store.interface';
+import { Action } from '@decorators/action.decorator';
+import { AbstractReducer } from '@abstract/reducer.abstract';
 
-export interface Payload {
+export interface PayloadInterface {
     name: string;
     isLogin?: boolean;
 }
@@ -22,10 +22,10 @@ class UserReducer extends AbstractReducer {
      * Action payload types
      */
 
-    static override actions: ReducerActions<UserReducer>;
+    static override actions: ReducerActionsType<UserReducer>;
 
     @Action
-    isLogin(state: any, payload: Payload) {
+    isLogin(state: any, payload: PayloadInterface) {
         return payload;
     }
 }
@@ -36,10 +36,10 @@ class AuthReducer extends AbstractReducer {
      * Action payload types
      */
 
-    static override actions: ReducerActions<AuthReducer>;
+    static override actions: ReducerActionsType<AuthReducer>;
 
     @Action
-    isLogin(state: any, payload: Payload) {
+    isLogin(state: any, payload: PayloadInterface) {
         return payload;
     }
 }
@@ -48,11 +48,11 @@ class AuthReducer extends AbstractReducer {
  * Initialize global test mocks
  */
 
-const userIsLoginSpy = jest.spyOn(UserReducer.prototype, 'isLogin');
-const authIsLoginSpy = jest.spyOn(AuthReducer.prototype, 'isLogin');
+const userIsLoginSpy = xJet.spyOn(UserReducer.prototype, 'isLogin');
+const authIsLoginSpy = xJet.spyOn(AuthReducer.prototype, 'isLogin');
 
 beforeEach(() => {
-    jest.resetAllMocks();
+    xJet.resetAllMocks();
 });
 
 test('Should dispatch action by reducer class method.', () => {
@@ -61,7 +61,7 @@ test('Should dispatch action by reducer class method.', () => {
         name: 'test2'
     }));
 
-    expect(authIsLoginSpy).toBeCalledWith({}, {
+    expect(authIsLoginSpy).toHaveBeenCalledWith({}, {
         name: 'test2'
     });
 });
@@ -72,6 +72,6 @@ test('Should reducer class ignore different namespace dispatch.', () => {
         name: 'test2'
     }));
 
-    expect(authIsLoginSpy).not.toBeCalled();
-    expect(userIsLoginSpy).not.toBeCalled();
+    expect(authIsLoginSpy).not.toHaveBeenCalled();
+    expect(userIsLoginSpy).not.toHaveBeenCalled();
 });
