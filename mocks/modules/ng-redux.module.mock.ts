@@ -3,9 +3,9 @@
  */
 
 import { NgModule } from '@angular/core';
+import { MockNgRedux } from '../services/ng-redux.service.mock';
 import { NgRedux, DevToolsExtension } from '@angular-redux2/store';
-import { MockNgRedux } from '@mocks/services/ng-redux.service.mock';
-import { MockDevToolsExtension } from '@mocks/services/dev-tool.service.mock';
+import { MockDevToolsExtension } from '../services/dev-tool.service.mock';
 
 /**
  * Returns the shared {@link MockNgRedux} for the `NgRedux` provider of {@link MockNgReduxModule}.
