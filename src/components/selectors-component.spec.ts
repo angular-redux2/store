@@ -1,45 +1,13 @@
 /**
- * angular-redux2
+ * Imports
  */
 
-import { get } from './object.component';
-import { getSelectorType, resolver } from './selectors.component';
+import { get } from '@components/object.component';
+import { resolver } from '@components/selectors.component';
 
-/**
- * Mocks
- */
-
-jest.mock('./object.component');
-
-describe('getSelectorType', () => {
-    test('returns "property" for a string selector', () => {
-        expect(getSelectorType('propName')).toBe('property');
-    });
-
-    test('returns "function" for a function selector', () => {
-        expect(getSelectorType((state) => state)).toBe('function');
-    });
-
-    test('returns "path" for an array selector', () => {
-        expect(getSelectorType([ 'one', 'two' ])).toBe('path');
-    });
-
-    test('returns "nil" for undefined selector', () => {
-        expect(getSelectorType()).toBe('nil');
-    });
-
-    test.each([
-        [ 'propName', 'property' ],
-        [ 3, 'property' ],
-        [ Symbol('whatever'), 'property' ],
-        [ (state: any) => state, 'function' ],
-        [[ 'one', 'two' ], 'path' ],
-        [ undefined, 'nil' ],
-    ])('detectSelectorType should get selector type \'%s\' for selector \'%s\'', (selector, expectedType) => {
-        expect(getSelectorType(selector)).toBe(expectedType);
-    });
-});
 describe('resolver', () => {
+    afterEach(() => xJet.restoreAllMocks());
+
     test('returns a function for a string selector', () => {
         const fn = resolver('propName');
         expect(typeof fn).toBe('function');
@@ -73,11 +41,12 @@ describe('resolver', () => {
     });
 
     test('returns the correct function for an array selector', () => {
+        xJet.mock(get);
         const fn = resolver([ 'one', 'two' ]);
         const state = { one: { two: 'value' } };
         fn(state);
 
-        expect(get).toBeCalledWith(state, [ 'one', 'two' ]);
+        expect(get).toHaveBeenCalledWith(state, [ 'one', 'two' ]);
     });
 
     test('returns the state for undefined selector', () => {
@@ -102,39 +71,35 @@ describe('resolver', () => {
                 const reducer = resolver('propName');
                 const state = { propName: 'test' };
 
-                expect.assertions(1);
-                expect(reducer(state)).toStrictEqual('test');
+                expect(reducer(state)).toEqual('test');
             });
 
             test('should return undefined from reducer', () => {
                 const reducer = resolver('propName');
                 const state = {};
 
-                expect.assertions(1);
-                expect(reducer(state)).toStrictEqual(undefined);
+                expect(reducer(state)).toEqual(undefined);
             });
         });
 
         describe('with path selector', () => {
             test('should return value from reducer by path', () => {
-                (get as jest.Mock).mockReturnValueOnce(13);
+                xJet.mock(get).mockReturnValueOnce(<any> 13);
 
                 const reducer = resolver([ 'level1', 'level2' ]);
 
-                expect.assertions(1);
-                expect(reducer(state)).toStrictEqual(13);
+                expect(reducer(state)).toEqual(13);
             });
         });
 
         describe('with function selector', () => {
             test('should call the function with state', () => {
-                const mockFunction = jest.fn();
+                const mockFunction = xJet.fn();
                 const reducer = resolver(mockFunction);
 
                 reducer(state);
 
-                expect.assertions(1);
-                expect(mockFunction).toBeCalledWith(state);
+                expect(mockFunction).toHaveBeenCalledWith(state);
             });
         });
 
@@ -142,7 +107,6 @@ describe('resolver', () => {
             test('should return same state object', () => {
                 const reducer = resolver();
 
-                expect.assertions(1);
                 expect(reducer(state)).toBe(state);
             });
         });

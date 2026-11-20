@@ -1,74 +1,54 @@
 /**
- * angular-redux2
+ * Type-only imports erased during TypeScript compilation.
+ */
+
+import type { SelectorType } from '../interfaces/store.interface';
+
+/**
+ * Imports
  */
 
 import { get } from './object.component';
 
 /**
- * angular-redux2 types
- */
-
-import type { FunctionSelector, PathSelector, PropertySelector, Selector } from '../interfaces/store.interface';
-
-/**
- * Determines the type of selector.
+ * Turns any selector into a function from the state to the selected value.
+ *
+ * @typeParam RootState - The type of the state being selected from
+ * @typeParam State - The type of the selected value
+ * @param selector - The selector to resolve
+ * @returns A function that takes the state and returns the selected value
+ *
+ * @remarks
+ * A property selector reads one key and returns `undefined` for a falsy state.
+ * A path selector walks the state with {@link get}.
+ * A function selector is returned as it is, and a missing selector returns the whole state.
  *
  * @example
- * ```typescript
- * getSelectorType('propName') // property
- * getSelectorType(state => state) // function
- * getSelectorType([ 'one', 'two' ]) // path
- * getSelectorType() // nil
+ * ```ts
+ * const state = { one: { two: 2 } };
+ *
+ * resolver([ 'one', 'two' ])(state); // 2
+ * resolver('one')(state);            // { two: 2 }
+ * resolver()(state);                 // { one: { two: 2 } }
  * ```
  *
- * @template RootState - The type of the root state object.
- * @template S - The type of the selected subset of the RootState object.
- * @param {Selector} selector - The selector to detect the type of.
- * @returns {('property'|'path'|'function'|'nil')} The type of the selector
+ * @see SelectorType
+ *
+ * @since 5.0.0
  */
 
-export function getSelectorType<RootState, S>(selector?: Selector<RootState, S>): string {
+export function resolver<RootState, State>(selector?: SelectorType<RootState, State>): (state: RootState) => State {
     if (!selector) {
-        return 'nil';
+        return (state: RootState): State => <State> <unknown> state;
     }
-    if (Array.isArray(selector)) {
-        return 'path';
-    }
+
     if (typeof selector === 'function') {
-        return 'function';
+        return selector;
     }
 
-    return 'property';
-}
-
-/**
- * Resolves a selector and returns a function to extract the selected data from a state object.
- *
- * @example
- * ```typescript
- * resolver([ 'one', 'two' ])
- * ```
- *
- * @template RootState - The type of the root state object.
- * @template State - The type of the selected subset of the RootState object.
- * @param {Selector} selector - The selector to resolve.
- * @returns {Function} A function that takes a state object and returns the selected data.
- */
-
-export function resolver<RootState, State>(selector?: Selector<RootState, State>): any {
-    const type = getSelectorType(selector);
-
-    switch (type) {
-        case 'property':
-            return (state: any): any => state ? state[selector as PropertySelector] : undefined;
-
-        case 'path':
-            return (state: RootState): any => get(state, selector as PathSelector);
-
-        case 'function':
-            return selector as FunctionSelector<RootState, State>;
-
-        case 'nil':
-            return (state: RootState): any => state;
+    if (Array.isArray(selector)) {
+        return (state: RootState): State => <State> get(state, selector);
     }
+
+    return (state: RootState): State => <State> (state ? (<Record<PropertyKey, unknown>> state)[selector] : undefined);
 }

@@ -1,8 +1,8 @@
 /**
- * angular-redux2
+ * Imports
  */
 
-import { get, set, shallowCopy } from './object.component';
+import { get, set, shallowCopy } from '@components/object.component';
 
 const storeStruct = {
     foo: 1,
@@ -19,7 +19,7 @@ const storeStruct = {
         level_2: {
             fooBar: 3,
             level_3: {
-                key: 'x',
+                key: 'x'
             }
         },
         arr: [
@@ -70,34 +70,34 @@ describe('get', () => {
     });
 
     describe('should get a deeply nested property value from an object', () => {
-        describe.each([
+        describe.each(
             [[ 'foo' ], 1 ],
             [[ 'level_1', 'bar' ], 2 ],
-            [[ 'level_1', 'level_2', 'fooBar' ], 3 ],
-        ])('get() should select a deeply nested property', (path, expected) => {
-            test(`path ${JSON.stringify(path)} should return ${expected}`, () => {
+            [[ 'level_1', 'level_2', 'fooBar' ], 3 ]
+        )('get() should select a deeply nested property', ([ path, expected ]: any) => {
+            test(`path ${ JSON.stringify(path) } should return ${ expected }`, () => {
                 expect(get(storeStruct, path)).toEqual(expected);
             });
         });
 
-        describe.each([
+        describe.each(
             [ 'a', false ],
             [ 'b', 0 ],
             [ 'c', '' ],
-            [ 'd', undefined ],
-        ])('get() should select falsy values properly', (prop, expected) => {
-            test(`property '${prop}' should return ${expected}`, () => {
+            [ 'd', undefined ]
+        )('get() should select falsy values properly', ([ prop, expected ]: any) => {
+            test(`property '${ prop }' should return ${ expected }`, () => {
                 expect(get(storeStruct, [ prop ])).toEqual(expected);
             });
         });
 
-        describe.each([
+        describe.each(
             [ 'a', false ],
             [ 'b', 0 ],
             [ 'c', '' ],
-            [ 'd', undefined ],
-        ])('get() should select nested falsy values properly', (prop, expected) => {
-            test(`property 'level_1.${prop}' should return ${expected}`, () => {
+            [ 'd', undefined ]
+        )('get() should select nested falsy values properly', ([ prop, expected ]: any) => {
+            test(`property 'level_1.${ prop }' should return ${ expected }`, () => {
                 expect(get(storeStruct, [ 'level_1', prop ])).toEqual(expected);
             });
         });
@@ -118,39 +118,39 @@ describe('get', () => {
             expect(get(storeStruct, [ 'bar', 'test' ])).toEqual(undefined);
         });
 
-        describe.each([
+        describe.each(
             [[ 0 ], 'foo' ],
             [[ '0' ], 'foo' ],
             [[ 1 ], 'bar' ],
             [[ '1' ], 'bar' ],
             [[ 2 ], undefined ],
-            [[ '2' ], undefined ],
-        ])('get() should select array elements properly', (path, expected) => {
-            test(`path ${JSON.stringify(path)} should return ${expected}`, () => {
+            [[ '2' ], undefined ]
+        )('get() should select array elements properly', ([ path, expected ]: any) => {
+            test(`path ${ JSON.stringify(path) } should return ${ expected }`, () => {
                 const test = [ 'foo', 'bar' ];
                 expect(get(test, path)).toEqual(expected);
             });
         });
     });
 
-    describe.each([
+    describe.each(
         [[ 'test', 0 ], 'foo' ],
         [[ 'test', '0' ], 'foo' ],
         [[ 'test', 1 ], 'bar' ],
         [[ 'test', '1' ], 'bar' ],
         [[ 'test', 2 ], undefined ],
-        [[ 'test', '2' ], undefined ],
-    ])('get() should select nested array elements properly', (path, expected) => {
-        test(`path ${JSON.stringify(path)} should return ${JSON.stringify(expected)}`, () => {
+        [[ 'test', '2' ], undefined ]
+    )('get() should select nested array elements properly', ([ path, expected ]: any) => {
+        test(`path ${ JSON.stringify(path) } should return ${ JSON.stringify(expected) }`, () => {
             const test = { test: [ 'foo', 'bar' ] };
             expect(get(test, path)).toBe(expected);
         });
     });
 
     test('Should return an array and allow find function.', () => {
-        const array = get(storeStruct, [ 'level_1', 'arr' ]);
+        const array = <Array<string>> get(storeStruct, [ 'level_1', 'arr' ]);
         const result = array.find((value: string) => value == 'test');
-        expect(result).toStrictEqual('test');
+        expect(result).toEqual('test');
     });
 });
 
@@ -187,29 +187,33 @@ describe('set', () => {
     });
 
     describe('Should sets a deeply-nested property value and return a new object.', () => {
-        describe.each([
+        describe.each(
             [ undefined, [ 'foo', 'bar' ], 5, undefined ],
             [{ arr: [ 1, 2, 3, 4 ] }, [ 'arr', '0' ], 2, { arr: [ 2, 2, 3, 4 ] }],
             [{ a: 1 }, [ 'b' ], 2, { a: 1, b: 2 }],
-            [{ a: 1 }, [ 'b', 'c', 'd' ], 2, {
-                a: 1,
-                b: {
-                    c: {
-                        d: 2,
-                    },
-                },
-            }],
-            [{ a: 1, b: { wat: 3 } }, [ 'b', 'c', 'd' ], 2, {
-                a: 1,
-                b: {
-                    wat: 3,
-                    c: {
-                        d: 2,
-                    },
-                },
-            }],
-        ])('set', (original, path, value, expected) => {
-            test(`returns ${JSON.stringify(expected)}`, () => {
+            [
+                { a: 1 }, [ 'b', 'c', 'd' ], 2, {
+                    a: 1,
+                    b: {
+                        c: {
+                            d: 2
+                        }
+                    }
+                }
+            ],
+            [
+                { a: 1, b: { wat: 3 } }, [ 'b', 'c', 'd' ], 2, {
+                    a: 1,
+                    b: {
+                        wat: 3,
+                        c: {
+                            d: 2
+                        }
+                    }
+                }
+            ]
+        )('set', ([ original, path, value, expected ]: any) => {
+            test(`returns ${ JSON.stringify(expected) }`, () => {
                 expect(set(original, path, value)).toEqual(expected);
             });
 
