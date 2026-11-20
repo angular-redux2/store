@@ -1,0 +1,21 @@
+/* To learn more about this file see: https://angular.io/config/tsconfig. */
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "composite": true,
+        "declaration": true,
+        "outDir": "./out-tsc/spec",
+        "types": [
+            "node",
+            "@remotex-labs/xjet"
+        ]
+    },
+    "include": [
+        "**/*.ts"
+    ],
+    "exclude": [
+        "dist",
+        "docs",
+        "node_modules"
+    ]
+}
