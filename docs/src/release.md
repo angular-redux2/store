@@ -16,11 +16,22 @@ The library moves to the current Angular toolchain, adds signal selections, and 
 - **Added**: [`provideNgRedux`](/guide#configure-the-store) configures the store from the application config in one
   call, with the reducer, initial state, middleware, enhancers, and [Redux DevTools](/store/devtools) as options.
   `DevToolsExtension` is provided in root, so `NgReduxModule` is only needed by `NgModule` applications.
+- **Added**: [`addReducer`](/store/ng-redux#addreducer) on `NgRedux`, and `provideNgReduxFeature` for a lazy route,
+  add a reducer that owns one top-level key next to the root reducer, so a feature loads its reducer with its code.
+  `combineReducers` neither drops nor warns about the key.
+- **Added**: [`freeze: isDevMode()`](/store/ng-redux#freezing-the-state) on `provideNgRedux`, or the `freezeState()`
+  enhancer, freezes the state, so code that mutates it outside a reducer throws at the write.
+- **Added**: [`transferState: true`](/store/ng-redux#server-side-rendering) on `provideNgRedux` carries the state from
+  server-side rendering to the browser through Angular's `TransferState`.
+- **Added**: [`@SelectSignal`](/decorators/select#selectsignal) is the signal form of `@Select`, and follows the
+  sub-store of a `@Substore` class like the other decorators.
 - **Fixed**: With the Redux DevTools panel open, a zoneless application crashed with `NG0101: ApplicationRef.tick is
   called recursively` when a component dispatched while Angular rendered, for example in `ngOnInit`. The extension
   integration re-enters the zone instead of forcing change detection.
 - **Fixed**: `Symbol.observable` on a [sub-store](/store/sub-store) emits its state; it returned a stream that never
   emitted.
+- **Fixed**: `from(ngRedux)` works without a `Symbol.observable` polyfill. The method sat under the key `'undefined'`,
+  so RxJS rejected the store; it now also answers the `'@@observable'` key that RxJS and Redux fall back to.
 - **Changed**: Built and tested against Angular 22, TypeScript 6, RxJS 7.8, and Redux 5.
 - **Changed**: The peer ranges follow what is built and tested: `@angular/core` 20 and later (an application built
   and tested on Angular 20, 21, and 22), `rxjs` `^7.5.0`, and
@@ -69,7 +80,8 @@ The library moves to the current Angular toolchain, adds signal selections, and 
   takes one, and `ReducerActionsType` maps only the methods of the class.
 - **Removed**: The `get`, `set`, and `shallowCopy` helpers are no longer exported; they were internal.
 - **Added**: [`MockNgRedux`](/testing/mocks#selector-stubs) stubs `selectSignal` as well, through the same stub as
-  `select`, so a component under test that reads `injectSelect` shows the values a test pushes into the stub.
+  `select`, so a component under test that reads `injectSelect` shows the values a test pushes into the stub. It ignores
+  `replaceStore`, like `configureStore`, so the stubs keep serving.
 - **Changed**: The mocks' `_mockNgReduxFactory` is renamed `mockNgReduxFactory`.
 - **Migration**: Dispatch class-reducer actions through their creators. Code that dispatched a bare method name, such
   as `{ type: 'addBug' }`, now needs `BugReducer.actions.addBug(...)` or the full `BugReducer/addBug` type.

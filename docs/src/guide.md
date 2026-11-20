@@ -86,13 +86,18 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-| Option         | Notes                                                                                        |
-|----------------|----------------------------------------------------------------------------------------------|
-| `reducer`      | The root reducer. It may mutate its state, see [Draft state](/reducers/draft-state).         |
-| `initialState` | The state the store starts from.                                                             |
-| `middleware`   | [Reducer middleware](/store/middleware#reducer-middleware), run in order before the reducer. |
-| `enhancers`    | Redux store enhancers, such as `applyMiddleware(...)`.                                       |
-| `devTools`     | `true` or extension options to connect [Redux DevTools](/store/devtools); off by default.    |
+| Option          | Notes                                                                                                        |
+|-----------------|--------------------------------------------------------------------------------------------------------------|
+| `reducer`       | The root reducer. It may mutate its state, see [Draft state](/reducers/draft-state).                         |
+| `initialState`  | The state the store starts from.                                                                             |
+| `middleware`    | [Reducer middleware](/store/middleware#reducer-middleware), run in order before the reducer.                 |
+| `enhancers`     | Redux store enhancers, such as `applyMiddleware(...)`.                                                       |
+| `devTools`      | `true` or extension options to connect [Redux DevTools](/store/devtools); off by default.                    |
+| `freeze`        | `true` [freezes the state](/store/ng-redux#freezing-the-state); pass `isDevMode()`. Off by default.          |
+| `transferState` | `true` carries the state from [server-side rendering](/store/ng-redux#server-side-rendering) to the browser. |
+
+A lazy route adds its own reducer with [`provideNgReduxFeature`](/store/ng-redux#addreducer), so the root reducer
+does not have to list every feature.
 
 An application that bootstraps an `NgModule` can import `NgReduxModule` and call
 [`configureStore`](/store/ng-redux#configurestore) from the constructor of its root module instead.

@@ -1,7 +1,8 @@
-# @Select and @Select$
+# @Select, @Select$, and @SelectSignal
 
 `@Select` and `@Select$` turn a property into a selection from the store. The property becomes a getter that returns an
-`Observable`, so a template reads it with the `async` pipe.
+`Observable`, so a template reads it with the `async` pipe. [`@SelectSignal`](#selectsignal) returns a signal
+instead, which a template reads without a pipe or a subscription.
 
 ::: tip 📡 Without decorators
 [`injectSelect`](/store/ng-redux#selectsignal) returns the selection as a signal from a field initializer, and needs no
@@ -61,10 +62,30 @@ export class FooComponent {
 The transformer also receives the decorated instance as its second argument. The `comparator` is applied to what the
 transformer emits.
 
+## @SelectSignal
+
+```ts
+function SelectSignal<T, RootState = unknown>(selector?: SelectorType<RootState, T>, comparator?: ComparatorType<T>): PropertyDecorator
+```
+
+```ts
+import { SelectSignal } from '@angular-redux2/store';
+
+@Component({ template: '{{ name() }} lives in {{ city() }}' })
+export class UserComponent {
+    @SelectSignal() readonly name: Signal<string>;                          // state.name
+    @SelectSignal([ 'address', 'city' ]) readonly city: Signal<string>;     // state.address.city
+}
+```
+
+It is the signal form of `@Select`, built on [`selectSignal`](/store/ng-redux#selectsignal). With no selector, the
+property name is used as it is, so `name` selects `name`. A `comparator` decides whether a new value is a change, and
+the signal keeps its previous value while the comparator calls the new one equal.
+
 ## How the selection is resolved
 
 The selection is built the first time the property is read, then cached on the instance, so every read returns the same
-observable. It comes from the store of the class: the [sub-store](/decorators/substore) when the class has `@Substore`
+observable or signal. It comes from the store of the class: the [sub-store](/decorators/substore) when the class has `@Substore`
 and a base path, otherwise [`NgRedux.store`](/store/ng-redux#static-access).
 
 ::: warning `useDefineForClassFields`
