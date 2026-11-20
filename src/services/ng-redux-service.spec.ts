@@ -11,10 +11,10 @@ import type { MiddlewareInterface } from '@interfaces/reducer.interface';
 
 import { of } from 'rxjs';
 import { NgZone } from '@angular/core';
-import { compose, createStore } from 'redux';
-import { NgRedux } from '@services/ng-redux.service';
 import { ReducerService } from '@services/reducer.service';
 import { SubStoreService } from '@services/sub-store.service';
+import { combineReducers, compose, createStore } from 'redux';
+import { NgRedux, ADD_REDUCER } from '@services/ng-redux.service';
 
 describe('NgRedux', () => {
     let ngRedux: NgRedux<object>;
@@ -79,7 +79,7 @@ describe('NgRedux', () => {
 
             // Assert
             expect(mockReduxCompose).toHaveBeenCalledWith(createStore);
-            expect(ReducerService.getInstance().composeReducers).toHaveBeenCalledWith(reducer, middleware);
+            expect(ReducerService.getInstance().composeReducers).toHaveBeenCalledWith(reducer, middleware, expect.any(Map));
             expect(setStoreSpy).toHaveBeenCalled();
         });
     });
@@ -119,7 +119,7 @@ describe('NgRedux', () => {
 
             ngRedux.provideStore(reducer, store);
 
-            expect(spyReplaceReducer).toHaveBeenCalledWith(reducer);
+            expect(spyReplaceReducer).toHaveBeenCalledWith(reducer, [], expect.any(Map));
             expect(mockReplaceReducer).toHaveBeenCalled();
             expect(ngRedux['reduxStore']).toBe(store);
         });
@@ -208,6 +208,103 @@ describe('NgRedux', () => {
 
             expect(result).toBe(mockUnsubscribe);
             expect(mockStore.subscribe).toHaveBeenCalledWith(mockListener);
+        });
+    });
+
+    describe('addReducer', () => {
+        interface StateInterface {
+            count: number;
+            todos?: Array<string>;
+        }
+
+        const count: Reducer<number> = (state = 0, action) => action.type === 'INCREMENT' ? state + 1 : state;
+        const todos = (state: Array<string> = [], action: any): Array<string> => {
+            if (action.type === 'ADD_TODO') {
+                state.push(action.title);
+            }
+
+            return state;
+        };
+
+        function configure(): NgRedux<StateInterface> {
+            const store = new NgRedux<StateInterface>();
+            store.configureStore(<Reducer<StateInterface>> <unknown> combineReducers({ count }), { count: 0 });
+
+            return store;
+        }
+
+        beforeEach(() => {
+            xJet.restoreAllMocks();
+        });
+
+        test('should set the initial state of the feature as soon as it is added', () => {
+            const store = configure();
+            store.addReducer('todos', todos);
+
+            expect(store.getState()).toEqual({ count: 0, todos: [] });
+        });
+
+        test('should run the feature reducer on its draft and keep the root reducer running', () => {
+            const store = configure();
+            store.addReducer('todos', todos);
+            const before = store.getState().todos;
+
+            store.dispatch({ type: 'ADD_TODO', title: 'Write docs' });
+            store.dispatch({ type: 'INCREMENT' });
+
+            expect(store.getState()).toEqual({ count: 1, todos: [ 'Write docs' ] });
+            expect(before).toEqual([]);
+        });
+
+        test('should hide the feature key from combineReducers, so it neither drops nor warns about it', () => {
+            const error = xJet.spyOn(console, 'error').mockImplementation(() => undefined);
+            const store = configure();
+            store.addReducer('todos', todos);
+
+            store.dispatch({ type: 'INCREMENT' });
+
+            expect(store.getState().todos).toEqual([]);
+            expect(error).not.toHaveBeenCalled();
+        });
+
+        test('should keep the state object when no reducer changed anything', () => {
+            const store = configure();
+            store.addReducer('todos', todos);
+            const state = store.getState();
+
+            store.dispatch({ type: 'UNKNOWN' });
+
+            expect(store.getState()).toBe(state);
+        });
+
+        test('should include a reducer added before the store is configured', () => {
+            const store = new NgRedux<StateInterface>();
+            store.addReducer('todos', todos);
+            store.configureStore(<Reducer<StateInterface>> <unknown> combineReducers({ count }), { count: 0 });
+
+            expect(store.getState()).toEqual({ count: 0, todos: [] });
+        });
+
+        test('should dispatch ADD_REDUCER only for a reducer that is new for its key', () => {
+            const store = configure();
+            const listener = xJet.fn();
+            store.subscribe(listener);
+
+            store.addReducer('todos', todos);
+            store.addReducer('todos', todos);
+
+            expect(listener).toHaveBeenCalledTimes(1);
+            expect(ADD_REDUCER).toBe('@@angular-redux2/store/ADD_REDUCER');
+        });
+
+        test('should keep the features after the root reducer is replaced', () => {
+            const store = configure();
+            store.addReducer('todos', todos);
+
+            store.replaceReducer(<Reducer<StateInterface>> <unknown> combineReducers({ count: (state: number = 0) => state + 10 }));
+            store.dispatch({ type: 'ADD_TODO', title: 'a' });
+
+            expect(store.getState()).toEqual({ count: 10, todos: [ 'a' ] });
         });
     });
 
