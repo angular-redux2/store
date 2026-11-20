@@ -2,18 +2,17 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
-        "baseUrl": "./",
         "target": "ES2022",
         "module": "ES2022",
         "outDir": "./dist/out-tsc",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "strict": true,
         "sourceMap": true,
         "declaration": false,
         "importHelpers": true,
+        "skipLibCheck": true,
         "noImplicitReturns": true,
         "noImplicitOverride": true,
-        "downlevelIteration": true,
         "experimentalDecorators": true,
         "useDefineForClassFields": false,
         "noFallthroughCasesInSwitch": true,
@@ -24,12 +23,36 @@
             "ES2022",
             "dom"
         ],
+        "types": [
+            "node"
+        ],
         "paths": {
-            "@angular-redux2/store": [
-                "./projects/angular-redux2/store/src/public-api",
-            ],
             "@angular-redux2/store/mocks": [
-                "./projects/angular-redux2/store/mocks/public-api",
+                "./mocks/index"
+            ],
+            "@angular-redux2/store": [
+                "./src/index"
+            ],
+            "@mocks/*": [
+                "./mocks/*"
+            ],
+            "@modules/*": [
+                "./src/modules/*"
+            ],
+            "@services/*": [
+                "./src/services/*"
+            ],
+            "@abstract/*": [
+                "./src/abstract/*"
+            ],
+            "@interfaces/*": [
+                "./src/interfaces/*"
+            ],
+            "@decorators/*": [
+                "./src/decorators/*"
+            ],
+            "@components/*": [
+                "./src/components/*"
             ]
         }
     },
@@ -38,5 +61,9 @@
         "strictInjectionParameters": true,
         "strictInputAccessModifiers": true,
         "enableI18nLegacyMessageIdFormat": false
-    }
+    },
+    "files": [],
+    "references": [
+        { "path": "./tsconfig.spec.json" }
+    ]
 }
