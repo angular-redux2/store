@@ -3,6 +3,7 @@
  */
 
 import type { Observable } from 'rxjs';
+import type { Signal } from '@angular/core';
 import type { UnknownAction, Reducer } from 'redux';
 import type { AbstractStore } from '../abstract/store.abstract';
 import type { PathSelectorType } from '../interfaces/store.interface';
@@ -130,10 +131,11 @@ export class DecoratorFlagComponent {
     }
 
     /**
-     * The selection cache that maps each decorated property name to its observable.
+     * The selection cache that maps each decorated property name to its observable or signal.
      *
      * @remarks
-     * `Select` and `Select$` store an observable here on the first read of a property and return it afterward.
+     * `Select` and `Select$` store an observable here on the first read of a property, and `SelectSignal` a signal,
+     * and each returns the stored one afterward.
      *
      * @example
      * ```ts
@@ -144,8 +146,8 @@ export class DecoratorFlagComponent {
      * @since 5.0.0
      */
 
-    get selections(): { [key: string | symbol]: Observable<unknown> } {
-        return <{ [key: string | symbol]: Observable<unknown> }> this.decoratedInstance[SELECTION_KEY];
+    get selections(): { [key: string | symbol]: Observable<unknown> | Signal<unknown> } {
+        return <{ [key: string | symbol]: Observable<unknown> | Signal<unknown> }> this.decoratedInstance[SELECTION_KEY];
     }
 
     /**
