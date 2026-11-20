@@ -1,42 +1,49 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+name: 🐞 Bug Report
+title: 🐞 Bug Report
+about: Something is broken
+labels: [ "bug", "needs triage" ]
 ---
 
-### This is a...
+**Describe the bug**
 
-* [ ] feature request
-* [ ] bug report
-* [ ] usage question
+A clear and concise description of what is wrong.
 
-### What toolchain are you using for transpilation/bundling?
+**Reproduction**
 
-* [ ] @angular/cli
-* [ ] Raw `ngc`
-* [ ] Rollup
-* [ ] Other
+The smallest store setup and component that show the problem.
 
-### Environment
+```ts
+import { NgRedux, Select } from '@angular-redux2/store';
 
-NodeJS Version:
-Typescript Version:
-Angular Version:
-@angular-redux2/store version:
-@angular/cli version: (if applicable)
-OS:
+// configureStore call, reducer, and the component or service that misbehaves
+```
 
-### Link to repo showing the issue
-(optional, but helps _a lot_)
+**Expected behavior**
 
-### Expected Behaviour:
+What you expected to happen.
 
-### Actual Behaviour:
+**Actual behavior**
 
-### Stack Trace/Error Message:
+What actually happened. Include the full error message and stack trace if there is one.
 
-### Additional Notes:
-(optional)
+```text
+Error: ...
+    at ...
+```
+
+**Environment**
+
+|                                 | |
+|---------------------------------|-|
+| `@angular-redux2/store` version | |
+| Angular version                 | |
+| Redux version                   | |
+| RxJS version                    | |
+| Browser or Node.js version      | |
+
+**Checklist**
+
+- [ ] I have searched for existing issues, and this is not a duplicate.
+- [ ] I am using the latest published version.
+- [ ] I have included a minimal reproduction above.
