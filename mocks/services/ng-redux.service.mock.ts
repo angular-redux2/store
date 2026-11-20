@@ -4,8 +4,8 @@
 
 import type { Signal } from '@angular/core';
 import type { Observable, Subject } from 'rxjs';
-import type { UnknownAction, Unsubscribe } from 'redux';
 import type { SubStoreService } from '@angular-redux2/store';
+import type { Store, UnknownAction, Unsubscribe } from 'redux';
 import type { ComparatorType, PathSelectorType, SelectorType } from '@angular-redux2/store';
 import type { SelectorStubMapInterface, SelectorStubRecordInterface, SubStoreStubMapInterface } from '../interfaces/store.interface.mock';
 
@@ -326,6 +326,26 @@ export class MockNgRedux<S = unknown> extends NgRedux<S> {
      */
 
     override provideStore(): void {
+        return;
+    }
+
+    /**
+     * Does nothing and ignores the store.
+     *
+     * @param _store - The store that the real service would adopt
+     *
+     * @remarks
+     * The mock serves its selector stubs, so a real store would only subscribe it to state that no test controls.
+     *
+     * @example
+     * ```ts
+     * mock.replaceStore(store); // the stubs keep serving every selection
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    override replaceStore(_store?: Store<S>): void {
         return;
     }
 

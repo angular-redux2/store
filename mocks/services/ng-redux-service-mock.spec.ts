@@ -192,6 +192,19 @@ describe('MockNgRedux', () => {
         });
     });
 
+    test('should ignore replaceStore and keep serving the stubs', () => {
+        const store = { getState: xJet.fn(), subscribe: xJet.fn(), dispatch: xJet.fn() };
+        MockNgRedux.store.replaceStore(<any> store);
+        const stub = MockNgRedux.getSelectorStub<unknown, number>('count');
+        const values: Array<number> = [];
+        MockNgRedux.store.select<number>('count').subscribe(value => values.push(value));
+
+        stub.next(4);
+
+        expect(store.subscribe).not.toHaveBeenCalled();
+        expect(values).toEqual([ 4 ]);
+    });
+
     test('should follow the values pushed into a selector stub with a signal', () => {
         const count = MockNgRedux.store.selectSignal<number>('count');
 
