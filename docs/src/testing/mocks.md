@@ -80,12 +80,13 @@ test('should dispatch INCREMENT', () => {
 
 ## API
 
-| Member                                                | Notes                                                 |
-|-------------------------------------------------------|-------------------------------------------------------|
-| `MockNgRedux.store`                                   | The mock instance the module provides.                |
-| `MockNgRedux.getSelectorStub(selector?, comparator?)` | The subject behind that selection.                    |
-| `MockNgRedux.getSubStore(...paths)`                   | The mock for a sub-store, one path per nesting level. |
-| `MockNgRedux.reset()`                                 | Drops every selector and sub-store stub.              |
+| Member                                                | Notes                                                                         |
+|-------------------------------------------------------|-------------------------------------------------------------------------------|
+| `MockNgRedux.store`                                   | The mock instance the module provides.                                        |
+| `MockNgRedux.getSelectorStub(selector?, comparator?)` | The subject behind that selection.                                            |
+| `MockNgRedux.getSubStore(...paths)`                   | The mock for a sub-store, one path per nesting level.                         |
+| `MockNgRedux.reset()`                                 | Drops every selector and sub-store stub.                                      |
+| `replaceStore(store)`                                 | Ignored, like `configureStore` and `provideStore`, so the stubs keep serving. |
 
 ## See also
 
