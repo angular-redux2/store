@@ -6,6 +6,9 @@ export * from './modules/ng-redux.module';
 export * from './modules/ng-redux.inject';
 export * from './modules/ng-redux.provider';
 
+// Components
+export { freezeState } from './components/freeze.component';
+
 // Abstract
 export * from './abstract/reducer.abstract';
 
