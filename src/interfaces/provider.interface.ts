@@ -97,4 +97,26 @@ export interface NgReduxConfigInterface<State> {
      */
 
     freeze?: boolean;
+
+    /**
+     * Carries the state from server-side rendering to the browser through Angular's `TransferState`.
+     *
+     * @remarks
+     * On the server, the state as it is when the page is rendered goes into the page.
+     * In the browser, the store starts from that state instead of `initialState`,
+     * so the first render matches the server's and data that the server loaded is not fetched again.
+     * Without server-side rendering there is nothing to transfer, and `initialState` is used.
+     *
+     * The state travels as JSON, so it must hold only JSON values: a `Date` arrives as a string,
+     * and a `Map`, `Set`, or class instance does not survive.
+     *
+     * @example
+     * ```ts
+     * provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, transferState: true });
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    transferState?: boolean;
 }

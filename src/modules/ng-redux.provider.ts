@@ -13,7 +13,17 @@ import type { NgReduxConfigInterface } from '../interfaces/provider.interface';
 import { NgRedux } from '../services/ng-redux.service';
 import { freezeState } from '../components/freeze.component';
 import { DevToolsExtension } from '../services/dev-tool.service';
-import { inject, makeEnvironmentProviders, provideAppInitializer, provideEnvironmentInitializer } from '@angular/core';
+import {
+    inject, makeEnvironmentProviders, makeStateKey, provideAppInitializer, provideEnvironmentInitializer, TransferState
+} from '@angular/core';
+
+/**
+ * The key under which the `transferState` option carries the state from the server to the browser.
+ *
+ * @since 6.0.0
+ */
+
+const STATE_KEY = makeStateKey<unknown>('@angular-redux2/store');
 
 /**
  * Configures the store when the application starts.
@@ -27,6 +37,7 @@ import { inject, makeEnvironmentProviders, provideAppInitializer, provideEnviron
  * The store is configured before the first component renders, so decorated members can read it at once.
  * The DevTools enhancer is added last, after the configured `enhancers`, and only when the extension is installed.
  * The {@link freezeState} enhancer, when `freeze` is set, comes first.
+ * With `transferState`, the browser starts from the state that server-side rendering left in the page.
  *
  * @example
  * ```ts
@@ -46,12 +57,16 @@ import { inject, makeEnvironmentProviders, provideAppInitializer, provideEnviron
 export function provideNgRedux<State>(config: NgReduxConfigInterface<State>): EnvironmentProviders {
     return makeEnvironmentProviders([
         provideAppInitializer(() => {
-            const { reducer, initialState, middleware = [], enhancers = [], devTools, freeze } = config;
+            const { reducer, initialState, middleware = [], enhancers = [], devTools, freeze, transferState } = config;
+            const ngRedux = inject(NgRedux<State>);
+            const transfer = transferState ? inject(TransferState) : undefined;
             const devToolsEnhancer = devTools
                 ? inject(DevToolsExtension).enhancer(devTools === true ? undefined : devTools)
                 : null;
 
-            inject(NgRedux<State>).configureStore(reducer, initialState, middleware, [
+            // The server never holds the key, and onSerialize runs only when it renders the page.
+            transfer?.onSerialize(STATE_KEY, () => ngRedux.getState());
+            ngRedux.configureStore(reducer, <State> (transfer?.get(STATE_KEY, initialState) ?? initialState), middleware, [
                 ...freeze ? [ freezeState() ] : [],
                 ...enhancers,
                 ...devToolsEnhancer ? [ devToolsEnhancer ] : []

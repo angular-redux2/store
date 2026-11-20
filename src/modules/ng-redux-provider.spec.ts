@@ -14,8 +14,8 @@ import { DevToolsExtension } from '@services/dev-tool.service';
 import { TestBed, TestComponentRenderer } from '@angular/core/testing';
 import { provideNgRedux, provideNgReduxFeature } from '@modules/ng-redux.provider';
 import {
-    ApplicationInitStatus, ApplicationModule, createEnvironmentInjector, EnvironmentInjector, ErrorHandler, NgModule, platformCore,
-    provideZonelessChangeDetection, ɵINJECTOR_SCOPE
+    ApplicationInitStatus, ApplicationModule, createEnvironmentInjector, EnvironmentInjector, ErrorHandler, makeStateKey, NgModule,
+    platformCore, provideZonelessChangeDetection, TransferState, ɵINJECTOR_SCOPE
 } from '@angular/core';
 
 /**
@@ -124,6 +124,56 @@ describe('provideNgRedux', () => {
         const ngRedux = await start({ reducer, initialState: INITIAL_STATE, devTools: true });
 
         expect(ngRedux.getState()).toEqual(INITIAL_STATE);
+    });
+});
+
+describe('provideNgRedux with transferState', () => {
+    const KEY = makeStateKey<unknown>('@angular-redux2/store');
+
+    async function start(transfer: TransferState, transferState?: boolean): Promise<NgRedux<StateInterface>> {
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: NgRedux, useFactory: () => new NgRedux() },
+                { provide: TransferState, useValue: transfer },
+                provideNgRedux({ reducer, initialState: INITIAL_STATE, transferState })
+            ]
+        });
+        await TestBed.inject(ApplicationInitStatus).donePromise;
+
+        return TestBed.inject(NgRedux<StateInterface>);
+    }
+
+    afterEach(() => {
+        TestBed.resetTestingModule();
+    });
+
+    test('should start the browser from the state that the server put in the page', async () => {
+        const transfer = new TransferState();
+        transfer.set(KEY, { counter: 5, lastAction: 'SERVER' });
+
+        const ngRedux = await start(transfer, true);
+
+        expect(ngRedux.getState()).toEqual({ counter: 5, lastAction: 'SERVER' });
+    });
+
+    test('should put the state as it is at render time into the page on the server', async () => {
+        const transfer = new TransferState();
+        const ngRedux = await start(transfer, true);
+
+        ngRedux.dispatch({ type: 'INCREMENT' });
+
+        expect(JSON.parse(transfer.toJson())).toEqual({ [KEY]: { counter: 1, lastAction: '' } });
+    });
+
+    test('should neither read nor write the transfer state by default', async () => {
+        const transfer = new TransferState();
+        transfer.set(KEY, { counter: 5, lastAction: 'SERVER' });
+
+        const ngRedux = await start(transfer);
+        transfer.remove(KEY);
+
+        expect(ngRedux.getState()).toEqual(INITIAL_STATE);
+        expect(transfer.toJson()).toBe('{}');
     });
 });
 
