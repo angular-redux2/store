@@ -1,92 +1,153 @@
 /**
- * Import third-party libraries
+ * Type-only imports erased during TypeScript compilation.
  */
 
-import { NgZone } from '@angular/core';
-import { Injectable } from '@angular/core';
-import { ApplicationRef } from '@angular/core';
+import type { StoreEnhancer, Unsubscribe } from 'redux';
 
 /**
- * Import third-party types
- */
-
-import type { Unsubscribe } from 'redux';
-
-/**
- * angular-redux2
+ * Imports
  */
 
 import { NgRedux } from './ng-redux.service';
+import { Injectable, NgZone } from '@angular/core';
 
 /**
- * Declare window const
- * A window containing a DOM document; the document property points to the DOM document loaded in that window.
+ * The Redux DevTools extension as the browser exposes it on `window`.
+ *
+ * @since 6.0.0
  */
 
-const environment: any = typeof window !== 'undefined' ? window : {};
+interface DevToolsGlobalInterface {
+    /**
+     * Creates the store enhancer that connects a store to the extension.
+     *
+     * @param options - The extension options
+     * @returns The store enhancer
+     *
+     * @since 6.0.0
+     */
+
+    (options?: unknown): StoreEnhancer;
+
+    /**
+     * Registers a listener for the messages the extension sends, such as `START` and `STOP`.
+     *
+     * @param listener - Called with each message
+     *
+     * @since 6.0.0
+     */
+
+    listen(listener: (message: { type: string }) => void): void;
+}
 
 /**
- * Developer Tools to power-up Redux development workflow or any other architecture which handles the state change.
- * `It can be used as a browser extension (for Chrome, Edge and Firefox), as a standalone app or as a React component integrated in the client app.`
+ * The global `window`, or an empty object outside a browser.
+ *
+ * @remarks
+ * The fallback keeps {@link DevToolsExtension.isEnabled} safe under server-side rendering and in Node tests,
+ * where it reports the extension as missing.
+ *
+ * @since 5.0.0
  */
 
-@Injectable()
+const environment = <Record<string, unknown>> (typeof window !== 'undefined' ? window : {});
+
+/**
+ * Connects the Redux DevTools browser extension to the store and to Angular change detection.
+ *
+ * @remarks
+ * Pass the result of {@link DevToolsExtension.enhancer} to {@link NgRedux.configureStore} with the other enhancers.
+ * When the extension starts monitoring, the service subscribes to the store,
+ * and re-enters the Angular zone for state changes that happen outside it, such as a time-travel jump from the
+ * extension. The service is provided in the root injector; {@link provideNgRedux} wires it up from its `devTools`
+ * option.
+ *
+ * @example
+ * ```ts
+ * class AppModule {
+ *     constructor(ngRedux: NgRedux<AppState>, devTools: DevToolsExtension) {
+ *         const enhancer = isDevMode() ? devTools.enhancer() : null;
+ *
+ *         ngRedux.configureStore(rootReducer, INITIAL_STATE, [], enhancer ? [ enhancer ] : []);
+ *     }
+ * }
+ * ```
+ *
+ * @see NgRedux.configureStore
+ *
+ * @since 5.0.0
+ */
+
+@Injectable({ providedIn: 'root' })
 export class DevToolsExtension {
 
     /**
-     * Constructs a new DevToolsExtension object with the given parameters.
+     * Creates the service with the zone and the store that it keeps in sync.
      *
-     * @constructor
-     * @param {ApplicationRef} appRef - The application reference object.
-     * @param {NgRedux<any>} ngRedux - The Angular Redux service instance.
+     * @param ngZone - The zone that a state change from the extension re-enters, so a zone-based app renders it
+     * @param ngRedux - The store that the extension monitors
+     *
+     * @remarks
+     * Angular injects both dependencies, so the service is normally obtained through injection rather than `new`.
+     *
+     * @example
+     * ```ts
+     * const devTools = TestBed.inject(DevToolsExtension);
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    constructor(private appRef: ApplicationRef, private ngRedux: NgRedux<any>) {}
+    constructor(private ngZone: NgZone, private ngRedux: NgRedux<unknown>) {}
 
     /**
-     * Returns true if the extension is installed and enabled.
+     * Whether the Redux DevTools extension is installed in this browser.
+     *
+     * @returns `true` when the extension has registered its global hook
+     *
+     * @remarks
+     * It checks for `__REDUX_DEVTOOLS_EXTENSION__` on the global `window`,
+     * so it returns `false` outside a browser.
+     *
+     * @example
+     * ```ts
+     * devTools.isEnabled(); // true with the extension installed
+     * ```
+     *
+     * @since 5.0.0
      */
 
     isEnabled(): boolean {
-        return Boolean(environment && environment.__REDUX_DEVTOOLS_EXTENSION__);
+        return Boolean(environment && environment['__REDUX_DEVTOOLS_EXTENSION__']);
     }
 
     /**
-     * A wrapper for the browser Extension `Redux DevTools`.
-     * Makes sure state changes triggered by the extension
-     * trigger Angular change detector.
+     * Returns the store enhancer of the extension, wired into Angular change detection.
+     *
+     * @param options - The options of the extension, as described in the redux-devtools-instrument API
+     * @returns The store enhancer, or `null` when the extension is not installed
+     *
+     * @remarks
+     * Each call registers a new listener with the extension and creates a new enhancer, so call it once per store.
+     * On `START`, the listener subscribes to the store and re-enters the Angular zone for every state change that
+     * happens outside it, such as a jump or a dispatch from the extension, so a zone-based app renders the change.
+     * It never forces change detection itself: a zoneless app already renders through the `async` pipe and
+     * signals, and a dispatch made while Angular renders must not start a second render (NG0101).
+     * On `STOP`, it removes that subscription.
+     * The `options` format is described in the
+     * [redux-devtools-instrument API](https://github.com/reduxjs/redux-devtools/tree/main/packages/redux-devtools-instrument#api).
      *
      * @example
-     * ```typescript
-     * constructor(ngRedux: NgRedux<IAppState>, devTools: DevToolsExtension) {
-     *  let enhancer: Array<any> = [];
+     * ```ts
+     * const enhancer = devTools.enhancer({ maxAge: 50 }); // null without the extension
      *
-     *  if (devTools.enhancer() && isDevMode())
-     *      enhancer = [ devTools.enhancer() ];
-     *
-     *  ngRedux.configureStore(rootReducer, INITIAL_STATE, [], enhancer);
-     * }
-     *
-     * // or
-     *
-     * constructor(ngRedux: NgRedux<IAppState>, devTools: DevToolsExtension) {
-     *     let enhancer: Array<any> = [];
-     *
-     *     if (devTools.enhancer() && isDevMode())
-     *         enhancer = [ devTools.enhancer() ];
-     *
-     *     ngRedux.configureStore(rootReducer, INITIAL_STATE, [
-     *         reduxSyncMiddleware({
-     *             initState: true
-     *         })
-     *     ], enhancer);
-     * }
+     * ngRedux.configureStore(rootReducer, INITIAL_STATE, [], enhancer ? [ enhancer ] : []);
      * ```
      *
-     * @argument options: dev tool options; [same format as described here](https://github.com/reduxjs/redux-devtools/tree/main/packages/redux-devtools-instrument#api)
+     * @since 5.0.0
      */
 
-    enhancer(options?: any): any {
+    enhancer(options?: unknown): StoreEnhancer | null {
         if (!this.isEnabled()) {
             return null;
         }
@@ -94,11 +155,12 @@ export class DevToolsExtension {
         let subscription: Unsubscribe;
 
         // Make sure changes from dev tools update angular views.
-        environment['__REDUX_DEVTOOLS_EXTENSION__'].listen(({ type }: any) => {
+        const extension = <DevToolsGlobalInterface> environment['__REDUX_DEVTOOLS_EXTENSION__'];
+        extension.listen(({ type }) => {
             if (type === 'START') {
                 subscription = this.ngRedux.subscribe(() => {
                     if (!NgZone.isInAngularZone()) {
-                        this.appRef.tick(); // Trigger change detection from redux_devtool change.
+                        this.ngZone.run(() => undefined);
                     }
                 });
             } else if (type === 'STOP') {
@@ -106,6 +168,6 @@ export class DevToolsExtension {
             }
         });
 
-        return environment['__REDUX_DEVTOOLS_EXTENSION__'](options);
+        return extension(options);
     }
 }
