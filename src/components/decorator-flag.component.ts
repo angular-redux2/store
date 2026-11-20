@@ -1,96 +1,173 @@
 /**
- * angular-redux2
+ * Type-only imports erased during TypeScript compilation.
+ */
+
+import type { Observable } from 'rxjs';
+import type { UnknownAction, Reducer } from 'redux';
+import type { AbstractStore } from '../abstract/store.abstract';
+import type { PathSelectorType } from '../interfaces/store.interface';
+import type { SubstoreFlagType } from '../interfaces/fractal.interface';
+
+/**
+ * Imports
  */
 
 import { NgRedux } from '../services/ng-redux.service';
 import { LOCAL_REDUCER_KEY, SELECTION_KEY, SUBSTORE_KEY } from '../interfaces/fractal.interface';
 
 /**
- * angular-redux2 types
+ * Resolves the store and the caches that the decorators keep on a decorated instance.
+ *
+ * @remarks
+ * `Select`, `Select$`, and `Dispatch` create one of these around the instance on every access.
+ * The constructor makes sure that the substore cache and the selection cache exist on the instance,
+ * so the state of the decorators lives on the instance and survives between wrappers.
+ * {@link DecoratorFlagComponent.store} returns a substore when the class carries `Substore`
+ * and the instance has a truthy `basePath()`, and the root {@link NgRedux} store otherwise.
+ *
+ * @example
+ * ```ts
+ * @Substore(userReducer)
+ * class UserComponent {
+ *     basePath = () => [ 'users', 'u1' ];
+ * }
+ *
+ * const { store } = new DecoratorFlagComponent(new UserComponent());
+ * store.getState(); // the state under users, u1
+ * ```
+ *
+ * @see Substore
+ * @see SUBSTORE_KEY
+ * @see SELECTION_KEY
+ *
+ * @since 5.0.0
  */
 
-import type { AnyAction, Reducer } from 'redux';
-import type { PathSelector } from '../interfaces/store.interface';
-import type { SubstoreFlag } from '../interfaces/fractal.interface';
-import type { AbstractStore } from '../abstract/store.abstract';
-
-/**
- * Class for managing the flag of a decorator instance.
- * This class provides methods to get instance properties and state,
- * and to instantiate a substore if the decorated component is a subcomponent.
- */
 export class DecoratorFlagComponent {
     /**
-     * The decorated instance provided to this DecoratorFlagComponent instance.
-     * @readonly
-     * @type {any}
-     */
-
-    private readonly decoratedInstance: any;
-
-    /**
-     * A cache for Substore flags.
+     * The instance that the decorators were applied to.
      *
-     * @private
-     * @readonly
-     * @type {SubstoreFlag}
+     * @remarks
+     * Every getter reads from it, and both caches are stored on it.
+     *
+     * @since 5.0.0
      */
 
-    private readonly substoreCache: SubstoreFlag;
+    private readonly decoratedInstance: Record<PropertyKey, unknown>;
 
     /**
-     * Constructs a new instance of the DecoratorFlagComponent class.
-     * @param {any} decoratedInstance - The decorated instance.
+     * The substore cache stored on the instance under {@link SUBSTORE_KEY}.
+     *
+     * @remarks
+     * It holds the last substore and the base path that created it, so an unchanged path reuses the substore.
+     *
+     * @since 5.0.0
      */
 
-    constructor(decoratedInstance: any) {
-        this.decoratedInstance = decoratedInstance;
-        this.substoreCache = this.decoratedInstance[SUBSTORE_KEY] ??= {};
+    private readonly substoreCache: SubstoreFlagType;
+
+    /**
+     * Wraps a decorated instance and creates its caches when they are missing.
+     *
+     * @param decoratedInstance - The instance that the decorators were applied to
+     *
+     * @remarks
+     * The caches are created with `??=`, so wrapping the same instance again keeps the existing ones.
+     *
+     * @example
+     * ```ts
+     * const flags = new DecoratorFlagComponent(component);
+     * component[SELECTION_KEY]; // {}
+     * ```
+     *
+     * @since 5.0.0
+     */
+
+    constructor(decoratedInstance: object) {
+        this.decoratedInstance = <Record<PropertyKey, unknown>> decoratedInstance;
+        this.substoreCache = <SubstoreFlagType> (this.decoratedInstance[SUBSTORE_KEY] ??= {});
         this.decoratedInstance[SELECTION_KEY] ??= {};
     }
 
     /**
-     * Gets the reducer associated with the decorated instance.
-     * @readonly
-     * @type {Reducer<any, AnyAction> | undefined}
+     * The local reducer that `Substore` stored on the class of the instance.
+     *
+     * @remarks
+     * It is `undefined` for a class without the `Substore` decorator.
+     *
+     * @example
+     * ```ts
+     * new DecoratorFlagComponent(new UserComponent()).reducer; // userReducer
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    get reducer(): Reducer<any, AnyAction> | undefined {
-        return this.decoratedInstance.constructor[LOCAL_REDUCER_KEY];
+    get reducer(): Reducer<unknown, UnknownAction> | undefined {
+        return <Reducer<unknown, UnknownAction> | undefined> (<Record<PropertyKey, unknown>> <unknown> this.decoratedInstance.constructor)[LOCAL_REDUCER_KEY];
     }
 
     /**
-     * Gets the base path selector associated with the decorated instance.
-     * @readonly
-     * @type {PathSelector | undefined}
+     * The path that the `basePath` function of the instance returns.
+     *
+     * @remarks
+     * The function is called on every read, so the path can follow an input of a component.
+     * It is called without `this`, so only an arrow function field can read other members of the instance.
+     * The getter returns `undefined` when the instance has no `basePath` function.
+     *
+     * @example
+     * ```ts
+     * new DecoratorFlagComponent(new UserComponent()).basePath; // [ 'users', 'u1' ]
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    get basePath(): PathSelector | undefined {
-        const basePathFn = this.decoratedInstance.basePath;
+    get basePath(): PathSelectorType | undefined {
+        const basePathFn = this.decoratedInstance['basePath'];
 
-        return typeof basePathFn === 'function' ? basePathFn() : undefined;
+        return typeof basePathFn === 'function' ? (<() => PathSelectorType | undefined> basePathFn)() : undefined;
     }
 
     /**
-     * Gets the selection object associated with the decorated instance.
-     * @readonly
-     * @type {{ [key: string | symbol]: any }}
+     * The selection cache that maps each decorated property name to its observable.
+     *
+     * @remarks
+     * `Select` and `Select$` store an observable here on the first read of a property and return it afterward.
+     *
+     * @example
+     * ```ts
+     * component.name$;
+     * new DecoratorFlagComponent(component).selections; // { name$: Observable }
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    get selections(): { [key: string | symbol]: any } {
-        return this.getInstanceFlag(SELECTION_KEY);
+    get selections(): { [key: string | symbol]: Observable<unknown> } {
+        return <{ [key: string | symbol]: Observable<unknown> }> this.decoratedInstance[SELECTION_KEY];
     }
 
     /**
-     * Gets the NgRedux store instance associated with the decorated instance.
-     * @readonly
-     * @type {AbstractStore<any>}
+     * The store that the decorators of the instance operate on.
+     *
+     * @remarks
+     * With both a `Substore` reducer and a truthy `basePath`, it returns the cached substore for that path,
+     * creating a new one when the path changed.
+     * Otherwise it returns the root store from {@link NgRedux.store}, which throws when no {@link NgRedux} exists yet.
+     *
+     * @example
+     * ```ts
+     * new DecoratorFlagComponent(plainInstance).store === NgRedux.store; // true
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    get store(): AbstractStore<any> {
+    get store(): AbstractStore<unknown> {
         const { reducer, basePath } = this;
 
-        if (!!reducer && !!basePath) {
+        if (reducer && basePath) {
             return this.factorySubstoreInstance(basePath, reducer);
         }
 
@@ -98,26 +175,21 @@ export class DecoratorFlagComponent {
     }
 
     /**
-     * Gets the instance flag associated with the decorated instance.
-     * @private
-     * @param {string} flagName - The name of the instance flag.
-     * @returns {any} - The instance flag object.
+     * Returns the substore for a base path, creating and caching it when the path changed.
+     *
+     * @param basePath - The path of the substore in the root state
+     * @param reducer - The local reducer of the substore
+     * @returns The cached or new substore
+     *
+     * @remarks
+     * Paths are compared by their string form, so `[ 'users', 'u1' ]` and `[ 'users,u1' ]` count as the same path.
+     * A new substore comes from `configureSubStore` on the root store.
+     *
+     * @since 5.0.0
      */
 
-    private getInstanceFlag(flagName: string): any {
-        return this.decoratedInstance[flagName];
-    }
-
-    /**
-     * Factory function to create and return a substore instance associated with the decorated instance.
-     * @private
-     * @param {PathSelector} basePath - The base path selector.
-     * @param {Reducer<any, AnyAction>} reducer - The reducer function.
-     * @returns {NgRedux<any>} - The substore instance.
-     */
-
-    private factorySubstoreInstance(basePath: PathSelector, reducer: Reducer<any, AnyAction>): AbstractStore<any> {
-        const cachePath = (basePath || []).toString();
+    private factorySubstoreInstance(basePath: PathSelectorType, reducer: Reducer<unknown, UnknownAction>): AbstractStore<unknown> {
+        const cachePath = String(basePath);
 
         if (!this.substoreCache.instance || this.substoreCache.cachePath !== cachePath) {
             this.substoreCache.cachePath = cachePath;

@@ -1,32 +1,60 @@
 /**
- * Shallowly copies an array or object.
- * @param {any} object - The array or object to copy.
- * @returns {any} A shallow copy of the input array or object.
+ * Returns a shallow copy of an array or object.
+ *
+ * @param object - The array or object to copy
+ * @returns A new array or object with the same top-level entries
+ *
+ * @remarks
+ * An array is copied with `slice`, and anything else with `Object.assign` onto an empty object,
+ * so nested values stay shared with the original.
+ * A primitive or `null` comes back as an empty object.
+ *
+ * @example
+ * ```ts
+ * const original = { user: { name: 'Ada' } };
+ * const copy = shallowCopy(original);
+ *
+ * copy === original;           // false
+ * copy.user === original.user; // true
+ * ```
+ *
+ * @since 5.0.0
  */
 
-export function shallowCopy(object: any): any {
+export function shallowCopy<T>(object: T): T {
     if (Array.isArray(object)) {
-        return object.slice();
+        return <T> object.slice();
     }
 
     return Object.assign({}, object);
 }
 
 /**
- * Returns the value at the specified path in the given object.
+ * Reads the value at a path in a nested object.
+ *
+ * @param object - The object to read from
+ * @param path - The keys and indexes to walk, outermost first
+ * @returns The value at the path, or `undefined` when the path leaves the object tree
+ *
+ * @remarks
+ * The walk returns `undefined` as soon as an intermediate value is not an object, so it never throws.
+ * An empty path returns the object itself.
  *
  * @example
- * ```typescript
- * const test = { foo: { bar: 2 } };
- * get(test, [ 'foo', 'bar' ]) // to be 2
+ * ```ts
+ * const state = { foo: { bar: 2 } };
+ *
+ * get(state, [ 'foo', 'bar' ]);     // 2
+ * get(state, [ 'foo', 'missing' ]); // undefined
+ * get(state, []);                   // { foo: { bar: 2 } }
  * ```
  *
- * @param {object} object - The object to get the value from.
- * @param {Array<string|number>} path - The path to the value.
- * @returns {*} - The value at the specified path, or undefined if the path is not valid.
+ * @see set
+ *
+ * @since 5.0.0
  */
 
-export function get(object: any, path: Array<string | number>): any {
+export function get(object: unknown, path: Array<string | number>): unknown {
     let result = object;
 
     for (const key of path) {
@@ -41,49 +69,40 @@ export function get(object: any, path: Array<string | number>): any {
 }
 
 /**
- * Sets the value at the given path in the object.
- * If any intermediate keys in the path do not exist, they are created as empty objects.
- * A shallow copy of the object is made to avoid mutating the original object.
+ * Returns a copy of an object with a value written at a path.
+ *
+ * @param object - The object to start from, which stays unchanged
+ * @param path - The keys to walk, outermost first
+ * @param value - The value to write at the last key
+ * @returns A copy of the object with the value set, or the object itself when there is nothing to set
+ *
+ * @remarks
+ * The object and every intermediate value along the path are copied shallowly, and branches off the path stay shared.
+ * A missing or non-object intermediate value is replaced by a new empty object.
+ * A falsy object, a non-array path, or an empty path returns the object unchanged.
  *
  * @example
- * ```typescript
- * const original = {
- *      a: 1,
- *      b: {
- *          wat: 3,
- *      },
- * };
+ * ```ts
+ * const original = { a: 1, b: { wat: 3 } };
  *
- * set(original, [ 'b', 'c', 'd' ], 2)
+ * set(original, [ 'b', 'c', 'd' ], 2); // { a: 1, b: { wat: 3, c: { d: 2 } } }
+ * original.b;                          // { wat: 3 } - the original is untouched
  * ```
  *
- * @param object - The object to set the value in.
- * @param path - The path to the key whose value should be set.
- * @param value - The value to set at the key.
- * @returns A shallow copy of the object with the new value set at the given path.
+ * @see get
+ *
+ * @since 5.0.0
  */
 
-export function set(object: any, path: Array<string | number | symbol>, value: any): any {
+export function set<T>(object: T, path: Array<string | number | symbol>, value: unknown): T {
     if (!object || !Array.isArray(path) || path.length < 1) {
         return object;
     }
 
-    const result = shallowCopy(object);
-    let tempObjet = result;
+    const [ key, ...rest ] = path;
+    const result = <Record<PropertyKey, unknown>> shallowCopy(object);
+    const child = result[key];
+    result[key] = rest.length ? set(child && typeof child === 'object' ? child : {}, rest, value) : value;
 
-    for (let i = 0; i < path.length - 1; i++) {
-        const key = path[i];
-
-        if (!tempObjet[key] || typeof tempObjet[key] !== 'object') {
-            tempObjet[key] = {};
-        } else {
-            tempObjet[key] = shallowCopy(tempObjet[key]);
-        }
-
-        tempObjet = tempObjet[key];
-    }
-
-    tempObjet[path[path.length - 1]] = value;
-
-    return result;
+    return <T> result;
 }
