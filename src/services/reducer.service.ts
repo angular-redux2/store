@@ -322,6 +322,18 @@ export class ReducerService {
     private rootReducer: Reducer;
 
     /**
+     * The feature reducers of the store, by the top-level key that each one owns.
+     *
+     * @remarks
+     * {@link ReducerService.composeReducers} receives the map from the store and keeps a reference,
+     * so a feature that the store adds later takes part from the next action on.
+     *
+     * @since 6.0.0
+     */
+
+    private featureReducers: ReadonlyMap<string, Reducer> = new Map();
+
+    /**
      * The registry of local reducers, keyed by the hash of their source text.
      *
      * @remarks
@@ -359,12 +371,16 @@ export class ReducerService {
      *
      * @param rootReducer - The root reducer to run last
      * @param middlewares - The middlewares to run first, in order
+     * @param featureReducers - The reducers that own one top-level key each, next to the root reducer
      * @returns The composed reducer to hand to Redux
      *
      * @remarks
      * The chain is the middlewares, then the substore router, then the root reducer through a proxy draft.
      * A substore action that changes its branch stops at the router, so the root reducer does not see it.
      * Calling it again replaces the stored root reducer for every reducer that this service composed.
+     *
+     * The root reducer never sees the keys of the feature reducers, so `combineReducers` keeps them and does not warn.
+     * Each feature reducer receives a draft of its own key, and a feature key wins over the same key of the root.
      *
      * @example
      * ```ts
@@ -377,13 +393,18 @@ export class ReducerService {
      * @since 5.0.0
      */
 
-    composeReducers<State>(rootReducer: Reducer, middlewares: Array<MiddlewareInterface<State>> = []): Reducer {
+    composeReducers<State>(
+        rootReducer: Reducer,
+        middlewares: Array<MiddlewareInterface<State>> = [],
+        featureReducers: ReadonlyMap<string, Reducer> = new Map()
+    ): Reducer {
         this.rootReducer = rootReducer;
+        this.featureReducers = featureReducers;
 
         const middlewareList: Array<MiddlewareInterface> = [
             ...<Array<MiddlewareInterface>> <unknown> middlewares,
             this.subStoreRootReducer.bind(this),
-            (state, action): unknown => this.produce(state, action, this.rootReducer)
+            (state, action): unknown => this.reduceRoot(state, action)
         ];
 
         return (state: unknown, action: UnknownAction): unknown => this.executeMiddlewareChain(state, action, middlewareList);
@@ -553,6 +574,42 @@ export class ReducerService {
         }
 
         return next(state, action);
+    }
+
+    /**
+     * Runs the root reducer and every feature reducer, each against a draft of its own part of the state.
+     *
+     * @param state - The current root state
+     * @param action - The action being reduced
+     * @returns The next root state: the same object when no reducer changed anything
+     *
+     * @remarks
+     * Without feature reducers, the root reducer gets the whole state.
+     * Otherwise it gets a shallow copy without the feature keys,
+     * and each feature reducer gets the value under its key.
+     * The parts are merged into a new root object only when one of them changed.
+     *
+     * @since 6.0.0
+     */
+
+    private reduceRoot(state: unknown, action: UnknownAction): unknown {
+        if (this.featureReducers.size === 0) {
+            return this.produce(state, action, this.rootReducer);
+        }
+
+        const record = <Record<string, unknown> | undefined> state;
+        const rootState = record && Object.fromEntries(Object.entries(record).filter(([ key ]) => !this.featureReducers.has(key)));
+        const nextRoot = this.produce(rootState, action, this.rootReducer);
+        const features: Record<string, unknown> = {};
+        let changed = nextRoot !== rootState;
+
+        for (const [ key, reducer ] of this.featureReducers) {
+            const previous = record?.[key];
+            features[key] = this.produce(previous, action, reducer);
+            changed ||= features[key] !== previous;
+        }
+
+        return changed ? { ...<object> nextRoot, ...features } : state;
     }
 
     /**
