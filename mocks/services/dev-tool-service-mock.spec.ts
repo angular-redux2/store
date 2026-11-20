@@ -1,8 +1,8 @@
 /**
- * Mocks type
+ * Imports
  */
 
-import { MockDevToolsExtension } from './dev-tool.service.mock';
+import { MockDevToolsExtension } from '@mocks/services/dev-tool.service.mock';
 
 describe('MockDevToolsExtension', () => {
     let appRef: any;
@@ -11,11 +11,11 @@ describe('MockDevToolsExtension', () => {
 
     beforeEach(() => {
         appRef = {
-            tick: jest.fn(),
+            tick: xJet.fn()
         };
 
         ngRedux = {
-            subscribe: jest.fn(),
+            subscribe: xJet.fn()
         };
 
         mockDevToolsExtension = new MockDevToolsExtension(appRef, ngRedux);
