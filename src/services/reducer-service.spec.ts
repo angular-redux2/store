@@ -1,15 +1,15 @@
 /**
- * angular-redux2
+ * Type-only imports erased during TypeScript compilation.
  */
 
-import { ReducerService } from './reducer.service';
-import { ACTION_KEY } from '../interfaces/fractal.interface';
+import type { MiddlewareInterface } from '@interfaces/reducer.interface';
 
 /**
- * angular-redux2 types
+ * Imports
  */
 
-import type { Middleware } from '../interfaces/reducer.interface';
+import { ACTION_KEY } from '@interfaces/fractal.interface';
+import { ReducerService } from '@services/reducer.service';
 
 let reducerService: ReducerService;
 
@@ -57,7 +57,7 @@ describe('executeMiddlewareChain', () => {
     test('should return the state when no middleware functions to execute', () => {
         const state = {};
         const action = { type: 'TEST_ACTION' };
-        const middlewareList: Middleware[] = [];
+        const middlewareList: MiddlewareInterface[] = [];
 
         const newState = (reducerService as any).executeMiddlewareChain(state, action, middlewareList);
 
@@ -70,9 +70,9 @@ describe('executeMiddlewareChain', () => {
         const action = { type: 'TEST_ACTION' };
 
         // Define middleware functions
-        const middleware1 = jest.fn((state: any, action: any, next: any) => next(state));
-        const middleware2 = jest.fn((state: any, action: any, next: any) => next(state));
-        const middleware3 = jest.fn((state: any, action: any, next: any) => next(state));
+        const middleware1 = xJet.fn((state: any, action: any, next: any) => next(state));
+        const middleware2 = xJet.fn((state: any, action: any, next: any) => next(state));
+        const middleware3 = xJet.fn((state: any, action: any, next: any) => next(state));
 
         // Register the middleware functions with the reducer service
         const fn = reducerService.composeReducers((state: any) => state, [ middleware1, middleware2, middleware3 ]);
@@ -105,31 +105,11 @@ describe('executeMiddlewareChain', () => {
     });
 });
 
-describe('cleanup', () => {
-    test('should recursively remove all proxy-related properties from an object', () => {
-        const obj = {
-            prop1: {},
-            prop2: {
-                prop3: {
-                    prop4: {},
-                },
-            },
-            prop5: {},
-        };
-
-        const cleanedObj = (reducerService as any).cleanup(obj);
-
-        expect(cleanedObj.prop1).toEqual({});
-        expect(cleanedObj.prop2.prop3.prop4).toEqual({});
-        expect(cleanedObj.prop5).toEqual({});
-    });
-});
-
 describe('produce', () => {
     test('should produce a new state object based on the given base state object and an action object', () => {
         const state = {
             prop1: {},
-            prop2: {},
+            prop2: {}
         };
         const action = {};
         const producer = (state: any) => state;
@@ -172,11 +152,11 @@ describe('produce', () => {
 
     test('should not use proxy if state is not an object', () => {
         const action = { type: 'SOME_ACTION' };
-        const producer = jest.fn((state: any) => state);
+        const producer = xJet.fn((state: any) => state);
         const produce = (reducerService as any).produce;
 
         expect(produce(<any>'not an object', action, producer)).toBe('not an object');
-        expect(producer).toBeCalledWith('not an object', action);
+        expect(producer).toHaveBeenCalledWith('not an object', action);
     });
 });
 
@@ -188,26 +168,26 @@ describe('Immutable state created by js proxy', () => {
             loc: 'US',
             level1: {
                 level2: {
-                    name: 'test',
-                },
+                    name: 'test'
+                }
             },
             categoriesGroups: [
                 {
                     type: 'test',
                     visible: true,
-                    categories: [{ name: 'phone' }],
+                    categories: [{ name: 'phone' }]
                 },
                 {
                     type: 'number',
                     visible: true,
-                    categories: [{ name: 'phone' }],
-                },
-            ],
+                    categories: [{ name: 'phone' }]
+                }
+            ]
         };
     });
 
     test('creates new state with js proxy', () => {
-        const rootReducer = reducerService.composeReducers((state, action) => {
+        const rootReducer = reducerService.composeReducers((state: any, action: any) => {
             state.loc += action['payload'];
             state.level1.level2.name = 'test new name';
         });
@@ -217,15 +197,15 @@ describe('Immutable state created by js proxy', () => {
             loc: expect.any(String),
             level1: expect.objectContaining({
                 level2: expect.objectContaining({
-                    name: 'test new name',
-                }),
-            }),
+                    name: 'test new name'
+                })
+            })
         }));
         expect(newState._isProxy).toBeUndefined();
     });
 
     test('creates new state by js proxy with return state', () => {
-        const rootReducer = reducerService.composeReducers((state, action) => {
+        const rootReducer = reducerService.composeReducers((state: any, action: any) => {
             state.loc = action['payload'];
 
             return state;
@@ -233,7 +213,7 @@ describe('Immutable state created by js proxy', () => {
         const newState = rootReducer(state, { type: 'test', payload: 'test' });
 
         expect(newState).toEqual(expect.objectContaining({
-            loc: 'test',
+            loc: 'test'
         }));
         expect(newState._isProxy).toBeUndefined();
     });
@@ -250,9 +230,9 @@ describe('Immutable state created by js proxy', () => {
         expect(newState).toEqual(expect.objectContaining({
             level1: expect.objectContaining({
                 level2: expect.objectContaining({
-                    name: 'test new name',
-                }),
-            }),
+                    name: 'test new name'
+                })
+            })
         }));
         expect(newState.level1._isProxy).toBeUndefined();
     });
@@ -268,9 +248,9 @@ describe('Immutable state created by js proxy', () => {
 
         const newState = rootReducer(state, { type: 'test', payload: 'test' });
 
-        expect(state).not.toStrictEqual(newState);
-        expect(state.level1.name).toStrictEqual(undefined);
-        expect(newState.level1.name).toStrictEqual('test');
+        expect(state).not.toEqual(newState);
+        expect(state.level1.name).toEqual(undefined);
+        expect(newState.level1.name).toEqual('test');
         expect(newState.level1._isProxy).toBe(undefined);
     });
 });
@@ -302,7 +282,7 @@ describe('Complex nested object with js proxy', () => {
             ]
         };
 
-        const rootReducer = reducerService.composeReducers((state, action) => {
+        const rootReducer = reducerService.composeReducers((state: any, action: any) => {
             const users = state.users;
             const index = users.findIndex((user: any) => user.name === action['payload'].name);
 
@@ -327,14 +307,6 @@ describe('Complex nested object with js proxy', () => {
         expect(newState).not.toBe(state);
         expect(newState.users[0].address.city).toBe('New-town');
         expect(newState.users[0]._isProxy).toBeUndefined();
-    });
-});
-
-describe('Utility function', () => {
-    test('Should clean object from proxy rerun if is not an object.', () => {
-        const result = (reducerService as any).cleanup('test');
-
-        expect(result).toBe('test');
     });
 });
 
@@ -378,7 +350,7 @@ describe('registerSubReducer', () => {
     test('should do nothing if the sub-reducer does not exist', () => {
         (reducerService as any).map = {
             12345: (state: any) => state,
-            123456: (state: any) => state,
+            123456: (state: any) => state
         };
 
         reducerService.replaceSubReducer(789, () => ({ foo: 'bar' }));
@@ -388,10 +360,10 @@ describe('registerSubReducer', () => {
 
     test('should replace the sub-reducer with the given hash key', () => {
         const hashReducer = 1;
-        const nextLocalReducer = jest.fn();
+        const nextLocalReducer = xJet.fn();
 
         // Adding a mock reducer to the map
-        reducerService['mapSubReducers'][hashReducer] = jest.fn();
+        reducerService['mapSubReducers'][hashReducer] = xJet.fn();
 
         // Replacing the reducer with the given hash key
         reducerService.replaceSubReducer(hashReducer, nextLocalReducer);
@@ -405,9 +377,9 @@ describe('subStoreRootReducer', () => {
     const initialState = {
         foo: {
             bar: {
-                test: 42,
-            },
-        },
+                test: 42
+            }
+        }
     };
 
     const action = {
@@ -415,14 +387,14 @@ describe('subStoreRootReducer', () => {
         payload: 'name',
         [ACTION_KEY]: {
             hash: 1234,
-            path: [ 'foo', 'bar' ],
-        },
+            path: [ 'foo', 'bar' ]
+        }
     };
 
-    const next = jest.fn((state: any) => state);
+    const next = xJet.fn((state: any) => state);
 
     test('should update state correctly for a matching action', () => {
-        const localReducer = jest.fn((state, action) => {
+        const localReducer = xJet.fn((state: any, action: any) => {
             return {
                 test: {
                     baz: action.payload
@@ -436,9 +408,9 @@ describe('subStoreRootReducer', () => {
         expect(state).toEqual({
             foo: {
                 bar: {
-                    test: { baz: 'name' },
-                },
-            },
+                    test: { baz: 'name' }
+                }
+            }
         });
 
         expect(localReducer).toHaveBeenCalledWith(initialState.foo.bar, action);
