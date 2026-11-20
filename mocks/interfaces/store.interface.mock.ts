@@ -4,7 +4,7 @@
 
 import type { Subject } from 'rxjs';
 import type { ComparatorType } from '@angular-redux2/store';
-import type { MockNgRedux } from '@angular-redux2/store/mocks';
+import type { MockNgRedux } from '../services/ng-redux.service.mock';
 
 /**
  * The stub that {@link MockNgRedux} keeps for one selector.

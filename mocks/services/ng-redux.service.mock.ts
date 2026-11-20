@@ -7,7 +7,7 @@ import type { Observable, Subject } from 'rxjs';
 import type { UnknownAction, Unsubscribe } from 'redux';
 import type { SubStoreService } from '@angular-redux2/store';
 import type { ComparatorType, PathSelectorType, SelectorType } from '@angular-redux2/store';
-import type { SelectorStubMapInterface, SelectorStubRecordInterface, SubStoreStubMapInterface } from '@mocks/interfaces/store.interface.mock';
+import type { SelectorStubMapInterface, SelectorStubRecordInterface, SubStoreStubMapInterface } from '../interfaces/store.interface.mock';
 
 /**
  * Imports
