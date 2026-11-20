@@ -2,7 +2,7 @@
  * Imports
  */
 
-import { of } from 'rxjs';
+import { firstValueFrom, from, of } from 'rxjs';
 import { AbstractStore } from '@abstract/store.abstract';
 
 /**
@@ -26,6 +26,10 @@ describe('AbstractStore', () => {
 
             expect(store.select).toHaveBeenCalledWith();
             expect(observable).toBe(store.select.mock.results[0].value);
+        });
+
+        test('should let RxJS from() read the store without a Symbol.observable polyfill', async () => {
+            expect(await firstValueFrom(from(<any> new StubStore()))).toEqual({ count: 1 });
         });
     });
 });
