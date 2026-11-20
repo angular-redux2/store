@@ -1,31 +1,46 @@
 /**
- * angular-redux2
+ * Type-only imports erased during TypeScript compilation.
  */
 
-import { DevToolsExtension } from './dev-tool.service';
+import type { DevToolsExtension } from '@services/dev-tool.service';
+
+/**
+ * Imports
+ */
+
+import { NgZone } from '@angular/core';
 
 describe('DevToolsExtension', () => {
     let devTool: DevToolsExtension;
-    let appRef: any;
+    let DevTools: typeof DevToolsExtension;
+    let ngZone: any;
     let ngRedux: any;
     let environment: any;
 
-    beforeAll(() => {
-        appRef = {
-            tick: jest.fn(),
+    beforeAll(async () => {
+        // The service reads `window` once at module load, so it has to exist before the import.
+        (globalThis as any).window ??= globalThis;
+        DevTools = (await import('./dev-tool.service')).DevToolsExtension;
+
+        ngZone = {
+            run: xJet.fn()
         };
 
         ngRedux = {
-            subscribe: jest.fn(),
+            subscribe: xJet.fn()
         };
 
-        environment = typeof window !== 'undefined' ? window : {};
+        environment = window;
         environment.__REDUX_DEVTOOLS_EXTENSION__ = undefined;
     });
 
     beforeEach(() => {
-        devTool = new DevToolsExtension(appRef, ngRedux);
+        devTool = new DevTools(ngZone, ngRedux);
         environment.__REDUX_DEVTOOLS_EXTENSION__ = undefined;
+    });
+
+    afterEach(() => {
+        xJet.restoreAllMocks();
     });
 
     describe('isEnabled', () => {
@@ -45,34 +60,52 @@ describe('DevToolsExtension', () => {
         });
 
         test('should call listen method when __REDUX_DEVTOOLS_EXTENSION__ is defined', () => {
-            const listen = jest.fn();
-            environment.__REDUX_DEVTOOLS_EXTENSION__ = jest.fn();
+            const listen = xJet.fn();
+            environment.__REDUX_DEVTOOLS_EXTENSION__ = xJet.fn();
             environment.__REDUX_DEVTOOLS_EXTENSION__.listen = listen;
 
             devTool.enhancer({});
-            expect(listen).toBeCalled();
+            expect(listen).toHaveBeenCalled();
         });
 
-        test('should call tick and unsubscribe when START and STOP actions are detected', () => {
-            const unsubscribe = jest.fn();
-            const subscribe = jest.fn((callback) => {
+        test('should re-enter the zone and unsubscribe when START and STOP actions are detected', () => {
+            const unsubscribe = xJet.fn();
+            const subscribe = xJet.fn((callback: any) => {
                 callback();
 
                 return unsubscribe;
             });
-            const listen = jest.fn().mockImplementation((callback) => {
+            const listen = xJet.fn().mockImplementation((callback: any) => {
                 callback({ type: 'START' });
                 callback({ type: 'STOP' });
             });
 
-            jest.spyOn(devTool, 'isEnabled').mockReturnValue(true);
+            xJet.spyOn(devTool, 'isEnabled').mockReturnValue(true);
             ngRedux.subscribe = subscribe;
-            environment.__REDUX_DEVTOOLS_EXTENSION__ = jest.fn();
+            environment.__REDUX_DEVTOOLS_EXTENSION__ = xJet.fn();
             environment.__REDUX_DEVTOOLS_EXTENSION__.listen = listen;
             devTool.enhancer({});
 
-            expect(appRef.tick).toBeCalledTimes(1);
-            expect(unsubscribe).toBeCalledTimes(1);
+            expect(ngZone.run).toHaveBeenCalledTimes(1);
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        });
+
+        test('should leave a change made inside Angular alone, so a render never starts another (NG0101)', () => {
+            ngZone.run.mockClear();
+            const listen = xJet.fn().mockImplementation((callback: any) => callback({ type: 'START' }));
+            ngRedux.subscribe = xJet.fn((callback: any) => {
+                callback();
+
+                return xJet.fn();
+            });
+
+            xJet.spyOn(devTool, 'isEnabled').mockReturnValue(true);
+            xJet.spyOn(NgZone, 'isInAngularZone').mockReturnValue(true);
+            environment.__REDUX_DEVTOOLS_EXTENSION__ = xJet.fn();
+            environment.__REDUX_DEVTOOLS_EXTENSION__.listen = listen;
+            devTool.enhancer({});
+
+            expect(ngZone.run).not.toHaveBeenCalled();
         });
     });
 });
