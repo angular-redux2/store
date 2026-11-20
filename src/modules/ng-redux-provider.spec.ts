@@ -84,6 +84,19 @@ describe('provideNgRedux', () => {
         expect(ngRedux.getState()).toEqual({ counter: 1, lastAction: 'INCREMENT' });
     });
 
+    test('should freeze the state when freeze is set', async () => {
+        const ngRedux = await start({ reducer, initialState: { ...INITIAL_STATE }, freeze: true });
+        ngRedux.dispatch({ type: 'INCREMENT' });
+
+        expect(Object.isFrozen(ngRedux.getState())).toBe(true);
+    });
+
+    test('should leave the state unfrozen by default', async () => {
+        const ngRedux = await start({ reducer, initialState: { ...INITIAL_STATE } });
+
+        expect(Object.isFrozen(ngRedux.getState())).toBe(false);
+    });
+
     test('should connect no DevTools enhancer when devTools is off', async () => {
         const enhancer = xJet.spyOn(DevToolsExtension.prototype, 'enhancer');
         await start({ reducer, initialState: INITIAL_STATE });
