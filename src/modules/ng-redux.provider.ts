@@ -10,6 +10,7 @@ import type { NgReduxConfigInterface } from '../interfaces/provider.interface';
  */
 
 import { NgRedux } from '../services/ng-redux.service';
+import { freezeState } from '../components/freeze.component';
 import { DevToolsExtension } from '../services/dev-tool.service';
 import { inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
 
@@ -24,6 +25,7 @@ import { inject, makeEnvironmentProviders, provideAppInitializer } from '@angula
  * It replaces importing {@link NgReduxModule} and calling {@link NgRedux.configureStore} from an app initializer.
  * The store is configured before the first component renders, so decorated members can read it at once.
  * The DevTools enhancer is added last, after the configured `enhancers`, and only when the extension is installed.
+ * The {@link freezeState} enhancer, when `freeze` is set, comes first.
  *
  * @example
  * ```ts
@@ -43,17 +45,16 @@ import { inject, makeEnvironmentProviders, provideAppInitializer } from '@angula
 export function provideNgRedux<State>(config: NgReduxConfigInterface<State>): EnvironmentProviders {
     return makeEnvironmentProviders([
         provideAppInitializer(() => {
-            const { reducer, initialState, middleware = [], enhancers = [], devTools } = config;
+            const { reducer, initialState, middleware = [], enhancers = [], devTools, freeze } = config;
             const devToolsEnhancer = devTools
                 ? inject(DevToolsExtension).enhancer(devTools === true ? undefined : devTools)
                 : null;
 
-            inject(NgRedux<State>).configureStore(
-                reducer,
-                initialState,
-                middleware,
-                devToolsEnhancer ? [ ...enhancers, devToolsEnhancer ] : enhancers
-            );
+            inject(NgRedux<State>).configureStore(reducer, initialState, middleware, [
+                ...freeze ? [ freezeState() ] : [],
+                ...enhancers,
+                ...devToolsEnhancer ? [ devToolsEnhancer ] : []
+            ]);
         })
     ]);
 }

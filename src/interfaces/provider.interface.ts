@@ -80,4 +80,21 @@ export interface NgReduxConfigInterface<State> {
      */
 
     devTools?: boolean | Record<string, unknown>;
+
+    /**
+     * Freezes the state, so code that mutates it outside a reducer throws at the write.
+     *
+     * @remarks
+     * `true` adds the {@link freezeState} enhancer before the configured `enhancers`.
+     * Freezing walks the new parts of the state after every action, so pass `isDevMode()` to keep it out of production.
+     *
+     * @example
+     * ```ts
+     * provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, freeze: isDevMode() });
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    freeze?: boolean;
 }
