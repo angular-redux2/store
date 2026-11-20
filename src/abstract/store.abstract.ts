@@ -189,4 +189,28 @@ export abstract class AbstractStore<State> implements Store<State> {
     [Symbol.observable](): ReturnType<Store<State>[typeof Symbol.observable]> {
         return <ReturnType<Store<State>[typeof Symbol.observable]>> <unknown> this.select();
     }
+
+    /**
+     * Returns the whole state as an observable, under the key that RxJS and Redux fall back to.
+     *
+     * @returns An observable that emits the current state and every change
+     *
+     * @remarks
+     * Without a polyfill, `Symbol.observable` is `undefined`,
+     * so the method above sits under the key `'undefined'` and `from(store)` cannot find it.
+     * RxJS and Redux then look for `'@@observable'` instead, which this method answers.
+     *
+     * @example
+     * ```ts
+     * from(ngRedux).subscribe(state => render(state)); // the current state, then every change
+     * ```
+     *
+     * @see AbstractStore.select
+     *
+     * @since 6.0.0
+     */
+
+    ['@@observable'](): ReturnType<Store<State>[typeof Symbol.observable]> {
+        return <ReturnType<Store<State>[typeof Symbol.observable]>> <unknown> this.select();
+    }
 }
