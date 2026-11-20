@@ -3,6 +3,7 @@
  */
 
 import type { Observable } from 'rxjs';
+import type { Signal } from '@angular/core';
 import type { TransformerType } from '../interfaces/store.interface';
 import type { ComparatorType, SelectorType } from '../interfaces/store.interface';
 
@@ -49,6 +50,57 @@ import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 export function Select<T, RootState = unknown>(selector?: SelectorType<RootState, T>, comparator?: ComparatorType<T>): PropertyDecorator {
     return (target: object, name: string | symbol): void =>
         createSelectDecorator<RootState, T, T>(selector ?? String(name).replace(/\$\s*$/, ''), comparator)(target, name);
+}
+
+/**
+ * Replaces the decorated property with a signal of a slice of the state.
+ *
+ * @typeParam T - The type of the selected value
+ * @typeParam RootState - The type of the state a function selector reads, inferred from its parameter
+ * @param selector - The key, path, or function that locates the value, defaulting to the property name
+ * @param comparator - The equality check that decides whether a new value is a change
+ * @returns A property decorator
+ *
+ * @remarks
+ * It is the signal counterpart of {@link Select}, built on `selectSignal`, so a template reads the value without
+ * the `async` pipe and without a subscription.
+ * Without a selector, the property name becomes a property selector as it is, so `count` selects `count`.
+ * The property turns into a getter that creates the signal on first read and returns the same one afterward,
+ * from the substore when the class carries `Substore` and from the root {@link NgRedux} store otherwise.
+ * Like the other decorators, it needs `useDefineForClassFields: false`, and {@link injectSelect} is the alternative
+ * that works without it.
+ *
+ * @example
+ * ```ts
+ * @Component({ template: '{{ count() }} / {{ name() }}' })
+ * class CounterComponent {
+ *     @SelectSignal() readonly count: Signal<number>;                  // selects 'count'
+ *     @SelectSignal([ 'user', 'name' ]) readonly name: Signal<string>; // selects a path
+ * }
+ * ```
+ *
+ * @see Select
+ * @see injectSelect
+ * @see AbstractStore.selectSignal
+ *
+ * @since 6.0.0
+ */
+
+export function SelectSignal<T, RootState = unknown>(selector?: SelectorType<RootState, T>, comparator?: ComparatorType<T>): PropertyDecorator {
+    return (target: object, name: string | symbol): void => {
+        Object.defineProperty(target, name, {
+            get(this: object): Signal<unknown> {
+                const flags = new DecoratorFlagComponent(this);
+
+                return <Signal<unknown>> (flags.selections[name] ??= flags.store.selectSignal(
+                    <SelectorType<unknown, T>> (selector ?? String(name)),
+                    comparator
+                ));
+            },
+            enumerable: true,
+            configurable: true
+        });
+    };
 }
 
 /**
@@ -164,9 +216,9 @@ function getInstanceSelection<RootState, S, T>(
 ): Observable<unknown> {
     const flags = new DecoratorFlagComponent(decoratedInstance);
 
-    return flags.selections[name] ??= transformer
+    return <Observable<unknown>> (flags.selections[name] ??= transformer
         ? flags.store.select(<SelectorType<unknown, S>> selector).pipe(
             (obs$: Observable<S>) => transformer(obs$, decoratedInstance),
             distinctUntilChanged(comparator)
-        ) : flags.store.select(<SelectorType<unknown, S>> selector, <ComparatorType<S> | undefined> <unknown> comparator);
+        ) : flags.store.select(<SelectorType<unknown, S>> selector, <ComparatorType<S> | undefined> <unknown> comparator));
 }

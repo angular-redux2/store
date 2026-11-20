@@ -11,6 +11,8 @@ import type { UnknownAction } from 'redux';
 import { createStore } from 'redux';
 import { NgRedux } from '@services/ng-redux.service';
 import { injectSelect } from '@modules/ng-redux.inject';
+import { Substore } from '@decorators/substore.decorator';
+import { SelectSignal } from '@decorators/select.decorator';
 import { Injector, runInInjectionContext } from '@angular/core';
 
 /**
@@ -121,5 +123,51 @@ describe('injectSelect', () => {
 
     test('should throw outside an injection context', () => {
         expect(() => injectSelect('count')).toThrow();
+    });
+});
+
+describe('SelectSignal', () => {
+    test('should select the property name and follow the state', () => {
+        const ngRedux = configure();
+
+        class CounterComponent {
+            @SelectSignal() readonly count: () => number;
+        }
+
+        const component = new CounterComponent();
+        ngRedux.dispatch({ type: 'INCREMENT' });
+
+        expect(component.count()).toBe(1);
+        expect(component.count).toBe(component.count);
+    });
+
+    test('should select a path, with a comparator that keeps the previous value', () => {
+        const ngRedux = configure();
+
+        class UserComponent {
+            @SelectSignal([ 'users', 'ada' ], (previous: any, next: any) => previous.name === next.name)
+            readonly user: () => { name: string };
+        }
+
+        const component = new UserComponent();
+        const first = component.user();
+        ngRedux.dispatch({ type: 'RENAME', name: 'Ada' });
+
+        expect(component.user()).toBe(first);
+    });
+
+    test('should select from the substore of a Substore class', () => {
+        configure();
+
+        @Substore((state: { name: string } = { name: '' }) => state)
+        class UserComponent {
+            @SelectSignal() readonly name: () => string;
+
+            basePath(): Array<string> {
+                return [ 'users', 'bob' ];
+            }
+        }
+
+        expect(new UserComponent().name()).toBe('Bob');
     });
 });
