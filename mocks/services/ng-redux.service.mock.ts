@@ -1,144 +1,204 @@
 /**
- * Import a third-party library
+ * Type-only imports erased during TypeScript compilation.
  */
 
+import type { Signal } from '@angular/core';
+import type { Observable, Subject } from 'rxjs';
+import type { UnknownAction, Unsubscribe } from 'redux';
+import type { SubStoreService } from '@angular-redux2/store';
+import type { ComparatorType, PathSelectorType, SelectorType } from '@angular-redux2/store';
+import type { SelectorStubMapInterface, SelectorStubRecordInterface, SubStoreStubMapInterface } from '@mocks/interfaces/store.interface.mock';
+
+/**
+ * Imports
+ */
+
+import { signal } from '@angular/core';
+import { NgRedux } from '@angular-redux2/store';
 import { distinctUntilChanged, ReplaySubject } from 'rxjs';
 
 /**
- * Import third-party types
- */
-
-import type { Observable, Subject } from 'rxjs';
-import type { AnyAction, Reducer, Store, Unsubscribe } from 'redux';
-
-/**
- * angular-redux2
- */
-
-import { NgRedux } from '@angular-redux2/store';
-
-/**
- * angular-redux2 types
- */
-import type { Comparator, PathSelector, Selector } from '@angular-redux2/store';
-
-/**
- * Mocks type
- */
-
-import type { SubStoreService } from '@angular-redux2/store';
-import type { SelectorStubMap, SelectorStubRecord, SubStoreStubMap } from '../interfaces/store.interface.mock';
-
-/**
- * This is the public of `@angular-redux2/store`.
- * It wraps the global redux store and adds a few other add-on methods.
- * It's what you'll inject into your Angular application as a service.
+ * A stand-in for {@link NgRedux} that lets a unit test push values into selections.
  *
- * `Convenience mock to make it easier to control selector behaviour in unit tests.`
+ * @typeParam S - The type of the root state
+ *
+ * @remarks
+ * Every `select` and `selectSignal` call, including the ones behind the decorators and `injectSelect`,
+ * returns the subject of a selector stub instead of reading a state.
+ * A test pushes values into that subject with {@link MockNgRedux.getSelectorStub}.
+ * Substores are mocks too, and {@link MockNgRedux.getSubStore} returns the one for a base path.
+ * Store methods such as `dispatch`, `getState`, and `configureStore` are inert,
+ * so spy on them where a test needs to check a call.
+ *
+ * The static methods work on one shared instance, which {@link MockNgReduxModule} also injects as `NgRedux`.
+ * The decorators read `NgRedux.store` instead, and the `NgRedux` constructor points it at every new mock,
+ * mock substores included.
+ * Once a test creates a mock substore, through `getSubStore` or through a `Substore` component,
+ * decorated members that have not been read yet select from that substore mock rather than from the shared root.
+ * Read the decorated members of root-level components before creating mock substores.
+ * Call {@link MockNgRedux.reset} between tests to drop every stub.
+ *
+ * @example
+ * ```ts
+ * beforeEach(() => MockNgRedux.reset());
+ *
+ * test('shows the count', () => {
+ *     const count = MockNgRedux.getSelectorStub<AppState, number>('count');
+ *     count.next(3);
+ *
+ *     component.count$.subscribe(value => expect(value).toBe(3));
+ * });
+ * ```
+ *
+ * @see MockNgReduxModule
+ * @see SelectorStubMapInterface
+ *
+ * @since 5.0.0
  */
 
-export class MockNgRedux<S = any> extends NgRedux<S> {
+export class MockNgRedux<S = unknown> extends NgRedux<S> {
     /**
-     * Mock substore
+     * The mock substores created so far, keyed by the JSON form of their base path.
+     *
+     * @remarks
+     * {@link MockNgRedux.getSubStore} and `configureSubStore` both create entries here.
+     *
+     * @example
+     * ```ts
+     * MockNgRedux.getSubStore([ 'users', 'u1' ]);
+     * Object.keys(MockNgRedux.store.subStores); // [ '["users","u1"]' ]
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    subStores: SubStoreStubMap = {};
+    subStores: SubStoreStubMapInterface = {};
 
     /**
-     * Mock selectors
+     * The selector stubs created so far, keyed by the string form of each selector.
+     *
+     * @remarks
+     * {@link MockNgRedux.getSelectorStub} and `select` both create entries here.
+     *
+     * @example
+     * ```ts
+     * MockNgRedux.getSelectorStub('count');
+     * Object.keys(MockNgRedux.store.selections); // [ 'count' ]
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    selections: SelectorStubMap = {};
+    selections: SelectorStubMapInterface = {};
 
     /**
-     * Instance of NgRedux (singleton service).
+     * The shared mock that the static methods use.
+     *
+     * @remarks
+     * {@link MockNgRedux.store} creates it on first access.
+     *
      * @hidden
+     * @since 5.0.0
      */
 
-    protected static override instance: MockNgRedux<any>;
+    protected static override instance: MockNgRedux<unknown>;
 
     /**
-     * access to singleton service instance.
+     * The shared mock, created on first access.
+     *
+     * @remarks
+     * Unlike {@link NgRedux.store}, it never throws, since it creates the mock when none exists.
+     *
+     * @example
+     * ```ts
+     * MockNgRedux.store === MockNgRedux.store; // true
+     * ```
+     *
      * @hidden
+     * @since 5.0.0
      */
 
-    static override get store(): MockNgRedux<any> {
-        this.instance ||= new MockNgRedux<any>();
+    static override get store(): MockNgRedux<unknown> {
+        this.instance ||= new MockNgRedux<unknown>();
 
         return this.instance;
     }
 
     /**
-     * Returns a subject that's connected to any observable returned by the
-     * given selector. You can use this subject to pump values into your
-     * components or services under test; when they call .select or @select
-     * in the context of a unit test, MockNgRedux will give them the values
-     * you pushed onto your stub.
+     * Returns the subject behind a selector of the shared root mock.
      *
-     * ```typescript
-     *   it('select ticket price data from the substore', async(() => {
-     *     const mockSubStore = MockNgRedux.getSubStore(
-     *       ['WALLABIES', 'items', 'id1']);
+     * @typeParam R - The type of the root state
+     * @typeParam S - The type of the selected value
+     * @param selector - The selector that the code under test uses
+     * @param comparator - The comparator to store on a new stub
+     * @returns The subject that feeds every selection with that selector
      *
-     *     const selectorStub = mockSubStore.getSelectorStub('ticketPrice');
-     *     selectorStub.next(2);
-     *     selectorStub.complete();
+     * @remarks
+     * It forwards to {@link MockNgRedux.getSelectorStub} on the shared instance.
+     * Use the instance method on a mock substore to stub a selection of a `Substore` component.
+     * A decorated member reads `NgRedux.store`, which may no longer be the shared root once a mock substore exists.
      *
-     *     animalComponent.ticketPrice$
-     *       .subscribe(
-     *         ticketPrice => expect(ticketPrice).toEqual(2));
-     *   }));
+     * @example
+     * ```ts
+     * MockNgRedux.getSelectorStub('count').next(3); // every count$ selection emits 3
      * ```
+     *
+     * @since 5.0.0
      */
 
     static getSelectorStub<R, S>(
-        selector?: Selector<R, S>,
-        comparator?: Comparator
+        selector?: SelectorType<R, S>,
+        comparator?: ComparatorType<S>
     ): Subject<S> {
         return this.store.getSelectorStub<S>(
-            selector,
+            <SelectorType<unknown, S> | undefined> selector,
             comparator
         );
     }
 
     /**
-     * Returns a mock substore that allows you to set up selectorStubs for
-     * any 'fractal' stores your app creates with NgRedux.configureSubStore.
+     * Returns the mock substore for a chain of base paths below the shared root mock.
      *
-     * If your app creates deeply nested sub stores from another sub store,
-     * pass the chain of pathSelectors in as ordered arguments to mock
-     * the nested sub store out.
+     * @typeParam S - The type of the state of the mock substore
+     * @param pathSelectors - The base path of each level, outermost first
+     * @returns The mock substore at the end of the chain, or the root mock without arguments
      *
-     * ```typescript
+     * @remarks
+     * Pass one path per `configureSubStore` level that the code under test creates,
+     * so a substore of a substore takes two paths.
+     * A path is matched by its JSON form, so it must equal the path that the code passes.
      *
-     *   it('select name data from the substore', async(() => {
-     *     const mockSubStore = MockNgRedux.getSubStore(['WALLABIES', 'items', 'id1']);
-     *
-     *     const selectorStub = mockSubStore.getSelectorStub('name');
-     *     selectorStub.next('Wilbert');
-     *     selectorStub.complete();
-     *
-     *     animalComponent.name$
-     *       .subscribe(
-     *         name => expect(name).toEqual('Wilbert'));
-     *   }));
+     * @example
+     * ```ts
+     * const user = MockNgRedux.getSubStore([ 'users', 'u1' ]);
+     * user.getSelectorStub('name').next('Ada'); // the name$ of that user component emits 'Ada'
      * ```
+     *
+     * @since 5.0.0
      */
 
     static getSubStore<S>(
-        ...pathSelectors: PathSelector[]
+        ...pathSelectors: PathSelectorType[]
     ): MockNgRedux<S> {
         return pathSelectors.length
-            ? this.store.getSubStore(...pathSelectors)
-            : this.store;
+            ? this.store.getSubStore<S>(...pathSelectors)
+            : <MockNgRedux<S>> <unknown> this.store;
     }
 
     /**
-     * Reset all previously configured stubs.
+     * Drops every selector stub and mock substore of the shared root mock.
      *
-     * ```typescript
+     * @remarks
+     * Call it in a `beforeEach`, so values pushed in one test do not leak into the next.
+     * Observables that were selected before the reset keep their old subjects.
+     *
+     * @example
+     * ```ts
      * MockNgRedux.reset();
+     * MockNgRedux.store.selections; // {}
      * ```
+     *
+     * @since 5.0.0
      */
 
     static reset(): void {
@@ -146,82 +206,85 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * Returns a subject that's connected to any observable returned by the
-     * given selector. You can use this subject to pump values into your
-     * components or services under test; when they call .select or @select
-     * in the context of a unit test, MockNgRedux will give them the values
-     * you pushed onto your stub.
+     * Returns the subject behind a selector of this mock, creating the stub when needed.
      *
-     * ```typescript
-     *   it('select ticket price data from the substore', async(() => {
-     *     const mockSubStore = MockNgRedux.getSubStore(
-     *       ['WALLABIES', 'items', 'id1']);
+     * @typeParam SelectedState - The type of the selected value
+     * @param selector - The selector that the code under test uses
+     * @param comparator - The comparator to store on a new stub
+     * @returns The subject that feeds every selection with that selector
      *
-     *     const selectorStub = mockSubStore.getSelectorStub('ticketPrice');
-     *     selectorStub.next(2);
-     *     selectorStub.complete();
+     * @remarks
+     * The stub is shared with `select`, so the order does not matter:
+     * values pushed before the code under test selects are replayed to it.
      *
-     *     animalComponent.ticketPrice$
-     *       .subscribe(
-     *         ticketPrice => expect(ticketPrice).toEqual(2));
-     *   }));
+     * @example
+     * ```ts
+     * const name = MockNgRedux.getSubStore([ 'users', 'u1' ]).getSelectorStub<string>('name');
+     * name.next('Ada');
      * ```
+     *
+     * @since 5.0.0
      */
 
-    getSelectorStub<SelectedState>(selector?: Selector<S, SelectedState>, comparator?: Comparator): Subject<SelectedState> {
-        return this.initSelectorStub<SelectedState>(selector, comparator).subject;
+    getSelectorStub<SelectedState>(selector?: SelectorType<S, SelectedState>, comparator?: ComparatorType<SelectedState>): Subject<SelectedState> {
+        return <Subject<SelectedState>> this.initSelectorStub<SelectedState>(selector, comparator).subject;
     }
 
     /**
-     * Returns a mock substore that allows you to set up selectorStubs for
-     * any 'fractal' stores your app creates with NgRedux.configureSubStore.
+     * Returns the mock substore for a chain of base paths below this mock.
      *
-     * If your app creates deeply nested sub stores from another sub store,
-     * pass the chain of pathSelectors in as ordered arguments to mock
-     * the nested sub store out.
+     * @typeParam SubState - The type of the state of the mock substore
+     * @param pathSelectors - The base path of each level, outermost first
+     * @returns The mock substore at the end of the chain, or this mock without arguments
      *
-     * ```typescript
+     * @remarks
+     * Missing levels are created on the way, and existing ones are reused.
      *
-     *   it('select name data from the substore', async(() => {
-     *     const mockSubStore = MockNgRedux.getSubStore(['WALLABIES', 'items', 'id1']);
-     *
-     *     const selectorStub = mockSubStore.getSelectorStub('name');
-     *     selectorStub.next('Wilbert');
-     *     selectorStub.complete();
-     *
-     *     animalComponent.name$
-     *       .subscribe(
-     *         name => expect(name).toEqual('Wilbert'));
-     *   }));
+     * @example
+     * ```ts
+     * const address = mock.getSubStore([ 'users', 'u1' ], [ 'address' ]);
+     * address.getSelectorStub('city').next('Paris');
      * ```
+     *
+     * @since 5.0.0
      */
 
-    getSubStore<SubState>(...pathSelectors: PathSelector[]): MockNgRedux<SubState> {
+    getSubStore<SubState>(...pathSelectors: PathSelectorType[]): MockNgRedux<SubState> {
         const [ first, ...rest ] = pathSelectors;
 
-        return (first ? this.initSubStore(first).getSubStore(...rest) : this) as MockNgRedux<SubState>;
+        return <MockNgRedux<SubState>> <unknown> (first ? this.initSubStore(first).getSubStore(...rest) : this);
     }
 
     /**
-     * Reset all previously configured stubs.
+     * Drops every selector stub and mock substore of this mock, resetting the substores first.
      *
-     * ```typescript
-     * MockNgRedux.reset();
+     * @example
+     * ```ts
+     * mock.reset();
+     * mock.subStores; // {}
      * ```
+     *
+     * @since 5.0.0
      */
 
     reset(): void {
-        Object.keys(this.subStores).forEach(k => this.subStores[k].reset());
+        Object.values(this.subStores).forEach(subStore => subStore.reset());
         this.selections = {};
         this.subStores = {};
     }
 
     /**
-     * `Configures a Mock Redux store`
+     * Does nothing, so code under test may configure the store freely.
      *
-     * >Configures a Redux store and allows NgRedux to observe and dispatch to it.
-     *`This should only be called once for the lifetime of your app, for
-     *  example, in the constructor of your root component.`
+     * @remarks
+     * Unlike {@link NgRedux.configureStore}, it never throws on a second call.
+     *
+     * @example
+     * ```ts
+     * mock.configureStore(); // no Redux store is created
+     * ```
+     *
+     * @since 5.0.0
      */
 
     override configureStore(): void {
@@ -229,48 +292,78 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * `Config mock sub-store`
-     * Carves off a 'subStore' or 'fractal' store from this one.
+     * Returns the mock substore for a base path and ignores the reducer.
      *
-     * >The returned object is itself an observable store, however, any
-     * selections, dispatches, or invocations of localReducer will be
-     * specific to that sub-store and will not know about the parent
-     * ObservableStore from which it was created.
+     * @typeParam SubState - The type of the state of the substore
+     * @param basePath - The path of the substore
+     * @returns The mock substore for that path, typed as a substore
+     *
+     * @remarks
+     * The same path always returns the same mock, which {@link MockNgRedux.getSubStore} also returns.
+     *
+     * @example
+     * ```ts
+     * mock.configureSubStore([ 'users', 'u1' ], userReducer) === mock.getSubStore([ 'users', 'u1' ]); // true
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    override configureSubStore<SubState>(basePath: PathSelector, _: Reducer<SubState>): SubStoreService<SubState> {
-        return this.initSubStore<SubState>(basePath);
+    override configureSubStore<SubState>(basePath: PathSelectorType): SubStoreService<SubState> {
+        return <SubStoreService<SubState>> <unknown> this.initSubStore<SubState>(basePath);
     }
 
     /**
-     * `Mock provideStore`
+     * Does nothing and ignores both arguments.
      *
-     * > Accepts a Redux store, then sets it in NgRedux and allows NgRedux to observe and dispatch to it.
-     * This should only be called once for the lifetime of your app, for example, in the constructor of your root component.
+     *
+     * @example
+     * ```ts
+     * mock.provideStore(rootReducer, store); // no store is adopted
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    override provideStore(_: any, __: Store<any>): void {
+    override provideStore(): void {
         return;
     }
 
     /**
-     * `Mock dispatch`
+     * Returns the action without dispatching it.
      *
-     * > A `dispatching function` (or simply *dispatch function*) is a function that
-     * accepts an actions or an async actions; it then may or may not dispatch one
-     * or more actions to the store.
+     * @typeParam A - The type of the action
+     * @param action - The action to return
+     * @returns The same action
+     *
+     * @remarks
+     * No reducer runs and no stub changes, so spy on the method to check what the code under test dispatched.
+     *
+     * @example
+     * ```ts
+     * const spy = xJet.spyOn(MockNgRedux.store, 'dispatch');
+     * component.increment();
+     * expect(spy).toHaveBeenCalledWith({ type: 'INCREMENT' });
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    override dispatch<A extends AnyAction>(action: A): A {
+    override dispatch<A extends UnknownAction>(action: A): A {
         return action;
     }
 
     /**
-     * `Mock replaceReducer`
+     * Does nothing and returns `null`.
      *
-     * > Replaces the reducer currently used by the store to calculate the state.
-     * You might need this if your app implements code splitting, and you want to load some reducers dynamically.
-     * You might also need this if you implement a hot reloading mechanism for Redux.
+     * @returns Always `null`
+     *
+     * @example
+     * ```ts
+     * mock.replaceReducer(); // null
+     * ```
+     *
+     * @since 5.0.0
      */
 
     override replaceReducer(): null {
@@ -278,8 +371,19 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * `Mock getState`
-     * > Get store state
+     * Returns an empty object as the state.
+     *
+     * @returns A new empty object on every call
+     *
+     * @remarks
+     * The stubs do not feed it, so code that reads `getState` directly needs a spy that returns a state.
+     *
+     * @example
+     * ```ts
+     * mock.getState(); // {}
+     * ```
+     *
+     * @since 5.0.0
      */
 
     override getState(): S {
@@ -287,11 +391,17 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * `Mock subscribe`
+     * Ignores the listener and returns a function that does nothing.
      *
-     * > Adds a change listener.
-     * It will be called any time an actions is dispatched, and some part of the state tree may potentially have changed.
-     * You may then call getState() to read the current state tree inside the callback.
+     * @returns An unsubscribe function without effect
+     *
+     * @example
+     * ```ts
+     * const unsubscribe = mock.subscribe();
+     * unsubscribe(); // null
+     * ```
+     *
+     * @since 5.0.0
      */
 
     override subscribe(): Unsubscribe {
@@ -299,81 +409,148 @@ export class MockNgRedux<S = any> extends NgRedux<S> {
     }
 
     /**
-     * `Mock Select`
-     * > Select a slice of state to expose as an observable.
+     * Returns the stubbed observable for a selector.
+     *
+     * @typeParam SelectedState - The type of the selected value
+     * @param selector - The selector to stub
+     * @param comparator - The comparator to store on a new stub
+     * @returns The subject of the stub, piped through `distinctUntilChanged` when the stub has a comparator
+     *
+     * @remarks
+     * The stub is shared with {@link MockNgRedux.getSelectorStub}, so the values that a test pushes appear here.
+     * Only the comparator of the call that created the stub is used.
+     *
+     * @example
+     * ```ts
+     * mock.getSelectorStub('count').next(3);
+     * mock.select('count'); // emits 3
+     * ```
+     *
+     * @since 5.0.0
      */
 
-    override select<SelectedState>(selector?: Selector<any, SelectedState>, comparator?: Comparator): Observable<any> {
+    override select<SelectedState>(selector?: SelectorType<S, SelectedState>, comparator?: ComparatorType<SelectedState>): Observable<SelectedState> {
         const stub = this.initSelectorStub<SelectedState>(selector, comparator);
 
-        return stub.comparator
+        return <Observable<SelectedState>> (stub.comparator
             ? stub.subject.pipe(distinctUntilChanged(stub.comparator))
-            : stub.subject;
+            : stub.subject);
     }
 
-
     /**
-     * Init new mock sub-store
-     * @hidden
+     * Returns a signal that follows the stubbed values of a selector.
+     *
+     * @typeParam SelectedState - The type of the selected value
+     * @param selector - The selector to stub
+     * @param comparator - The comparator to store on a new stub
+     * @returns A read-only signal that holds the last value pushed into the stub, or `undefined` before the first
+     *
+     * @remarks
+     * The stub is shared with {@link MockNgRedux.getSelectorStub} and {@link MockNgRedux.select},
+     * so the values that a test pushes appear here, and `injectSelect` reads them in a component under test.
+     *
+     * @example
+     * ```ts
+     * const count = mock.selectSignal<number>('count');
+     *
+     * mock.getSelectorStub('count').next(3);
+     * count(); // 3
+     * ```
+     *
+     * @since 6.0.0
      */
 
-    protected initSubStore<SubState>(basePath: PathSelector): any {
-        const result = this.subStores[JSON.stringify(basePath)] || new MockNgRedux<SubState>();
-        this.subStores[JSON.stringify(basePath)] = result;
+    override selectSignal<SelectedState>(selector?: SelectorType<S, SelectedState>, comparator?: ComparatorType<SelectedState>): Signal<SelectedState> {
+        const value = signal(<SelectedState> undefined, { equal: comparator });
+        this.select(selector, comparator).subscribe(next => value.set(next));
 
-        return result;
+        return value.asReadonly();
+    }
+
+
+    /**
+     * Returns the mock substore for one base path, creating it when needed.
+     *
+     * @typeParam SubState - The type of the state of the substore
+     * @param basePath - The path of the substore
+     * @returns The mock substore stored under the JSON form of the path
+     *
+     * @remarks
+     * A new mock substore also becomes the instance that `NgRedux.store` returns,
+     * since the `NgRedux` constructor registers every instance.
+     *
+     * @hidden
+     * @since 5.0.0
+     */
+
+    protected initSubStore<SubState>(basePath: PathSelectorType): MockNgRedux<SubState> {
+        return <MockNgRedux<SubState>> (this.subStores[JSON.stringify(basePath)] ??= new MockNgRedux<unknown>());
     }
 
     /**
-     * Init selector stub
+     * Returns the stub record for a selector, creating it when needed.
+     *
+     * @typeParam SelectedState - The type of the selected value
+     * @param selector - The selector to stub
+     * @param comparator - The comparator to store on a new record
+     * @returns The record stored under the signature of the selector
+     *
+     * @remarks
+     * The signature is the string form of the selector, or the empty string for no selector.
+     * A function selector is normalized by {@link MockNgRedux.coverageFunctionSignature},
+     * and when coverage is collected, it is also called once with an empty object,
+     * so its body counts as covered.
+     *
      * @hidden
+     * @since 5.0.0
      */
 
     protected initSelectorStub<SelectedState>(
-        selector?: Selector<S, SelectedState>,
-        comparator?: Comparator
-    ): SelectorStubRecord {
+        selector?: SelectorType<S, SelectedState>,
+        comparator?: ComparatorType<SelectedState>
+    ): SelectorStubRecordInterface {
         let signature = selector ? selector.toString() : '';
 
         if ('function' === typeof selector) {
             signature = this.coverageFunctionSignature(signature);
             /**
-             * Run original coverage function
+             * Call the selector once under coverage, so its body counts as covered.
              */
 
-            if ((window as any)['__coverage__']) {
+            if ((<Record<string, unknown>> globalThis)['__coverage__']) {
                 try {
-                    selector(<any>{});
-                } catch (e) { /* empty */
+                    selector(<S> {});
+                } catch { /* empty */
                 }
             }
         }
 
-        const record = this.selections[signature] || {
+        return this.selections[signature] ??= <SelectorStubRecordInterface> {
             subject: new ReplaySubject<SelectedState>(),
-            comparator,
+            comparator
         };
-
-        this.selections[signature] = record;
-
-        return record;
     }
 
     /**
-     * Remove coverage metadata from function signature.
-     * and create uniq signature for stub selection.
+     * Normalizes the source of a function selector into a stub key.
      *
-     * @param signature - function signature
-     * @protected
+     * @param signature - The source text of the selector
+     * @returns The source without coverage counters, the word `return`, or any non-alphanumeric character
+     *
+     * @remarks
+     * Coverage instrumentation inserts counters into the source,
+     * so stripping them keeps the key the same with and without coverage.
+     * Two selectors that differ only in whitespace or punctuation share a key.
+     *
+     * @since 5.0.0
      */
 
     protected coverageFunctionSignature(
-        signature: string,
+        signature: string
     ): string {
-        signature = signature.replace(/cov_.+?[,;]/g, '');
-        signature = signature.replace(/return/g, '');
-        signature = signature.replace(/[^A-Za-z0-9]/g, '');
-
-        return signature;
+        return signature
+            .replace(/cov_.+?[,;]/g, '')
+            .replace(/return/g, '')
+            .replace(/[^A-Za-z0-9]/g, '');
     }
 }
