@@ -2,7 +2,9 @@
  * Public API Surface of store
  */
 
-export * from './ng-redux.module';
+export * from './modules/ng-redux.module';
+export * from './modules/ng-redux.inject';
+export * from './modules/ng-redux.provider';
 
 // Abstract
 export * from './abstract/reducer.abstract';
@@ -16,6 +18,7 @@ export * from './services/reducer.service';
 // Interfaces
 export * from './interfaces/store.interface';
 export * from './interfaces/reducer.interface';
+export * from './interfaces/provider.interface';
 
 // Decorators
 export * from './decorators/action.decorator';
@@ -23,5 +26,3 @@ export * from './decorators/select.decorator';
 export * from './decorators/dispatch.decorator';
 export * from './decorators/substore.decorator';
 
-// components
-export * from './components/object.component';
