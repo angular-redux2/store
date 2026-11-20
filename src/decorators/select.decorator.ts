@@ -1,168 +1,172 @@
 /**
- * Import third-party libraries
- */
-
-import { distinctUntilChanged } from 'rxjs';
-
-/**
- * Import third-party types
+ * Type-only imports erased during TypeScript compilation.
  */
 
 import type { Observable } from 'rxjs';
+import type { TransformerType } from '../interfaces/store.interface';
+import type { ComparatorType, SelectorType } from '../interfaces/store.interface';
 
 /**
- * angular-redux2
+ * Imports
  */
 
+import { distinctUntilChanged } from 'rxjs';
 import { DecoratorFlagComponent } from '../components/decorator-flag.component';
 
 /**
- * angular-redux2 types
- */
-
-import type { Transformer } from '../interfaces/store.interface';
-import type { Comparator, Selector } from '../interfaces/store.interface';
-
-/**
- * Selects an observable from the store, and attaches it to the decorated property.
+ * Replaces the decorated property with an observable of a slice of the state.
  *
+ * @typeParam T - The type of the selected value
+ * @typeParam RootState - The type of the state a function selector reads, inferred from its parameter
+ * @param selector - The key, path, or function that locates the value, defaulting to the property name
+ * @param comparator - The equality check that decides whether a new value is emitted
+ * @returns A property decorator
+ *
+ * @remarks
+ * Without a selector, the property name becomes a property selector, with one trailing `$` removed,
+ * so `count$` selects `count`.
+ * The property turns into a getter that creates the observable on first read and returns the same one afterward.
+ * The observable comes from the substore when the class carries `Substore` and `basePath()` returns a path,
+ * and from the root {@link NgRedux} store otherwise.
+ * The first read fixes the store, so a later change of `basePath()` does not reach a property that was already read.
+ *
+ * @example
  * ```ts
- *  import { select } from '@angular-redux2/store';
- *
- *  class SomeClass {
- *      @Select(['foo','bar']) foo$: Observable<string>
+ * class CounterComponent {
+ *     @Select() readonly count$: Observable<number>;                  // selects 'count'
+ *     @Select([ 'user', 'name' ]) readonly name$: Observable<string>; // selects a path
+ *     @Select(state => state.items.length) readonly size$: Observable<number>;
  * }
  * ```
  *
- * @param {Selector<any, T>} selector -
- * A selector function, property name string, or property name path
- * (array of strings/array indices) that locates the store data to be
- * selected
+ * @see Select$
+ * @see SelectorType
+ * @see Substore
  *
- * @param {Comparator} comparator - Function used to determine if this selector has changed.
+ * @since 5.0.0
  */
 
-export function Select<T>(selector?: Selector<any, T>, comparator?: Comparator): PropertyDecorator {
-    return (target: any, name: string | symbol): void => {
-        if (!selector) {
-            // remove $ from the name.
-            selector = String(name).replace(/\$\s*$/, '');
-        }
-
-        return createSelectDecorator(selector, comparator)(target, name);
-    };
+export function Select<T, RootState = unknown>(selector?: SelectorType<RootState, T>, comparator?: ComparatorType<T>): PropertyDecorator {
+    return (target: object, name: string | symbol): void =>
+        createSelectDecorator<RootState, T, T>(selector ?? String(name).replace(/\$\s*$/, ''), comparator)(target, name);
 }
 
 /**
- * Selects an observable using the given path selector, and runs it through the
- * given transformer function. A transformer function takes the store
- * observable as an input and returns a derived observable from it. That derived
- *  observable is run through distinctUntilChanges with the given optional
- * comparator and attached to the store property.
+ * Replaces the decorated property with a selection that runs through an observable transformer.
  *
- * `Think of a Transformer as a FunctionSelector that operates on observables
- * instead of values.`
+ * @typeParam S - The type of the selected value that the transformer receives
+ * @typeParam T - The type of the value that the transformed observable emits
+ * @typeParam RootState - The type of the state a function selector reads, inferred from its parameter
+ * @param selector - The key, path, or function that locates the value
+ * @param transformer - The function that derives a new observable from the selection
+ * @param comparator - The equality check applied after the transformer
+ * @returns A property decorator
  *
+ * @remarks
+ * Reach for it over {@link Select} when the value needs an RxJS operator, such as a debounce, rather than a mapping.
+ * The transformer receives the selection and the decorated instance,
+ * and its result goes through `distinctUntilChanged` with the optional comparator.
+ * The selector is required here, since the property name is not used as a default.
+ * Store lookup and caching work the same as for {@link Select}.
+ *
+ * @example
  * ```ts
- * import { select$ } from '@angular-redux2/store';
+ * const debounceAndTriple: TransformerType<number, number> = (count$) => count$.pipe(
+ *     debounceTime(300),
+ *     map(count => count * 3)
+ * );
  *
- * export const debounceAndTriple = obs$ => obs$
- *  .debounce(300)
- *  .map(x => 3 * x);
- *
- * class Foo {
- *      @Select$(['foo', 'bar'], debounceAndTriple)
- *      readonly debouncedFooBar$: Observable<number>;
+ * class CounterComponent {
+ *     @Select$('count', debounceAndTriple) readonly tripled$: Observable<number>;
  * }
  * ```
  *
- * @param {Selector<any, T>} selector -
- * A selector function, property name string, or property name path
- * (array of strings/array indices) that locates the store data to be
- * selected
+ * @see Select
+ * @see TransformerType
  *
- * @param {Transformer<any, T>} transformer - transformer that operates on observables instead of values.
- * @param {Comparator} comparator - Function used to determine if this selector has changed.
+ * @since 5.0.0
  */
 
-export function Select$<T>(
-    selector: Selector<any, T>,
-    transformer: Transformer<any, T>,
-    comparator?: Comparator
+export function Select$<S, T = S, RootState = unknown>(
+    selector: SelectorType<RootState, S>,
+    transformer: TransformerType<S, T>,
+    comparator?: ComparatorType<T>
 ): PropertyDecorator {
     return createSelectDecorator(selector, comparator, transformer);
 }
 
 /**
- * Selects an observable using the given path selector, and runs it through the
- * given transformer function. A transformer function takes the store
- * observable as an input and returns a derived observable from it.
+ * Builds the property decorator that both {@link Select} and {@link Select$} return.
  *
- * @param {Selector<any, any>} selector -
- * A selector function, property name string, or property name path
- * (array of strings/array indices) that locates the store data to be
- * selected
+ * @typeParam RootState - The type of the state a function selector reads
+ * @typeParam S - The type of the selected value
+ * @typeParam T - The type of the value the transformer emits
+ * @param selector - The key, path, or function that locates the value
+ * @param comparator - The equality check that decides whether a new value is emitted
+ * @param transformer - The optional function that derives a new observable from the selection
+ * @returns A property decorator that turns the property into a getter
  *
- * @param {Comparator} comparator - Function used to determine if this selector has changed.
- * @param {Transformer<any, any>} transformer - transformer that operates on observables instead of values.
+ * @remarks
+ * The decorator defines an enumerable, configurable getter for the property on the prototype.
+ * The getter delegates to {@link getInstanceSelection}, which resolves and caches the observable per instance.
+ *
  * @hidden
+ * @since 5.0.0
  */
 
-function createSelectDecorator(
-    selector: Selector<any, any>,
-    comparator?: Comparator,
-    transformer?: Transformer<any, any>,
+function createSelectDecorator<RootState, S, T>(
+    selector: SelectorType<RootState, S>,
+    comparator?: ComparatorType<T>,
+    transformer?: TransformerType<S, T>
 ): PropertyDecorator {
-    return function decorator(target: any, name: string | symbol): void {
-        function getter(this: any) {
+    return function decorator(target: object, name: string | symbol): void {
+        function getter(this: object): Observable<unknown> {
             return getInstanceSelection(this, name, selector, transformer, comparator);
         }
-
-        delete target[name];
 
         Object.defineProperty(target, name, {
             get: getter,
             enumerable: true,
-            configurable: true,
+            configurable: true
         });
     };
 }
 
 /**
- * Call store (root or substore) selects with a path.
+ * Returns the cached observable of a decorated property, creating it on the first read.
  *
- * @param {*} decoratedInstance - decorator instance
- * @param {string | symbol} name - string | symbol are use in select decorator (foo$) @Select(['foo','bar']) `foo$`: Observable<string>.
- * @param {Selector<any, T>} selector - select path in decorator.
- * @param {Transformer<any, T>} transformer - transformer that operates on observables instead of values.
- * @param {Comparator} comparator - Function used to determine if this selector has changed.
+ * @typeParam RootState - The type of the state a function selector reads
+ * @typeParam S - The type of the selected value
+ * @typeParam T - The type of the value the transformer emits
+ * @param decoratedInstance - The instance whose property is being read
+ * @param name - The name of the decorated property, which keys the cache
+ * @param selector - The key, path, or function that locates the value
+ * @param transformer - The optional function that derives a new observable from the selection
+ * @param comparator - The equality check that decides whether a new value is emitted
+ * @returns The observable for the property
+ *
+ * @remarks
+ * The store comes from {@link DecoratorFlagComponent}, so it is the substore of the instance when one applies.
+ * With a transformer, the selection runs without the comparator,
+ * and the comparator applies to the transformed observable instead.
+ * The result is stored in the selection cache of the instance, so later reads skip the store entirely.
+ *
  * @hidden
+ * @since 5.0.0
  */
 
-function getInstanceSelection<T>(
-    decoratedInstance: any,
+function getInstanceSelection<RootState, S, T>(
+    decoratedInstance: object,
     name: string | symbol,
-    selector: Selector<any, T>,
-    transformer?: Transformer<any, T>,
-    comparator?: Comparator
-): Observable<any> | undefined {
-    const { store, selections } = new DecoratorFlagComponent(decoratedInstance);
+    selector: SelectorType<RootState, S>,
+    transformer?: TransformerType<S, T>,
+    comparator?: ComparatorType<T>
+): Observable<unknown> {
+    const flags = new DecoratorFlagComponent(decoratedInstance);
 
-    if (selections[name]) {
-        return selections[name];
-    }
-
-    if (!store) {
-        return undefined;
-    }
-
-    const selection$ = transformer
-        ? store.select(selector).pipe(
-            (obs$: any) => transformer(obs$, decoratedInstance),
+    return flags.selections[name] ??= transformer
+        ? flags.store.select(<SelectorType<unknown, S>> selector).pipe(
+            (obs$: Observable<S>) => transformer(obs$, decoratedInstance),
             distinctUntilChanged(comparator)
-        ) : store.select(selector, comparator);
-
-    selections[name] = selection$;
-
-    return selection$;
+        ) : flags.store.select(<SelectorType<unknown, S>> selector, <ComparatorType<S> | undefined> <unknown> comparator);
 }

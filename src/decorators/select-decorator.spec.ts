@@ -1,17 +1,12 @@
 /**
- * Import third-party libraries
+ * Imports
  */
 
 import { BehaviorSubject } from 'rxjs';
+import { Select, Select$ } from '@decorators/select.decorator';
+import { DecoratorFlagComponent } from '@components/decorator-flag.component';
 
-/**
- * angular-redux2
- */
-
-import { Select, Select$ } from './select.decorator';
-import { DecoratorFlagComponent } from '../components/decorator-flag.component';
-
-interface State {
+interface StateInterface {
     foo: string;
 }
 
@@ -19,18 +14,17 @@ interface State {
  * Initialize global test mocks
  */
 
-jest.mock('../components/decorator-flag.component');
-const mockSelectStore = jest.fn();
+const mockSelectStore = xJet.fn();
 
-(DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
+xJet.mock(DecoratorFlagComponent, () => <any> {
     selections: {},
     store: {
         select: mockSelectStore
     }
-}));
+});
 
 afterEach(() => {
-    jest.clearAllMocks();
+    xJet.clearAllMocks();
 });
 
 describe('Select', () => {
@@ -40,7 +34,7 @@ describe('Select', () => {
 
     test('should define a property on the target object', () => {
         const target = {};
-        Select<State>(state => state.foo)(target, 'myProp');
+        Select((state: StateInterface) => state.foo)(target, 'myProp');
         expect(target).toHaveProperty('myProp');
     });
 
@@ -49,7 +43,7 @@ describe('Select', () => {
             select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
         };
         const instance: any = { store };
-        Select<State>(state => state.foo)(instance, 'myProp');
+        Select((state: StateInterface) => state.foo)(instance, 'myProp');
         expect(instance.myProp.subscribe).toBeDefined();
     });
 });
@@ -64,7 +58,7 @@ describe('Select$', () => {
             select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
         };
         const instance: any = { store };
-        Select$<State>([ 'foo' ], obs$ => obs$)(instance, 'myProp');
+        Select$<StateInterface>([ 'foo' ], obs$ => obs$)(instance, 'myProp');
         expect(instance).toHaveProperty('myProp');
     });
 
@@ -73,7 +67,7 @@ describe('Select$', () => {
             select: mockSelectStore.mockReturnValueOnce(new BehaviorSubject('foo'))
         };
         const instance: any = { store };
-        Select$<State>([ 'foo' ], obs$ => obs$)(instance, 'myProp');
+        Select$<StateInterface>([ 'foo' ], obs$ => obs$)(instance, 'myProp');
         expect(instance.myProp.subscribe).toBeDefined();
     });
 });

@@ -1,8 +1,8 @@
 /**
- * angular-redux2
+ * Imports
  */
 
-import { Action } from './action.decorator';
+import { Action } from '@decorators/action.decorator';
 
 describe('Action', () => {
     class ExampleReducer {
@@ -17,7 +17,7 @@ describe('Action', () => {
     test('should create an action creator for a specific function', () => {
         expect(ExampleReducer.actions.exampleFunction('test payload')).toEqual({
             type: 'ExampleReducer/exampleFunction',
-            payload: 'test payload',
+            payload: 'test payload'
         });
     });
 

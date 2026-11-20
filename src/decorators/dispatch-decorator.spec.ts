@@ -1,15 +1,9 @@
 /**
- * angular-redux2
+ * Imports
  */
 
-import { Dispatch } from './dispatch.decorator';
-import { DecoratorFlagComponent } from '../components/decorator-flag.component';
-
-/**
- * Initialize global test mocks
- */
-
-jest.mock('../components/decorator-flag.component');
+import { Dispatch } from '@decorators/dispatch.decorator';
+import { DecoratorFlagComponent } from '@components/decorator-flag.component';
 
 class TestClass {
     @Dispatch
@@ -30,19 +24,20 @@ class TestClass {
 
 describe('Dispatch', () => {
     let targetClass: any;
-    const mockDispatch = jest.fn();
+    const mockDispatch = xJet.fn();
 
     beforeEach(() => {
         targetClass = new TestClass();
-        (DecoratorFlagComponent as jest.Mock).mockImplementation(() => ({
+        xJet.mock(DecoratorFlagComponent, () => <any> {
             store: {
                 dispatch: mockDispatch
             }
-        }));
+        });
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        xJet.restoreAllMocks();
+        mockDispatch.mockClear();
     });
 
     test('should dispatch the result to the store when returning an object', () => {
@@ -69,7 +64,7 @@ describe('Dispatch', () => {
 
     test('should dispatch the result to the store when using an external function', () => {
         const functionName = 'testFunction';
-        const externalFunction = jest.fn(() => ({ type: 'TEST', payload: { value: 'test' } }));
+        const externalFunction = xJet.fn(() => ({ type: 'TEST', payload: { value: 'test' } }));
 
         Dispatch(targetClass, functionName);
         targetClass[functionName] = externalFunction;
@@ -83,7 +78,7 @@ describe('Dispatch', () => {
 
     test('should dispatch the result to the store when using a bound property', () => {
         const functionName = 'testFunction';
-        const boundProperty = jest.fn(() => ({ type: 'TEST', payload: { value: 'test' } }));
+        const boundProperty = xJet.fn(() => ({ type: 'TEST', payload: { value: 'test' } }));
 
         Dispatch(targetClass, functionName);
         targetClass[functionName] = boundProperty;
