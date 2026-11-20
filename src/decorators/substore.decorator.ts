@@ -1,38 +1,50 @@
 /**
- * Import third-party types
+ * Type-only imports erased during TypeScript compilation.
  */
 
-import type { AnyAction, Reducer } from 'redux';
+import type { UnknownAction, Reducer } from 'redux';
 
 /**
- * angular-redux2
+ * Imports
  */
 
 import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
 
 /**
- * A decorator function that modifies the behavior of any `@Select`, `@Select$`, or `@Dispatch`
- * decorators to operate on a substore defined with a given reducer.
+ * Scopes the `Select`, `Select$`, and `Dispatch` decorators of a class to a substore.
+ *
+ * @param reducer - The local reducer of the substore
+ * @returns A class decorator that stores the reducer on the class constructor
+ *
+ * @remarks
+ * The decorator only stores the reducer under {@link LOCAL_REDUCER_KEY}.
+ * The substore itself is created lazily, the first time a decorated member reads the store,
+ * from the path that the `basePath` function of the instance returns.
+ * The function is called without `this`, so declare it as an arrow function field rather than a method.
+ * While `basePath` is missing or returns a falsy value, the members use the root store.
+ * A new path creates a new substore, while an unchanged path reuses the cached one.
+ * `Select` members select from that substore and `Dispatch` members dispatch through it.
  *
  * @example
- * ```typescript
- * @SubStore(userComponentReducer)
- * export class TestComponent implements OnInit {
- *     @Input() userId: String;
+ * ```ts
+ * @Substore(userReducer)
+ * class UserComponent {
+ *     @Input() userId: string;
+ *     @Select('name') readonly name$: Observable<string>;
  *
- *     // The substore will be created from the return value of this function.
- *     basePath(): Array<string | String> | null {
- *         return this.userId ? ['users', this.userId] : null;
- *     }
+ *     basePath = (): PathSelectorType | null => this.userId ? [ 'users', this.userId ] : null;
  * }
  * ```
  *
- * @param reducer - The reducer function used to create the substore.
- * @returns A ClassDecorator function that sets the reducer to the class constructor's LOCAL_REDUCER_KEY property.
+ * @see Select
+ * @see Dispatch
+ * @see DecoratorFlagComponent
+ *
+ * @since 5.0.0
  */
 
-export function Substore(reducer: Reducer<any, AnyAction>): ClassDecorator {
-    return function decorate(constructor: any): void {
-        constructor[LOCAL_REDUCER_KEY] = reducer;
+export function Substore<State>(reducer: Reducer<State, UnknownAction>): ClassDecorator {
+    return function decorate(constructor: object): void {
+        (<Record<PropertyKey, unknown>> constructor)[LOCAL_REDUCER_KEY] = reducer;
     };
 }

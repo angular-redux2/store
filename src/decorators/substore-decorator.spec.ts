@@ -1,9 +1,9 @@
 /**
- * angular-redux2
+ * Imports
  */
 
-import { Substore } from './substore.decorator';
-import { LOCAL_REDUCER_KEY } from '../interfaces/fractal.interface';
+import { Substore } from '@decorators/substore.decorator';
+import { LOCAL_REDUCER_KEY } from '@interfaces/fractal.interface';
 
 describe('Substore', () => {
     test('should set the reducer to the LOCAL_REDUCER_KEY property of the class constructor', () => {
