@@ -296,6 +296,25 @@ export default defineConfig([
         }
     },
     {
+        // Shipped mocks: they reach the library through the package name, which stays external to the bundle,
+        // and each other by relative path, since ng-packagr keeps an alias as written.
+        files: [ 'mocks/**/*.ts' ],
+        ignores: [ '**/*.spec.ts' ],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: '^@(angular-redux2/store/mocks|abstract|components|decorators|interfaces|modules|services|mocks)(/|$)',
+                            message: 'Import the library through @angular-redux2/store, and other mocks by relative path.'
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
         files: [ '**/*.js', '**/*.cjs', '**/*.mjs' ],
         languageOptions: {
             parser: undefined,
