@@ -21,6 +21,14 @@ import { distinctUntilChanged, map, ReplaySubject } from 'rxjs';
 import { computed, Injectable, NgZone, signal } from '@angular/core';
 
 /**
+ * The type of the action that {@link NgRedux.addReducer} dispatches, so a new feature reducer sets its initial state.
+ *
+ * @since 6.0.0
+ */
+
+export const ADD_REDUCER = '@@angular-redux2/store/ADD_REDUCER';
+
+/**
  * The root store service that wraps a Redux store for an Angular application.
  *
  * @typeParam RootState - The type of the root state
@@ -117,6 +125,18 @@ export class NgRedux<RootState = unknown> extends AbstractStore<RootState> {
      */
 
     private unsubscribeStore?: Unsubscribe;
+
+    /**
+     * The feature reducers that {@link NgRedux.addReducer} registered, by the top-level key that each one owns.
+     *
+     * @remarks
+     * The composed root reducer keeps a reference to the map,
+     * so a feature added after the store is configured takes part from the next action on.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly featureReducers = new Map<string, Reducer>();
 
     /**
      * Creates the service and registers it as {@link NgRedux.store}.
@@ -286,7 +306,7 @@ export class NgRedux<RootState = unknown> extends AbstractStore<RootState> {
             throw new Error('Store already initialize!');
         }
 
-        const rootReducer = ReducerService.getInstance().composeReducers(reducer, middleware);
+        const rootReducer = ReducerService.getInstance().composeReducers(reducer, middleware, this.featureReducers);
         const enhancer = <StoreEnhancer> compose(...enhancers);
 
         this.setStore(<Store<RootState, UnknownAction>> enhancer(createStore)(rootReducer, initState));
@@ -353,7 +373,7 @@ export class NgRedux<RootState = unknown> extends AbstractStore<RootState> {
             throw new Error('Store already initialize!');
         }
 
-        const rootReducer = ReducerService.getInstance().composeReducers(reducer);
+        const rootReducer = ReducerService.getInstance().composeReducers(reducer, [], this.featureReducers);
         store.replaceReducer(rootReducer);
         this.setStore(store);
     }
@@ -463,6 +483,44 @@ export class NgRedux<RootState = unknown> extends AbstractStore<RootState> {
 
     subscribe(listener: () => void): Unsubscribe {
         return this.reduxStore.subscribe(listener);
+    }
+
+    /**
+     * Adds a reducer that owns one top-level key of the state, next to the root reducer.
+     *
+     * @param key - The top-level key of the state that the reducer owns
+     * @param reducer - The reducer of that key, which may mutate its draft
+     *
+     * @remarks
+     * Use it to load the reducer of a lazy feature with its code, rather than listing every feature in the root reducer.
+     * {@link provideNgReduxFeature} calls it when the providers of a lazy route are created.
+     *
+     * The root reducer never sees the key, so `combineReducers` neither drops it nor warns about it.
+     * Once the store is configured, the call dispatches {@link ADD_REDUCER}, so the reducer sets its initial state at once.
+     * A reducer added before that joins the store when it is configured.
+     * Adding the same reducer again does nothing, and a different reducer for the same key replaces it.
+     * The root state must be an object, and the key keeps its state for the life of the store.
+     *
+     * @example
+     * ```ts
+     * ngRedux.addReducer('todos', todosReducer);
+     * ngRedux.getState().todos; // the initial state of todosReducer
+     * ```
+     *
+     * @see provideNgReduxFeature
+     *
+     * @since 6.0.0
+     */
+
+    addReducer(key: string, reducer: Reducer): void {
+        if (this.featureReducers.get(key) === reducer) {
+            return;
+        }
+
+        this.featureReducers.set(key, reducer);
+        if (this.reduxStore) {
+            this.dispatch({ type: ADD_REDUCER, key });
+        }
     }
 
     /**
