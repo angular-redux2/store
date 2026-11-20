@@ -68,6 +68,8 @@ The library moves to the current Angular toolchain, adds signal selections, and 
 - **Changed**: [`ActionCreatorType`](/reducers/class-reducers#action-creators) requires the payload when the method
   takes one, and `ReducerActionsType` maps only the methods of the class.
 - **Removed**: The `get`, `set`, and `shallowCopy` helpers are no longer exported; they were internal.
+- **Added**: [`MockNgRedux`](/testing/mocks#selector-stubs) stubs `selectSignal` as well, through the same stub as
+  `select`, so a component under test that reads `injectSelect` shows the values a test pushes into the stub.
 - **Changed**: The mocks' `_mockNgReduxFactory` is renamed `mockNgReduxFactory`.
 - **Migration**: Dispatch class-reducer actions through their creators. Code that dispatched a bare method name, such
   as `{ type: 'addBug' }`, now needs `BugReducer.actions.addBug(...)` or the full `BugReducer/addBug` type.
