@@ -2,6 +2,7 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
+import type { Reducer } from 'redux';
 import type { EnvironmentProviders } from '@angular/core';
 import type { NgReduxConfigInterface } from '../interfaces/provider.interface';
 
@@ -12,7 +13,7 @@ import type { NgReduxConfigInterface } from '../interfaces/provider.interface';
 import { NgRedux } from '../services/ng-redux.service';
 import { freezeState } from '../components/freeze.component';
 import { DevToolsExtension } from '../services/dev-tool.service';
-import { inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
+import { inject, makeEnvironmentProviders, provideAppInitializer, provideEnvironmentInitializer } from '@angular/core';
 
 /**
  * Configures the store when the application starts.
@@ -57,4 +58,34 @@ export function provideNgRedux<State>(config: NgReduxConfigInterface<State>): En
             ]);
         })
     ]);
+}
+
+/**
+ * Adds a feature reducer to the store when the injector of a lazy route or component is created.
+ *
+ * @param key - The top-level key of the state that the reducer owns
+ * @param reducer - The reducer of that key
+ * @returns The providers to add to the route or component
+ *
+ * @remarks
+ * It calls {@link NgRedux.addReducer} from an environment initializer,
+ * so the reducer is loaded with the code of the route and the root reducer does not have to know about it.
+ * Its state stays in the store after the route is left, and visiting the route again leaves it as it is.
+ *
+ * @example
+ * ```ts
+ * export const routes: Routes = [{
+ *     path: 'todos',
+ *     loadComponent: () => import('./todos.component'),
+ *     providers: [ provideNgReduxFeature('todos', todosReducer) ]
+ * }];
+ * ```
+ *
+ * @see NgRedux.addReducer
+ *
+ * @since 6.0.0
+ */
+
+export function provideNgReduxFeature(key: string, reducer: Reducer): EnvironmentProviders {
+    return makeEnvironmentProviders([ provideEnvironmentInitializer(() => inject(NgRedux).addReducer(key, reducer)) ]);
 }

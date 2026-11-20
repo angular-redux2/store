@@ -10,11 +10,12 @@ import type { UnknownAction, StoreEnhancer } from 'redux';
 
 import '@angular/compiler';
 import { NgRedux } from '@services/ng-redux.service';
-import { provideNgRedux } from '@modules/ng-redux.provider';
 import { DevToolsExtension } from '@services/dev-tool.service';
 import { TestBed, TestComponentRenderer } from '@angular/core/testing';
+import { provideNgRedux, provideNgReduxFeature } from '@modules/ng-redux.provider';
 import {
-    ApplicationInitStatus, ApplicationModule, ErrorHandler, NgModule, platformCore, provideZonelessChangeDetection, ɵINJECTOR_SCOPE
+    ApplicationInitStatus, ApplicationModule, createEnvironmentInjector, EnvironmentInjector, ErrorHandler, NgModule, platformCore,
+    provideZonelessChangeDetection, ɵINJECTOR_SCOPE
 } from '@angular/core';
 
 /**
@@ -123,5 +124,26 @@ describe('provideNgRedux', () => {
         const ngRedux = await start({ reducer, initialState: INITIAL_STATE, devTools: true });
 
         expect(ngRedux.getState()).toEqual(INITIAL_STATE);
+    });
+});
+
+describe('provideNgReduxFeature', () => {
+    afterEach(() => {
+        TestBed.resetTestingModule();
+    });
+
+    test('should add the feature reducer when the injector of a lazy route is created', async () => {
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: NgRedux, useFactory: () => new NgRedux() },
+                provideNgRedux({ reducer, initialState: { ...INITIAL_STATE } })
+            ]
+        });
+        await TestBed.inject(ApplicationInitStatus).donePromise;
+        const todos = (state: Array<string> = [ 'first' ]): Array<string> => state;
+
+        createEnvironmentInjector([ provideNgReduxFeature('todos', todos) ], TestBed.inject(EnvironmentInjector));
+
+        expect(TestBed.inject(NgRedux<any>).getState()).toEqual({ ...INITIAL_STATE, todos: [ 'first' ] });
     });
 });
