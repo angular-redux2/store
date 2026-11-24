@@ -1,31 +1,19 @@
 /*
- * Public API Surface of store
+ * Public API Surface of @angular-redux2/store
  */
 
-export * from './modules/ng-redux.module';
-export * from './modules/ng-redux.inject';
-export * from './modules/ng-redux.provider';
+// Modules
+export * from './modules/ng-redux/ng-redux.module';
 
 // Components
-export { freezeState } from './components/freeze.component';
-
-// Abstract
-export * from './abstract/reducer.abstract';
+export { draft } from './components/draft.component';
+export { freezeReducer } from './components/freeze.component';
+export { createAction, createSlice } from './components/slice.component';
 
 // Services
-export * from './services/ng-redux.service';
-export * from './services/dev-tool.service';
-export * from './services/sub-store.service';
-export * from './services/reducer.service';
+export { NgRedux } from './services/ng-redux.service';
 
 // Interfaces
-export * from './interfaces/store.interface';
-export * from './interfaces/reducer.interface';
-export * from './interfaces/provider.interface';
-
-// Decorators
-export * from './decorators/action.decorator';
-export * from './decorators/select.decorator';
-export * from './decorators/dispatch.decorator';
-export * from './decorators/substore.decorator';
-
+export type * from './interfaces/store.interface';
+export type * from './interfaces/slice.interface';
+export type * from './interfaces/provider.interface';
