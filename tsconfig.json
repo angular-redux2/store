@@ -7,9 +7,10 @@
         "outDir": "./dist/out-tsc",
         "moduleResolution": "bundler",
         "strict": true,
-        "sourceMap": true,
-        "declaration": false,
+        "sourceMap": false,
+        "declaration": true,
         "importHelpers": true,
+        "removeComments": true,
         "skipLibCheck": true,
         "noImplicitReturns": true,
         "noImplicitOverride": true,
@@ -23,40 +24,36 @@
             "ES2022",
             "dom"
         ],
-        "types": [
-            "node"
-        ],
+        "types": [],
         "paths": {
-            "@angular-redux2/store/mocks": [
-                "./mocks/index"
-            ],
-            "@angular-redux2/store": [
-                "./src/index"
-            ],
             "@mocks/*": [
-                "./mocks/*"
-            ],
-            "@modules/*": [
-                "./src/modules/*"
-            ],
-            "@services/*": [
-                "./src/services/*"
+                "./src/modules/mocks/*"
             ],
             "@abstract/*": [
                 "./src/abstract/*"
             ],
+            "@services/*": [
+                "./src/services/*"
+            ],
             "@interfaces/*": [
                 "./src/interfaces/*"
             ],
-            "@decorators/*": [
-                "./src/decorators/*"
-            ],
             "@components/*": [
                 "./src/components/*"
+            ],
+            "@constants/*": [
+                "./src/constants/*"
+            ],
+            "@ng-redux/*": [
+                "./src/modules/ng-redux/*"
+            ],
+            "@angular-redux2/store": [
+                "./src/index.ts"
             ]
         }
     },
     "angularCompilerOptions": {
+        "compilationMode": "partial",
         "strictTemplates": true,
         "strictInjectionParameters": true,
         "strictInputAccessModifiers": true,
