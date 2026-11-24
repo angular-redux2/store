@@ -9,8 +9,8 @@ import type { UnknownAction } from 'redux';
  */
 
 import { createStore } from 'redux';
-import { NgRedux } from '@services/ng-redux.service';
-import { freezeState } from '@components/freeze.component';
+import { draft } from '@components/draft.component';
+import { deepFreeze, freezeReducer } from '@components/freeze.component';
 
 /**
  * Tests
@@ -33,66 +33,84 @@ function reducer(state: any = createState(), action: UnknownAction): any {
     return action.type === 'RENAME' ? { ...state, user: { ...state.user, name: action['name'] } } : state;
 }
 
-describe('freezeState', () => {
-    describe('the state it freezes', () => {
-        test('should freeze the initial state, nested objects and arrays included', () => {
-            const state = createState();
-            createStore(reducer, state, freezeState());
+describe('deepFreeze', () => {
+    test('should freeze the value with its nested objects and arrays and return it', () => {
+        const state = createState();
 
-            expect(Object.isFrozen(state)).toBe(true);
-            expect(Object.isFrozen(state.user)).toBe(true);
-            expect(Object.isFrozen(state.user.tags)).toBe(true);
-        });
-
-        test('should freeze each state that the reducer returns', () => {
-            const store = createStore(reducer, createState(), freezeState());
-            store.dispatch({ type: 'RENAME', name: 'Bob' });
-
-            expect(Object.isFrozen(store.getState().user)).toBe(true);
-            expect(() => {
-                store.getState().user.name = 'Eve';
-            }).toThrow(TypeError);
-        });
-
-        test('should freeze the states of a reducer passed to replaceReducer', () => {
-            const store = createStore(reducer, createState(), freezeState());
-            store.replaceReducer((state: any) => ({ ...state, fresh: { value: 1 } }));
-
-            expect(Object.isFrozen(store.getState().fresh)).toBe(true);
-        });
+        expect(deepFreeze(state)).toBe(state);
+        expect(Object.isFrozen(state)).toBe(true);
+        expect(Object.isFrozen(state.user)).toBe(true);
+        expect(Object.isFrozen(state.user.tags)).toBe(true);
     });
 
-    describe('the values it leaves alone', () => {
-        test.each(
-            { case: 'a Date', key: 'joined' },
-            { case: 'a Map', key: 'lookup' },
-            { case: 'a class instance', key: 'point' }
-        )('should leave $case unfrozen, so its methods and fields keep working', ({ key }: any) => {
-            const state = createState();
-            createStore(reducer, state, freezeState());
+    test.each(
+        { case: 'a Date', key: 'joined' },
+        { case: 'a Map', key: 'lookup' },
+        { case: 'a class instance', key: 'point' }
+    )('should leave $case unfrozen, so its methods and fields keep working', ({ key }: any) => {
+        const state = deepFreeze(createState());
 
-            expect(Object.isFrozen(state[key])).toBe(false);
-        });
+        expect(Object.isFrozen(state[key])).toBe(false);
     });
 
-    describe('with NgRedux', () => {
-        test('should let a reducer write to its draft of a frozen state', () => {
-            const ngRedux = new NgRedux<any>();
-            const draftReducer = (state: any = createState(), action: UnknownAction): any => {
-                if (action.type === 'RENAME') {
-                    state.user.name = action['name'];
-                }
+    test('should stop at an object that is already frozen', () => {
+        const child = { value: 1 };
+        const state = deepFreeze({ frozen: Object.freeze({ child }) });
 
-                return state;
-            };
-            ngRedux.configureStore(draftReducer, createState(), [], [ freezeState() ]);
-            const before = ngRedux.getState();
+        expect(Object.isFrozen(state)).toBe(true);
+        expect(Object.isFrozen(child)).toBe(false);
+    });
 
-            ngRedux.dispatch({ type: 'RENAME', name: 'Bob' });
+    test.each(
+        { case: 'undefined', value: undefined },
+        { case: 'null', value: null },
+        { case: 'a number', value: 1 },
+        { case: 'a string', value: 'a' }
+    )('should return $case as it is', ({ value }) => {
+        expect(deepFreeze(value)).toBe(value);
+    });
+});
 
-            expect(ngRedux.getState().user.name).toBe('Bob');
-            expect(before.user.name).toBe('Ada');
-            expect(Object.isFrozen(ngRedux.getState().user)).toBe(true);
+describe('freezeReducer', () => {
+    test('should freeze the state that the store starts with', () => {
+        const store = createStore(freezeReducer(reducer));
+
+        expect(Object.isFrozen(store.getState())).toBe(true);
+        expect(Object.isFrozen(store.getState().user.tags)).toBe(true);
+    });
+
+    test('should freeze each state that the reducer returns', () => {
+        const store = createStore(freezeReducer(reducer));
+        store.dispatch({ type: 'RENAME', name: 'Bob' });
+
+        expect(Object.isFrozen(store.getState().user)).toBe(true);
+        expect(() => {
+            store.getState().user.name = 'Eve';
+        }).toThrow(TypeError);
+    });
+
+    test('should make a reducer that mutates its state throw', () => {
+        const mutating = (state: any = createState(), action: UnknownAction): any => {
+            if (action.type === 'RENAME') state.user.name = action['name'];
+
+            return state;
+        };
+        const store = createStore(freezeReducer(mutating));
+
+        expect(() => store.dispatch({ type: 'RENAME', name: 'Bob' })).toThrow(TypeError);
+    });
+
+    test('should let a draft reducer write to its draft of a frozen state', () => {
+        const renaming = draft(createState(), (state: any, action: UnknownAction) => {
+            if (action.type === 'RENAME') state.user.name = action['name'];
         });
+        const store = createStore(freezeReducer(renaming));
+        const before = store.getState();
+
+        store.dispatch({ type: 'RENAME', name: 'Bob' });
+
+        expect(store.getState().user.name).toBe('Bob');
+        expect(before.user.name).toBe('Ada');
+        expect(Object.isFrozen(store.getState().user)).toBe(true);
     });
 });
