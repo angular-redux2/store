@@ -2,215 +2,218 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { Observable } from 'rxjs';
-import type { Signal } from '@angular/core';
-import type { UnknownAction, Reducer, Store, Unsubscribe } from 'redux';
-import type { ComparatorType, SelectorType } from '../interfaces/store.interface';
+import type { Action, Reducer, Unsubscribe } from 'redux';
+import type { CreateComputedOptions, Signal } from '@angular/core';
+import type { BasePathType, SelectorType, StoreInterface, SubStoreInterface } from '@interfaces/store.interface';
 
 /**
- * The observable store contract shared by the root store and every substore.
+ * Imports
+ */
+
+import { computed, untracked } from '@angular/core';
+import { distinctUntilChanged, Observable } from 'rxjs';
+
+/**
+ * The reading side shared by the root store and every substore.
  *
  * @typeParam State - The type of the state that the store holds
  *
  * @remarks
- * Subclasses provide `getState`, `dispatch`, `replaceReducer`, `subscribe`, `select`, and `selectSignal`:
- * {@link NgRedux} selects from the Redux store, and {@link SubStoreService} from the root store at its base path.
- * The class turns `select` into the `Symbol.observable` interop, so both stores work with `from(store)`.
- * It also implements the Redux `Store` interface, so either store can stand in where Redux expects one.
+ * A store only has to provide its `state` signal, a way to dispatch, a way to create a substore,
+ * and a listener hook that runs after every dispatch.
+ * Everything else that reads the state is built here from those, so both stores read the same way.
  *
  * @example
  * ```ts
- * const store: AbstractStore<AppState> = ngRedux;
- * const subStore: AbstractStore<User> = ngRedux.configureSubStore([ 'users', 'u1' ], userReducer);
+ * const store: AbstractStore<AppState> = inject(NgRedux<AppState>);
  *
- * store.select('count');   // emits the root count
- * subStore.select('name'); // emits the name of user u1
+ * store.select(state => state.counter)(); // 0
  * ```
  *
- * @see NgRedux
- * @see SubStoreService
+ * @see StoreInterface
  *
- * @since 5.0.0
+ * @since 6.0.0
  */
 
-export abstract class AbstractStore<State> implements Store<State> {
+export abstract class AbstractStore<State> implements StoreInterface<State> {
     /**
-     * Returns the current state of the store.
-     *
-     * @returns The current state
+     * Puts the interop method under `Symbol.observable` too, when a polyfill defines that symbol.
      *
      * @remarks
-     * The root store reads the Redux store, while a substore reads the root state at its base path.
+     * A class cannot declare a member under `Symbol.observable`, because RxJS types it as a plain `symbol`,
+     * so the block adds it to the prototype once, when the class is defined.
+     * Without a polyfill the symbol is `undefined`, and RxJS and Redux fall back to the `'@@observable'` key.
+     *
+     * @since 6.0.0
+     */
+
+    static {
+        const observable = (<{ observable?: symbol }> <unknown> Symbol).observable;
+        if (typeof observable === 'symbol') {
+            Object.defineProperty(this.prototype, observable, { value: this.prototype['@@observable'] });
+        }
+    }
+
+    /**
+     * The whole state of this store as a read-only signal.
      *
      * @example
      * ```ts
-     * ngRedux.getState(); // { count: 3 }
+     * store.state(); // { counter: 0 }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    abstract getState(): State;
+    abstract readonly state: Signal<State>;
 
     /**
      * Dispatches an action to the store.
      *
-     * @typeParam Action - The type of the dispatched action
-     * @param action - The plain action object to dispatch
-     * @returns The dispatched action
-     *
-     * @remarks
-     * The root store hands the action to Redux.
-     * A substore tags the action with its reducer and base path before handing it to the root store.
+     * @typeParam DispatchedAction - The type of the action
+     * @param action - The action to dispatch
+     * @returns The same action
      *
      * @example
      * ```ts
-     * ngRedux.dispatch({ type: 'INCREMENT' }); // { type: 'INCREMENT' }
+     * store.dispatch({ type: 'INCREMENT' }); // { type: 'INCREMENT' }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    abstract dispatch<Action extends UnknownAction>(action: Action): Action;
+    abstract dispatch<DispatchedAction extends Action>(action: DispatchedAction): DispatchedAction;
 
     /**
-     * Replaces the reducer that the store uses to calculate the state.
+     * Creates a store that works on one branch of this store.
      *
-     * @param nextReducer - The reducer to use from the next action on
-     *
-     * @remarks
-     * Use it for code splitting or hot reloading.
-     * The root store swaps its root reducer, while a substore swaps its local reducer.
+     * @typeParam SubState - The state of the branch
+     * @param basePath - The path of the branch, relative to this store
+     * @param reducer - The reducer that handles the actions dispatched through the substore
+     * @returns A store for the branch at the base path
      *
      * @example
      * ```ts
-     * ngRedux.replaceReducer(combineReducers({ counter, todos }));
+     * store.substore([ 'users', 'bob' ], userReducer).getState(); // { name: 'Bob Smith', loc: 1023 }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    abstract replaceReducer(nextReducer: Reducer<State, UnknownAction>): void;
+    abstract substore<SubState>(basePath: BasePathType, reducer: Reducer<SubState>): SubStoreInterface<SubState>;
 
     /**
-     * Adds a listener that runs after the state may have changed.
+     * Returns the current state without tracking it.
      *
-     * @param listener - The callback to run
-     * @returns A function that removes the listener
+     * @returns The current state of this store
      *
      * @remarks
-     * The root store registers the listener with Redux, so it runs after every dispatch.
-     * Read the new state with `getState()` inside the listener.
-     * A substore runs the listener on every emission of its own selection instead.
+     * Reading through this method inside a `computed` or an `effect` does not make it rerun on the next change.
      *
      * @example
      * ```ts
-     * const unsubscribe = ngRedux.subscribe(() => console.log(ngRedux.getState()));
-     * unsubscribe(); // the listener no longer runs
+     * store.getState(); // { counter: 0 }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    abstract subscribe(listener: () => void): Unsubscribe;
+    getState(): State {
+        return untracked(this.state);
+    }
 
     /**
-     * Selects a slice of the state as an observable.
+     * Selects one value of the state as a signal.
      *
-     * @typeParam SelectedType - The type of the selected value
-     * @param selector - The key, path, or function that locates the value, or nothing for the whole state
-     * @param comparator - The equality check that decides whether a new value is emitted
-     * @returns An observable that emits the selected value whenever it changes
-     *
-     * @remarks
-     * A new subscriber receives the current value at once, and then each value that the comparator does not call
-     * equal to the previous one. Without a comparator, values are compared by reference.
-     *
-     * @example
-     * ```ts
-     * ngRedux.select('count');                  // emits 3
-     * ngRedux.select([ 'user', 'name' ]);       // emits 'Ada'
-     * ngRedux.select(state => state.count * 2); // emits 6
-     * ```
-     *
-     * @see SelectorType
-     * @see ComparatorType
-     *
-     * @since 5.0.0
-     */
-
-    abstract select<SelectedType>(
-        selector?: SelectorType<State, SelectedType>,
-        comparator?: ComparatorType<SelectedType>
-    ): Observable<SelectedType>;
-
-    /**
-     * Selects a slice of the state as a signal.
-     *
-     * @typeParam SelectedType - The type of the selected value
-     * @param selector - The key, path, or function that locates the value, or nothing for the whole state
-     * @param comparator - The equality check that decides whether a new value is a change
+     * @typeParam Selected - The value that the selector returns
+     * @param selector - The function that picks the value
+     * @param options - The options passed to the underlying `computed`
      * @returns A read-only signal of the selected value
      *
      * @remarks
-     * The signal always holds the current value and needs no subscription.
-     * Without a comparator, values are compared by reference.
+     * The signal is a `computed` over {@link AbstractStore.state},
+     * so it needs no subscription and no injection context, and it only runs the selector when read after a change.
      *
      * @example
      * ```ts
-     * const count = ngRedux.selectSignal<number>('count');
-     * count(); // 3
-     * ```
+     * const count = store.select(state => state.counter);
      *
-     * @see AbstractStore.select
+     * count(); // 0
+     * ```
      *
      * @since 6.0.0
      */
 
-    abstract selectSignal<SelectedType>(
-        selector?: SelectorType<State, SelectedType>,
-        comparator?: ComparatorType<SelectedType>
-    ): Signal<SelectedType>;
-
-    /**
-     * Returns the whole state as an observable, for interoperability with other observable libraries.
-     *
-     * @returns An observable that emits the current state and every change
-     *
-     * @remarks
-     * Redux and RxJS look up this method through `Symbol.observable`,
-     * so `from(store)` turns the store into an observable of its state.
-     * See the [observable proposal](https://github.com/tc39/proposal-observable) for the protocol.
-     *
-     * @hidden
-     * @since 5.0.0
-     */
-
-    [Symbol.observable](): ReturnType<Store<State>[typeof Symbol.observable]> {
-        return <ReturnType<Store<State>[typeof Symbol.observable]>> <unknown> this.select();
+    select<Selected>(selector: SelectorType<State, Selected>, options?: CreateComputedOptions<Selected>): Signal<Selected> {
+        return computed(() => selector(this.state()), options);
     }
 
     /**
-     * Returns the whole state as an observable, under the key that RxJS and Redux fall back to.
+     * Selects one value of the state as an observable.
      *
-     * @returns An observable that emits the current state and every change
+     * @typeParam Selected - The value that the selector returns
+     * @param selector - The function that picks the value
+     * @param options - The `equal` function that decides whether a new value is emitted
+     * @returns An observable that emits the current value on subscribe and every distinct change after it
      *
      * @remarks
-     * Without a polyfill, `Symbol.observable` is `undefined`,
-     * so the method above sits under the key `'undefined'` and `from(store)` cannot find it.
-     * RxJS and Redux then look for `'@@observable'` instead, which this method answers.
+     * The observable emits synchronously after each dispatch that changes the selected value,
+     * so it never skips an intermediate value the way `toObservable` does.
+     * Every subscription listens on its own and stops when it unsubscribes.
      *
      * @example
      * ```ts
-     * from(ngRedux).subscribe(state => render(state)); // the current state, then every change
+     * store.select$(state => state.counter).subscribe(console.log); // logs 0
+     * store.dispatch({ type: 'INCREMENT' });                         // logs 1
      * ```
-     *
-     * @see AbstractStore.select
      *
      * @since 6.0.0
      */
 
-    ['@@observable'](): ReturnType<Store<State>[typeof Symbol.observable]> {
-        return <ReturnType<Store<State>[typeof Symbol.observable]>> <unknown> this.select();
+    select$<Selected>(
+        selector: SelectorType<State, Selected>, options?: Pick<CreateComputedOptions<Selected>, 'equal'>
+    ): Observable<Selected> {
+        return new Observable<Selected>(subscriber => {
+            const emit = (): void => subscriber.next(selector(this.getState()));
+            emit();
+
+            return this.listen(emit);
+        }).pipe(distinctUntilChanged(options?.equal));
     }
+
+    /**
+     * Makes the store an interop observable, so RxJS `from(store)` emits the whole state.
+     *
+     * @returns An observable of the whole state, the same as `select$(state => state)`
+     *
+     * @remarks
+     * RxJS and Redux look the method up under `Symbol.observable` when a polyfill defines it,
+     * and under the `'@@observable'` key otherwise, so the store answers both.
+     * A polyfill has to load before this module for the `Symbol.observable` key to be set.
+     *
+     * @example
+     * ```ts
+     * from(ngRedux).subscribe(state => console.log(state)); // logs { counter: 0 }
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    '@@observable'(): Observable<State> {
+        return this.select$(state => state);
+    }
+
+    /**
+     * Registers a listener that runs after every dispatch to the root store.
+     *
+     * @param listener - The function to run
+     * @returns A function that removes the listener
+     *
+     * @remarks
+     * {@link AbstractStore.select$} builds on it, so it emits synchronously and never skips a value.
+     *
+     * @since 6.0.0
+     */
+
+    protected abstract listen(listener: () => void): Unsubscribe;
 }
