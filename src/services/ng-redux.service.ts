@@ -2,571 +2,392 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { Observable } from 'rxjs';
-import type { Signal, WritableSignal } from '@angular/core';
-import type { MiddlewareInterface } from '../interfaces/reducer.interface';
-import type { UnknownAction, Reducer, Store, StoreEnhancer, Unsubscribe } from 'redux';
-import type { ComparatorType, PathSelectorType, SelectorType } from '../interfaces/store.interface';
+import type { Signal } from '@angular/core';
+import type { NgReduxConfigInterface } from '@interfaces/provider.interface';
+import type { BasePathType, SubStoreInterface } from '@interfaces/store.interface';
+import type { DevToolsGlobalInterface } from '@services/interfaces/ng-redux-service.interface';
+import type { SubstoreRouteInterface } from '@services/interfaces/sub-store-service.interface';
+import type { Action, Reducer, Store, StoreEnhancer, Unsubscribe, UnknownAction } from 'redux';
 
 /**
  * Imports
  */
 
-import { compose, createStore } from 'redux';
-import { ReducerService } from './reducer.service';
-import { SubStoreService } from './sub-store.service';
-import { AbstractStore } from '../abstract/store.abstract';
-import { resolver } from '../components/selectors.component';
-import { distinctUntilChanged, map, ReplaySubject } from 'rxjs';
-import { computed, Injectable, NgZone, signal } from '@angular/core';
+import { signal } from '@angular/core';
+import { SubStore } from '@services/sub-store.service';
+import { AbstractStore } from '@abstract/store.abstract';
+import { freezeReducer } from '@components/freeze.component';
+import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
+import { get, isPlain, set } from '@components/object.component';
+import { applyMiddleware, compose, legacy_createStore as createStore } from 'redux';
 
 /**
- * The type of the action that {@link NgRedux.addReducer} dispatches, so a new feature reducer sets its initial state.
+ * Composes the middleware, the enhancers, and the Redux DevTools extension into one enhancer.
+ *
+ * @param config - The options that create the store
+ * @returns The composed enhancer, or `undefined` when there is nothing to apply
+ *
+ * @remarks
+ * The middleware comes first and the extension last, so the extension records the actions that a middleware dispatches.
+ * The extension joins only when `devTools` is set and the browser has it installed.
+ *
+ * @example
+ * ```ts
+ * enhancerOf({ reducer, middleware: [ thunk ], devTools: true }); // applyMiddleware(thunk) composed with the extension
+ * enhancerOf({ reducer });                                        // undefined
+ * ```
  *
  * @since 6.0.0
  */
 
-export const ADD_REDUCER = '@@angular-redux2/store/ADD_REDUCER';
+function enhancerOf(
+    { middleware = [], enhancers = [], devTools }: Pick<NgReduxConfigInterface<unknown>, 'middleware' | 'enhancers' | 'devTools'>
+): StoreEnhancer | undefined {
+    const extension = devTools ? (<DevToolsGlobalInterface> globalThis).__REDUX_DEVTOOLS_EXTENSION__ : undefined;
+    const all = [
+        ...middleware.length ? [ applyMiddleware(...middleware) ] : [],
+        ...enhancers,
+        ...extension ? [ extension(devTools === true ? undefined : <Record<string, unknown>> devTools) ] : []
+    ];
+
+    return all.length ? <StoreEnhancer> compose(...all) : undefined;
+}
 
 /**
- * The root store service that wraps a Redux store for an Angular application.
+ * The root store: a Redux store whose state is an Angular signal.
  *
- * @typeParam RootState - The type of the root state
+ * @typeParam State - The type of the root state
  *
  * @remarks
- * Inject it, then call {@link NgRedux.configureStore} once to create the Redux store,
- * or {@link NgRedux.provideStore} to adopt one that already exists.
- * After that, it selects with observables or signals, dispatches inside the Angular zone,
- * and carves substores out of the state with {@link NgRedux.configureSubStore}.
- *
- * Every constructed instance registers itself as {@link NgRedux.store},
- * which is how the `Select`, `Select$`, and `Dispatch` decorators reach the store outside dependency injection.
- * The service is provided in the root injector, so an application normally has exactly one.
+ * It builds the Redux store in its constructor, so it is ready before anything reads it,
+ * and `provideNgRedux` creates the one instance for the application.
+ * After every dispatch it copies the Redux state into {@link NgRedux.state},
+ * and every selection is a `computed` over that signal.
+ * The root reducer also routes substore actions to their reducers and runs the feature reducers added later.
  *
  * @example
  * ```ts
- * class AppModule {
- *     constructor(ngRedux: NgRedux<AppState>) {
- *         ngRedux.configureStore(rootReducer, { count: 0 });
- *     }
- * }
+ * const ngRedux = new NgRedux({ reducer: rootReducer, initialState: { counter: 0 } });
+ * const count = ngRedux.select(state => state.counter);
  *
  * ngRedux.dispatch({ type: 'INCREMENT' });
- * ngRedux.select('count'); // emits 1
+ * count(); // 1
  * ```
  *
- * @see AbstractStore
- * @see SubStoreService
- *
- * @since 5.0.0
+ * @since 6.0.0
  */
 
-@Injectable({
-    providedIn: 'root'
-})
-export class NgRedux<RootState = unknown> extends AbstractStore<RootState> {
+export class NgRedux<State = unknown> extends AbstractStore<State> {
     /**
-     * The most recently constructed instance, which {@link NgRedux.store} returns.
+     * The underlying Redux store.
      *
      * @remarks
-     * The constructor overwrites it, so a second instance replaces the first one for the decorators.
-     *
-     * @hidden
-     * @since 5.0.0
-     */
-
-    protected static instance: NgRedux<unknown>;
-
-    /**
-     * The subject that replays the latest state to every selection.
-     *
-     * @remarks
-     * {@link NgRedux.setStore} pushes each new state into it, and {@link NgRedux.select} builds every selection on it.
-     * It replays only the last value, so a late subscriber receives the current state at once.
-     * Nothing emits until a store is set.
-     *
-     * @since 5.0.0
-     */
-
-    protected readonly state$: ReplaySubject<RootState> = new ReplaySubject<RootState>(1);
-
-    /**
-     * The signal that holds the latest state for every signal selection.
-     *
-     * @remarks
-     * {@link NgRedux.setStore} writes each new state into it, and {@link NgRedux.selectSignal} computes from it.
-     * It holds `undefined` until a store is set.
-     *
-     * @since 6.0.0
-     */
-
-    protected readonly state: WritableSignal<RootState | undefined> = signal(undefined);
-
-    /**
-     * The Redux store that this service wraps.
-     *
-     * @remarks
-     * It stays unset until {@link NgRedux.configureStore} or {@link NgRedux.provideStore} runs,
-     * and both methods refuse to replace it once it is set; {@link NgRedux.replaceStore} swaps it on purpose.
-     *
-     * @since 5.0.0
-     */
-
-    private reduxStore: Store<RootState, UnknownAction>;
-
-    /**
-     * Removes the listener that feeds the state of the current store into the selections.
-     *
-     * @remarks
-     * {@link NgRedux.setStore} calls it before it listens to a new store,
-     * so a replaced store no longer reaches the selections.
-     *
-     * @since 6.0.0
-     */
-
-    private unsubscribeStore?: Unsubscribe;
-
-    /**
-     * The feature reducers that {@link NgRedux.addReducer} registered, by the top-level key that each one owns.
-     *
-     * @remarks
-     * The composed root reducer keeps a reference to the map,
-     * so a feature added after the store is configured takes part from the next action on.
-     *
-     * @since 6.0.0
-     */
-
-    private readonly featureReducers = new Map<string, Reducer>();
-
-    /**
-     * Creates the service and registers it as {@link NgRedux.store}.
-     *
-     * @param ngZone - The zone that dispatches run in, or nothing to dispatch in the calling zone
-     *
-     * @remarks
-     * Angular injects the zone.
-     * With a zone, {@link NgRedux.dispatch} reenters it for an action dispatched from outside,
-     * so change detection sees the new state.
+     * Use it for libraries that expect a plain Redux store, such as `from(ngRedux.redux)` in RxJS.
+     * Do not replace its reducer, because the root reducer also runs substores and features.
      *
      * @example
      * ```ts
-     * const ngRedux = new NgRedux<AppState>(ngZone);
-     * NgRedux.store === ngRedux; // true
+     * ngRedux.redux.getState(); // { counter: 0 }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    constructor(private ngZone?: NgZone) {
+    readonly redux: Store<State>;
+
+    /**
+     * The whole root state as a read-only signal.
+     *
+     * @example
+     * ```ts
+     * ngRedux.state(); // { counter: 0 }
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    readonly state: Signal<State>;
+
+    /**
+     * The root reducer from the options.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly reducer: Reducer<State>;
+
+    /**
+     * The reducer handed to Redux: the root reducer, frozen when `freeze` is on.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly storeReducer: Reducer<State>;
+
+    /**
+     * The substore reducers by id.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly substoreReducers = new Map<number, Reducer>();
+
+    /**
+     * The id of each substore reducer and the number of substores that use it.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly substoreIds = new Map<Reducer, { id: number; count: number }>();
+
+    /**
+     * The id that the next new substore reducer gets.
+     *
+     * @since 6.0.0
+     */
+
+    private nextSubstoreId = 0;
+
+    /**
+     * The initial state from the options, kept so a feature added later starts from its preloaded key.
+     *
+     * @remarks
+     * `combineReducers` drops the keys it does not know when the store starts,
+     * so a key preloaded through `transferState` would be gone before the lazy route adds its reducer.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly preloaded?: Record<string, unknown>;
+
+    /**
+     * The feature reducers, by the state key that each one owns.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly features = new Map<string, Reducer>();
+
+    /**
+     * Creates the Redux store and the state signal.
+     *
+     * @param config - The options that create the store
+     *
+     * @remarks
+     * The state signal subscribes to the Redux store before anything else,
+     * so it already holds the new state when any other listener runs.
+     *
+     * @since 6.0.0
+     */
+
+    constructor(config: NgReduxConfigInterface<State>) {
         super();
-        NgRedux.instance = <NgRedux<unknown>> <unknown> this;
+
+        const reduce: Reducer<State> = (state, action) => this.reduce(state, action);
+        this.reducer = config.reducer;
+        this.preloaded = isPlain(config.initialState) ? config.initialState : undefined;
+        this.storeReducer = config.freeze ? freezeReducer(reduce) : reduce;
+        this.redux = createStore(this.storeReducer, config.initialState, enhancerOf(config));
+
+        const state = signal(this.redux.getState());
+        this.redux.subscribe(() => state.set(this.redux.getState()));
+        this.state = state.asReadonly();
     }
 
     /**
-     * The most recently constructed instance of the service.
+     * Dispatches an action to the Redux store.
      *
-     * @throws Error - When no instance has been constructed yet
-     *
-     * @remarks
-     * The decorators read the store through this getter, since they run outside dependency injection.
-     * The getter does not check that the store has been configured.
-     *
-     * @example
-     * ```ts
-     * NgRedux.store.getState(); // the root state
-     * ```
-     *
-     * @since 5.0.0
-     */
-
-    static get store(): NgRedux<unknown> {
-        if (!this.instance) {
-            throw new Error('NgRedux failed: instance not initialize.');
-        }
-
-        return this.instance;
-    }
-
-    /**
-     * Selects a slice of the state as an observable.
-     *
-     * @typeParam SelectedType - The type of the selected value
-     * @param selector - The key, path, or function that locates the value, or nothing for the whole state
-     * @param comparator - The equality check that decides whether a new value is emitted
-     * @returns An observable that emits the selected value whenever it changes
+     * @typeParam DispatchedAction - The type of the action
+     * @param action - The action to dispatch
+     * @returns What the Redux store returns, which is the action unless a middleware changes it
      *
      * @remarks
-     * The observable skips states that are the same reference as the previous one,
-     * maps each state through the selector, and then skips values that the comparator calls equal.
-     * Without a comparator, values are compared by reference.
-     * Because the subject replays the latest state, a new subscriber receives the current value at once.
-     *
-     * @example
-     * ```ts
-     * ngRedux.select('count');                  // emits 3
-     * ngRedux.select([ 'user', 'name' ]);       // emits 'Ada'
-     * ngRedux.select(state => state.count * 2); // emits 6
-     * ```
-     *
-     * @see SelectorType
-     * @see ComparatorType
-     *
-     * @since 5.0.0
-     */
-
-    override select<SelectedType>(selector?: SelectorType<RootState, SelectedType>, comparator?: ComparatorType<SelectedType>): Observable<SelectedType> {
-        return this.state$.pipe(
-            distinctUntilChanged(),
-            map(resolver(selector)),
-            distinctUntilChanged(comparator)
-        );
-    }
-
-    /**
-     * Selects a slice of the state as a signal.
-     *
-     * @typeParam SelectedType - The type of the selected value
-     * @param selector - The key, path, or function that locates the value, or nothing for the whole state
-     * @param comparator - The equality check that decides whether a new value is a change
-     * @returns A read-only signal of the selected value
-     *
-     * @remarks
-     * The signal is computed from the state, so it needs no subscription and no injection context,
-     * and it recomputes only when the state changes.
-     * Without a comparator, values are compared by reference.
-     * It reads `undefined` until the store is configured, without calling the selector.
-     * {@link provideNgRedux} configures the store before the first component renders.
-     *
-     * @example
-     * ```ts
-     * const count = ngRedux.selectSignal<number>('count');
-     * const doubled = ngRedux.selectSignal((state: AppState) => state.count * 2);
-     *
-     * count(); // 3
-     * ```
-     *
-     * @see injectSelect
-     * @see NgRedux.select
-     *
-     * @since 6.0.0
-     */
-
-    override selectSignal<SelectedType>(
-        selector?: SelectorType<RootState, SelectedType>,
-        comparator?: ComparatorType<SelectedType>
-    ): Signal<SelectedType> {
-        const resolve = resolver(selector);
-
-        return computed(() => {
-            const state = this.state();
-
-            return state === undefined ? <SelectedType> undefined : resolve(state);
-        }, { equal: comparator });
-    }
-
-    /**
-     * Creates the Redux store from a root reducer, an initial state, middlewares, and enhancers.
-     *
-     * @param reducer - The root reducer
-     * @param initState - The initial state
-     * @param middleware - The reducer-level middlewares, in the order that they run
-     * @param enhancers - The Redux store enhancers, such as the DevTools enhancer
-     *
-     * @throws Error - When the store has already been configured or provided
-     *
-     * @remarks
-     * Call it once in the lifetime of the application, for example in the constructor of the root module.
-     * The root reducer is wrapped so that middlewares run first, substore actions reach their local reducers,
-     * and every reducer runs against a draft of the state that it may mutate.
-     * The middlewares are {@link MiddlewareInterface} functions on the reducer, not Redux store middlewares.
-     * To use a Redux store middleware, pass it through `applyMiddleware` as an enhancer.
-     *
-     * @example
-     * ```ts
-     * class AppModule {
-     *     constructor(ngRedux: NgRedux<AppState>) {
-     *         ngRedux.configureStore(rootReducer, INITIAL_STATE, [ loggerMiddleware ], [ applyMiddleware(thunk) ]);
-     *     }
-     * }
-     * ```
-     *
-     * @see MiddlewareInterface
-     * @see NgRedux.provideStore
-     *
-     * @since 5.0.0
-     */
-
-    configureStore(
-        reducer: Reducer<RootState>,
-        initState: RootState,
-        middleware: Array<MiddlewareInterface<RootState>> = [],
-        enhancers: StoreEnhancer[] = []
-    ): void {
-        if (this.reduxStore) {
-            throw new Error('Store already initialize!');
-        }
-
-        const rootReducer = ReducerService.getInstance().composeReducers(reducer, middleware, this.featureReducers);
-        const enhancer = <StoreEnhancer> compose(...enhancers);
-
-        this.setStore(<Store<RootState, UnknownAction>> enhancer(createStore)(rootReducer, initState));
-    }
-
-    /**
-     * Creates a substore for one branch of the root state.
-     *
-     * @typeParam SubState - The type of the state at the base path
-     * @param basePath - The path of the substore in the root state
-     * @param localReducer - The reducer that handles the actions of the substore
-     * @returns A new substore
-     *
-     * @remarks
-     * Selections, dispatches, and the local reducer of the substore see only the branch at `basePath`.
-     * Its actions still go through the root Redux store, so DevTools and time travel cover them.
-     * Call {@link SubStoreService.setBasePath} on the result to move it to another branch later.
-     *
-     * @example
-     * ```ts
-     * const subStore = ngRedux.configureSubStore<User>([ 'users', userId ], userReducer);
-     *
-     * subStore.select('name'); // emits the name of that user
-     * ```
-     *
-     * @see Substore
-     * @see SubStoreService
-     *
-     * @since 5.0.0
-     */
-
-    configureSubStore<SubState>(basePath: PathSelectorType, localReducer: Reducer<SubState>): SubStoreService<SubState> {
-        return new SubStoreService<SubState>(<NgRedux<unknown>> <unknown> this, basePath, localReducer);
-    }
-
-    /**
-     * Adopts a Redux store that was created elsewhere.
-     *
-     * @param reducer - The root reducer, which replaces the current reducer of the store
-     * @param store - The Redux store to adopt
-     *
-     * @throws Error - When the store has already been configured or provided
-     *
-     * @remarks
-     * Reach for it over {@link NgRedux.configureStore} when another part of the application owns the Redux store.
-     * The service wraps `reducer` the same way as `configureStore` does, without middlewares,
-     * and installs it with `replaceReducer` on the store.
-     * Call it once, and never together with `configureStore`.
-     *
-     * @example
-     * ```ts
-     * const store = createStore(rootReducer, INITIAL_STATE);
-     *
-     * ngRedux.provideStore(rootReducer, store);
-     * ```
-     *
-     * @see NgRedux.configureStore
-     *
-     * @since 5.0.0
-     */
-
-    provideStore(reducer: Reducer<RootState>, store: Store<RootState>): void {
-        if (this.reduxStore) {
-            throw new Error('Store already initialize!');
-        }
-
-        const rootReducer = ReducerService.getInstance().composeReducers(reducer, [], this.featureReducers);
-        store.replaceReducer(rootReducer);
-        this.setStore(store);
-    }
-
-    /**
-     * Replaces the Redux store that the service wraps.
-     *
-     * @param store - The Redux store to wrap from now on
-     *
-     * @remarks
-     * The service stops listening to the previous store, and every selection, observable or signal,
-     * continues with the state of the new one.
-     * The store is used as given: unlike {@link NgRedux.provideStore}, its reducer is not wrapped,
-     * so substores and the draft state of `Action` methods only work when its reducer came from this service,
-     * for example a store rebuilt around `ngRedux.getState()` during hot module replacement.
-     *
-     * @example
-     * ```ts
-     * ngRedux.replaceStore(createStore(rootReducer, ngRedux.getState()));
-     * ```
-     *
-     * @see NgRedux.provideStore
-     *
-     * @since 6.0.0
-     */
-
-    replaceStore(store: Store<RootState>): void {
-        this.setStore(store);
-    }
-
-    /**
-     * Returns the current root state.
-     *
-     * @returns The current root state
-     *
-     * @remarks
-     * Calling it before the store is configured throws a `TypeError`.
-     *
-     * @example
-     * ```ts
-     * const { count } = ngRedux.getState(); // count is 3
-     * ```
-     *
-     * @since 5.0.0
-     */
-
-    getState(): RootState {
-        return this.reduxStore.getState();
-    }
-
-    /**
-     * Dispatches an action to the Redux store inside the Angular zone.
-     *
-     * @typeParam Action - The type of the dispatched action
-     * @param action - The plain action object to dispatch
-     * @returns The dispatched action
-     *
-     * @throws Error - When the store has not been configured or provided yet
-     *
-     * @remarks
-     * A dispatch from outside the Angular zone, such as a callback of a third-party library,
-     * reenters the zone first, so the views update without a manual change detection run.
-     * A dispatch from inside the zone, or from a service created without a zone, runs directly.
+     * The state signal already holds the new state when it returns.
      *
      * @example
      * ```ts
      * ngRedux.dispatch({ type: 'INCREMENT' }); // { type: 'INCREMENT' }
+     * ngRedux.getState().counter;              // 1
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    dispatch<Action extends UnknownAction>(action: Action): Action {
-        if (!this.reduxStore) {
-            throw new Error('Dispatch failed: store instance not initialize.');
-        }
-
-        /**
-         * Reenter the Angular zone for a dispatch from outside it, such as a third-party callback,
-         * so change detection sees the new state.
-         */
-
-        return this.ngZone && !NgZone.isInAngularZone()
-            ? this.ngZone.run(() => this.reduxStore.dispatch(action))
-            : this.reduxStore.dispatch(action);
+    dispatch<DispatchedAction extends Action>(action: DispatchedAction): DispatchedAction {
+        return <DispatchedAction> this.redux.dispatch(<UnknownAction> <unknown> action);
     }
 
     /**
-     * Adds a listener that runs after every dispatch.
+     * Creates a store that works on one branch of the root state.
      *
-     * @param listener - The callback to run
-     * @returns A function that removes the listener
+     * @typeParam SubState - The state of the branch
+     * @param basePath - The path of the branch, fixed or computed
+     * @param reducer - The reducer that handles the actions dispatched through the substore
+     * @returns A store for the branch at the base path
      *
      * @remarks
-     * The listener goes straight to the Redux store, so it runs for every action,
-     * even when the state did not change.
-     * Read the new state with {@link NgRedux.getState} inside it, or use {@link AbstractStore.select} instead.
+     * Substores that share a reducer, such as one per list item, share its id and register it once.
+     * {@link SubStoreInterface.destroy} releases the substore,
+     * and the store forgets the reducer once no substore uses it,
+     * so substores made with inline reducers do not pile up.
      *
      * @example
      * ```ts
-     * const unsubscribe = ngRedux.subscribe(() => console.log(ngRedux.getState()));
-     * unsubscribe(); // the listener no longer runs
+     * const bob = ngRedux.substore([ 'users', 'bob' ], userReducer);
+     *
+     * bob.getState(); // { name: 'Bob Smith', loc: 1023 }
+     * bob.destroy();
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    subscribe(listener: () => void): Unsubscribe {
-        return this.reduxStore.subscribe(listener);
+    substore<SubState>(basePath: BasePathType, reducer: Reducer<SubState>): SubStoreInterface<SubState> {
+        const entry = this.substoreIds.get(reducer) ?? { id: this.nextSubstoreId++, count: 0 };
+        entry.count++;
+        this.substoreIds.set(reducer, entry);
+        this.substoreReducers.set(entry.id, reducer);
+
+        return new SubStore<SubState>(this, basePath, entry.id, () => this.release(reducer));
     }
 
     /**
-     * Adds a reducer that owns one top-level key of the state, next to the root reducer.
+     * Adds a reducer that owns one key of the root state, such as the state of a lazy route.
      *
-     * @param key - The top-level key of the state that the reducer owns
-     * @param reducer - The reducer of that key, which may mutate its draft
+     * @param key - The state key that the reducer owns
+     * @param reducer - The reducer of that key
      *
      * @remarks
-     * Use it to load the reducer of a lazy feature with its code, rather than listing every feature in the root reducer.
-     * {@link provideNgReduxFeature} calls it when the providers of a lazy route are created.
-     *
-     * The root reducer never sees the key, so `combineReducers` neither drops it nor warns about it.
-     * Once the store is configured, the call dispatches {@link ADD_REDUCER}, so the reducer sets its initial state at once.
-     * A reducer added before that joins the store when it is configured.
-     * Adding the same reducer again does nothing, and a different reducer for the same key replaces it.
-     * The root state must be an object, and the key keeps its state for the life of the store.
+     * The store swaps in its reducer again, so Redux dispatches its replace action
+     * and the feature state starts from the defaults of its reducer at once.
+     * Adding the same reducer for the same key again does nothing.
      *
      * @example
      * ```ts
-     * ngRedux.addReducer('todos', todosReducer);
-     * ngRedux.getState().todos; // the initial state of todosReducer
+     * ngRedux.addReducer('todos', todos.reducer);
+     * ngRedux.getState().todos; // []
      * ```
-     *
-     * @see provideNgReduxFeature
      *
      * @since 6.0.0
      */
 
     addReducer(key: string, reducer: Reducer): void {
-        if (this.featureReducers.get(key) === reducer) {
-            return;
-        }
+        if (this.features.get(key) === reducer) return;
 
-        this.featureReducers.set(key, reducer);
-        if (this.reduxStore) {
-            this.dispatch({ type: ADD_REDUCER, key });
-        }
+        this.features.set(key, reducer);
+        this.redux.replaceReducer(this.storeReducer);
     }
 
     /**
-     * Replaces the root reducer.
+     * Registers a listener that runs after every dispatch.
      *
-     * @param nextReducer - The root reducer to use from the next action on
+     * @param listener - The function to run
+     * @returns A function that removes the listener
      *
-     * @remarks
-     * Only the innermost root reducer changes, so the middlewares and the substore routing stay in place.
-     * The Redux store is not told about the change, so no `@@redux/REPLACE` action is dispatched.
-     *
-     * @example
-     * ```ts
-     * ngRedux.replaceReducer(combineReducers({ counter, todos }));
-     * ```
-     *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    replaceReducer(nextReducer: Reducer<RootState>): void {
-        ReducerService.getInstance().replaceReducer(nextReducer);
+    protected listen(listener: () => void): Unsubscribe {
+        return this.redux.subscribe(listener);
     }
 
     /**
-     * Stores the Redux store and starts feeding its state into the selections.
+     * Releases one use of a substore reducer, and forgets the reducer when no substore uses it anymore.
      *
-     * @param store - The Redux store to wrap
+     * @param reducer - The substore reducer
      *
-     * @remarks
-     * It pushes the current state at once and then the state after every dispatch,
-     * into both the observable and the signal selections.
-     * A store that was set before stops feeding them.
-     *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    protected setStore(store: Store<RootState>): void {
-        const publish = (): void => {
-            const state = store.getState();
-            this.state.set(state);
-            this.state$.next(state);
-        };
+    private release(reducer: Reducer): void {
+        const entry = this.substoreIds.get(reducer);
+        if (!entry || --entry.count > 0) return;
 
-        this.unsubscribeStore?.();
-        this.reduxStore = store;
-        this.unsubscribeStore = store.subscribe(publish);
-        publish();
+        this.substoreIds.delete(reducer);
+        this.substoreReducers.delete(entry.id);
+    }
+
+    /**
+     * Reduces one action: a substore action on its branch, and every other action with the root and feature reducers.
+     *
+     * @param state - The current root state
+     * @param action - The action to reduce
+     * @returns The next root state
+     *
+     * @remarks
+     * A substore action reaches only its substore reducer, and only the objects along its path are copied.
+     * A substore action with an unknown id, such as one that the Redux DevTools extension imported,
+     * goes to the root reducer instead.
+     *
+     * @since 6.0.0
+     */
+
+    private reduce(state: State | undefined, action: UnknownAction): State {
+        const route = <SubstoreRouteInterface | undefined> action[SUBSTORE_ROUTE];
+        const reducer = route ? this.substoreReducers.get(route.id) : undefined;
+
+        if (route && reducer) {
+            const branch = get(state, route.path);
+            const next = reducer(branch, action);
+
+            return next === branch ? <State> state : set(<State> state, route.path, next);
+        }
+
+        return this.features.size ? this.reduceFeatures(state, action) : this.reducer(state, action);
+    }
+
+    /**
+     * Runs the root reducer on the state without the feature keys, then each feature reducer on its own key.
+     *
+     * @param state - The current root state
+     * @param action - The action to reduce
+     * @returns The next root state, or the same state when no reducer changed anything
+     *
+     * @remarks
+     * The root reducer never sees the feature keys,
+     * so `combineReducers` neither drops them nor warns about keys that it does not know.
+     *
+     * Each feature reducer starts from, in order:
+     * - the value that the root reducer put on its key, such as a state that `MockNgRedux.setState` sets
+     * - the current value of its key
+     * - the value of its key in the initial state, the first time it runs
+     *
+     * @since 6.0.0
+     */
+
+    private reduceFeatures(state: State | undefined, action: UnknownAction): State {
+        const record = <Record<string, unknown> | undefined> state;
+        const rootState = record && Object.fromEntries(Object.entries(record).filter(([ key ]) => !this.features.has(key)));
+        const nextRoot = <Record<string, unknown> | undefined> this.reducer(<State> rootState, action);
+        const next: Record<string, unknown> = { ...nextRoot };
+        let changed = nextRoot !== rootState;
+
+        for (const [ key, reducer ] of this.features) {
+            const previous = this.previousOf(key, nextRoot, record);
+            next[key] = reducer(previous, action);
+            changed ||= next[key] !== record?.[key];
+        }
+
+        return changed ? <State> next : <State> state;
+    }
+
+    /**
+     * Picks the state that a feature reducer starts from.
+     *
+     * @param key - The feature key
+     * @param nextRoot - What the root reducer returned
+     * @param record - The current root state
+     * @returns The previous state of the feature
+     *
+     * @see NgRedux.reduceFeatures
+     *
+     * @since 6.0.0
+     */
+
+    private previousOf(key: string, nextRoot?: Record<string, unknown>, record?: Record<string, unknown>): unknown {
+        if (nextRoot && Object.hasOwn(nextRoot, key)) return nextRoot[key];
+        if (record && Object.hasOwn(record, key)) return record[key];
+
+        return this.preloaded?.[key];
     }
 }
