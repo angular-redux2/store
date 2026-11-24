@@ -2,182 +2,96 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { Action } from 'redux';
 import type { Observable } from 'rxjs';
+import type { Action, Reducer } from 'redux';
+import type { CreateComputedOptions, Signal } from '@angular/core';
+
+/**
+ * A function that picks one value out of the state.
+ *
+ * @typeParam State - The state that the selector reads
+ * @typeParam Selected - The value that the selector returns
+ *
+ * @remarks
+ * A selector is the only way to read part of the state, so TypeScript infers the selected type from its body.
+ * It runs inside a `computed`, so it must be pure and should not create new objects or arrays on every call
+ * unless the selection also passes an `equal` function.
+ *
+ * @example
+ * ```ts
+ * const count: SelectorType<AppState, number> = state => state.counter;
+ *
+ * ngRedux.select(count)(); // 0
+ * ```
+ *
+ * @see StoreInterface
+ *
+ * @since 6.0.0
+ */
+
+export type SelectorType<State, Selected> = (state: State) => Selected;
 
 /**
  * A list of keys and indexes that walks down the state tree.
  *
  * @remarks
- * Each entry selects one level, so `[ 'users', 0, 'name' ]` reads `state.users[0].name`.
- * The walk stops with `undefined` as soon as an intermediate value is not an object,
- * so a path through a missing branch yields `undefined` instead of throwing.
- * Reach for a path when the value sits more than one level deep and no computation is needed.
+ * Each entry selects one level, so `[ 'users', 'bob', 'loc' ]` points at `state.users.bob.loc`.
+ * A path only places a substore in the state, while reading the state always goes through a {@link SelectorType}.
  *
  * @example
  * ```ts
- * class UserComponent {
- *     @Select([ 'users', 0, 'name' ]) readonly name$: Observable<string>;
- * }
+ * const path: PathType = [ 'users', 'bob' ];
  *
- * ngRedux.select([ 'users', 0, 'name' ]); // emits 'Ada' for { users: [ { name: 'Ada' } ] }
+ * ngRedux.substore(path, userReducer).getState(); // { name: 'Bob Smith', loc: 1023 }
  * ```
  *
- * @see SelectorType
- * @see PropertySelectorType
+ * @see BasePathType
  *
  * @since 6.0.0
  */
 
-export type PathSelectorType = Array<string | number>;
+export type PathType = ReadonlyArray<string | number>;
 
 /**
- * A single key that selects one top-level property of the state.
+ * The base path of a substore, fixed or computed.
  *
  * @remarks
- * The property is read with a plain index, so a symbol key works as well as a string or number.
- * A falsy key such as `0` or `''` does not select a property.
- * The selector treats it as missing and emits the whole state instead.
+ * A function runs inside a reactive context,
+ * so a path built from signals, such as a component input, moves the substore whenever one of those signals changes.
+ * Selections follow the move, and the next dispatch goes to the new path.
  *
  * @example
  * ```ts
- * class CounterComponent {
- *     @Select('count') readonly count$: Observable<number>;
- * }
- *
- * ngRedux.select('count'); // emits 3 for { count: 3 }
+ * ngRedux.substore([ 'users', 'bob' ], userReducer);               // a fixed path
+ * ngRedux.substore(() => [ 'users', this.userId() ], userReducer); // follows the userId input
  * ```
  *
- * @see SelectorType
- * @see PathSelectorType
+ * @see PathType
  *
  * @since 6.0.0
  */
 
-export type PropertySelectorType = string | number | symbol;
+export type BasePathType = PathType | (() => PathType);
 
 /**
- * A function that derives a value from the state.
- *
- * @typeParam RootState - The type of the state that the function receives
- * @typeParam State - The type of the value that the function returns
- *
- * @remarks
- * The store calls the function on every state change and passes its result through `distinctUntilChanged`,
- * so the observable emits only when the derived value changes.
- * Reach for a function when the value has to be computed or defaulted rather than read from a fixed path.
- *
- * @example
- * ```ts
- * class UserComponent {
- *     @Select((state: AppState) => state.name || 'guest') readonly name$: Observable<string>;
- * }
- * ```
- *
- * @see SelectorType
- *
- * @since 6.0.0
- */
-
-export type FunctionSelectorType<RootState, State> = ((state: RootState) => State);
-
-/**
- * Any of the three ways to select a value from the state.
- *
- * @typeParam RootState - The type of the state being selected from
- * @typeParam State - The type of the selected value
- *
- * @remarks
- * The store tells the forms apart at runtime: an array is a {@link PathSelectorType},
- * a function is a {@link FunctionSelectorType}, and anything else is a {@link PropertySelectorType}.
- * A missing or falsy selector selects the whole state.
- *
- * @example
- * ```ts
- * ngRedux.select('count');               // property
- * ngRedux.select([ 'user', 'name' ]);    // path
- * ngRedux.select(state => state.count);  // function
- * ngRedux.select();                      // the whole state
- * ```
- *
- * @see PathSelectorType
- * @see FunctionSelectorType
- * @see PropertySelectorType
- *
- * @since 6.0.0
- */
-
-export type SelectorType<RootState, State> = PropertySelectorType | PathSelectorType | FunctionSelectorType<RootState, State>;
-
-/**
- * A function that decides whether two selected values are equal.
- *
- * @typeParam T - The type of the selected values being compared
- *
- * @remarks
- * The store passes it to `distinctUntilChanged`, so returning `true` suppresses the emission.
- * Without a comparator, values are compared by reference.
- * Supply one when a selector builds a new object on every change but only some fields matter.
- *
- * @example
- * ```ts
- * const sameId: ComparatorType<User> = (previous, next) => previous.id === next.id;
- *
- * class UserComponent {
- *     @Select('user', sameId) readonly user$: Observable<User>;
- * }
- * ```
- *
- * @see SelectorType
- *
- * @since 6.0.0
- */
-
-export type ComparatorType<T = unknown> = (previous: T, next: T) => boolean;
-
-/**
- * A function that turns the observable of a selection into a derived observable.
- *
- * @typeParam RootState - The type of the value that the selection emits
- * @typeParam FragmentStore - The type of the value that the derived observable emits
- *
- * @remarks
- * A transformer is a {@link FunctionSelectorType} that works on observables instead of values,
- * so it can debounce, combine, or switch over the selection.
- * The `Select$` decorator passes the decorated instance as `scope`,
- * and the derived observable still goes through `distinctUntilChanged` with the optional comparator.
- *
- * @example
- * ```ts
- * const debounceAndTriple: TransformerType<number, number> = (store$) => store$.pipe(
- *     debounceTime(300),
- *     map(value => value * 3)
- * );
- *
- * class CounterComponent {
- *     @Select$('count', debounceAndTriple) readonly tripled$: Observable<number>;
- * }
- * ```
- *
- * @see Select$
- *
- * @since 6.0.0
- */
-
-export type TransformerType<RootState, FragmentStore> = (store$: Observable<RootState>, scope: unknown) => Observable<FragmentStore>;
-
-/**
- * A Redux action that may carry a `payload`.
+ * A Redux action that carries a payload.
  *
  * @typeParam Payload - The type of the payload
  *
  * @remarks
- * The action creators that the `Action` decorator generates return this shape.
- * The index signature keeps the type open, so an action may carry other properties alongside the payload.
+ * A reducer receives every action dispatched to the store, not only the ones that it handles,
+ * so the payload is optional and any other property is allowed, the same as Redux's `UnknownAction`.
+ * That keeps a reducer typed with this action assignable to `Reducer<State>`,
+ * so it can go to `provideNgRedux`, `combineReducers`, or a substore.
+ * The cost is that TypeScript does not catch a misspelled property name.
  *
  * @example
  * ```ts
- * const action: PayloadActionInterface<string> = { type: 'AuthReducer/login', payload: 'ada' };
+ * function counter(state = 0, action: PayloadActionInterface<number>): number {
+ *     return action.type === 'ADD' ? state + (action.payload ?? 0) : state;
+ * }
+ *
+ * counter(0, { type: 'ADD', payload: 5 }); // 5
  * ```
  *
  * @see ActionCreatorType
@@ -185,119 +99,262 @@ export type TransformerType<RootState, FragmentStore> = (store$: Observable<Root
  * @since 6.0.0
  */
 
-export interface PayloadActionInterface<Payload = unknown> extends Action {
+export interface PayloadActionInterface<Payload = unknown> extends Action<string> {
     /**
-     * The data that the action carries to the reducer method.
+     * The value that the reducer receives with the action.
      *
      * @remarks
-     * The `Action` decorator sets it whenever the creator receives an argument other than `undefined`,
-     * so falsy values such as `0`, `false`, and `''` are kept.
+     * It is optional because the same reducer also receives actions without a payload.
      *
-     * @example
-     * ```ts
-     * AuthReducer.actions.login('ada').payload; // 'ada'
-     * ```
-     *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
     payload?: Payload;
 
     /**
-     * Any other property that the action carries.
+     * Any other property of the action, such as `meta` or `error`.
      *
-     * @example
-     * ```ts
-     * const action: PayloadActionInterface = { type: 'SAVE', meta: { optimistic: true } };
-     * ```
-     *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
     [extraProps: string]: unknown;
 }
 
 /**
- * The tuple of parameter types of the function type `T`, or `never` for a non-function.
+ * A function that builds an action of one type.
  *
- * @typeParam T - The function type to read the parameters from
+ * @typeParam Payload - The type of the payload, or `void` for an action without one
  *
  * @remarks
- * {@link ReducerActionsType} uses it to read the payload type from the second parameter of a reducer method.
+ * A creator for `void` takes no argument and returns a bare action.
+ * Any other payload type makes the argument required.
+ * The tuple check `[ Payload ] extends [ void ]` keeps a union payload such as `string | number`
+ * from splitting into two creator types.
  *
  * @example
  * ```ts
- * type Params = ArgsType<(state: Auth, payload: string) => Auth>; // [ Auth, string ]
- * ```
+ * const reset: ActionCreatorType = createAction('reset');
+ * const add: ActionCreatorType<number> = createAction<number>('add');
  *
- * @since 5.0.0
- */
-
-type ArgsType<T> = T extends (...args: infer arg) => unknown ? arg : never;
-
-/**
- * A function that builds an action from its payload.
- *
- * @typeParam Payload - The type of the payload that the creator accepts
- *
- * @remarks
- * The `Action` decorator generates one creator per decorated reducer method.
- * The creator sets the `type` to `namespace/methodName` and attaches the payload unless it is `undefined`.
- * The payload argument is required when `Payload` excludes `undefined`, and optional otherwise,
- * so a method that takes no payload gets a creator that is called without arguments.
- *
- * @example
- * ```ts
- * const login: ActionCreatorType<string> = AuthReducer.actions.login;
- * const logout: ActionCreatorType = AuthReducer.actions.logout;
- *
- * login('ada'); // { type: 'AuthReducer/login', payload: 'ada' }
- * login();      // compile error: the payload is required
- * logout();     // { type: 'AuthReducer/logout' }
+ * reset();  // { type: 'reset' }
+ * add(5);   // { type: 'add', payload: 5 }
  * ```
  *
  * @see PayloadActionInterface
- * @see ReducerActionsType
  *
  * @since 6.0.0
  */
 
-export type ActionCreatorType<Payload = undefined> = undefined extends Payload
-    ? (payload?: Payload) => PayloadActionInterface<Payload>
+export type ActionCreatorType<Payload = void> = [ Payload ] extends [ void ]
+    ? () => Action<string>
     : (payload: Payload) => PayloadActionInterface<Payload>;
 
 /**
- * The typed map of action creators for a reducer class.
+ * The shape shared by the root store and every substore.
  *
- * @typeParam T - The reducer class whose methods become action creators
+ * @typeParam State - The state that the store holds
  *
  * @remarks
- * Each method of `T` maps to an {@link ActionCreatorType} whose payload type is the second parameter of that method,
- * so redeclaring the static `actions` field with this type gives auto-completion and payload checks.
- * Properties that are not methods are left out.
- * The type only describes the creators, while the `Action` decorator creates them at runtime.
+ * Code that receives a store does not need to know whether it is the root store or a substore,
+ * so a component can work on `users.bob` with the same calls it would use on the whole state.
+ * Reading goes through signals first, and `select$` exists for RxJS pipelines that need every change in order.
  *
  * @example
  * ```ts
- * class AuthReducer extends AbstractReducer {
- *     static override actions: ReducerActionsType<AuthReducer>;
+ * const store: StoreInterface<AppState> = inject(NgRedux<AppState>);
+ * const count = store.select(state => state.counter);
  *
- *     @Action
- *     login(state: Auth, username: string): Auth {
- *         return { ...state, username };
- *     }
- * }
- *
- * AuthReducer.actions.login('ada'); // { type: 'AuthReducer/login', payload: 'ada' }
+ * store.dispatch({ type: 'INCREMENT' });
+ * count(); // 1
  * ```
- *
- * @see Action
- * @see ActionCreatorType
- * @see AbstractReducer
  *
  * @since 6.0.0
  */
 
-export type ReducerActionsType<T> = {
-    [K in keyof T as T[K] extends (...args: Array<never>) => unknown ? K : never]: ActionCreatorType<ArgsType<T[K]>[1]>;
-};
+export interface StoreInterface<State> {
+    /**
+     * The whole state of this store as a read-only signal.
+     *
+     * @remarks
+     * The signal updates after every dispatch that changes the state.
+     * On a substore it holds the branch at the base path.
+     *
+     * @example
+     * ```ts
+     * store.state(); // { counter: 0, todos: [] }
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    readonly state: Signal<State>;
+
+    /**
+     * Returns the current state without tracking it.
+     *
+     * @returns The current state of this store
+     *
+     * @remarks
+     * Reading through this method inside a `computed` or an `effect` does not make it rerun on the next change.
+     * Use it in event handlers and other code outside a reactive context.
+     *
+     * @example
+     * ```ts
+     * store.getState(); // { counter: 0, todos: [] }
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    getState(): State;
+
+    /**
+     * Selects one value of the state as a signal.
+     *
+     * @typeParam Selected - The value that the selector returns
+     * @param selector - The function that picks the value
+     * @param options - The options passed to the underlying `computed`
+     * @returns A read-only signal of the selected value
+     *
+     * @remarks
+     * The signal is a `computed` over {@link StoreInterface.state},
+     * so it needs no subscription and no injection context, and it recomputes only when read after a change.
+     * Pass `equal` when the selector builds a new object or array, so that equal results do not notify readers.
+     *
+     * @example
+     * ```ts
+     * const count = store.select(state => state.counter);
+     *
+     * count(); // 0
+     * ```
+     *
+     * @see SelectorType
+     *
+     * @since 6.0.0
+     */
+
+    select<Selected>(selector: SelectorType<State, Selected>, options?: CreateComputedOptions<Selected>): Signal<Selected>;
+
+    /**
+     * Selects one value of the state as an observable.
+     *
+     * @typeParam Selected - The value that the selector returns
+     * @param selector - The function that picks the value
+     * @param options - The `equal` function that decides whether a new value is emitted
+     * @returns An observable that emits the current value on subscribe and every distinct change after it
+     *
+     * @remarks
+     * The observable emits synchronously after each dispatch that changes the selected value.
+     * Unlike `toObservable(store.select(...))`, it never skips an intermediate value,
+     * so choose it for RxJS pipelines that react to each change in order.
+     *
+     * @example
+     * ```ts
+     * store.select$(state => state.counter).subscribe(console.log); // logs 0
+     * store.dispatch({ type: 'INCREMENT' });                         // logs 1
+     * ```
+     *
+     * @see SelectorType
+     *
+     * @since 6.0.0
+     */
+
+    select$<Selected>(
+        selector: SelectorType<State, Selected>, options?: Pick<CreateComputedOptions<Selected>, 'equal'>
+    ): Observable<Selected>;
+
+    /**
+     * Dispatches an action to the store.
+     *
+     * @typeParam DispatchedAction - The type of the action
+     * @param action - The action to dispatch
+     * @returns The same action
+     *
+     * @remarks
+     * On a substore, the action goes to the substore reducer and only changes the branch at the base path.
+     *
+     * @example
+     * ```ts
+     * store.dispatch({ type: 'ADD', payload: 5 }); // { type: 'ADD', payload: 5 }
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    dispatch<DispatchedAction extends Action>(action: DispatchedAction): DispatchedAction;
+
+    /**
+     * Creates a store that works on one branch of this store.
+     *
+     * @typeParam SubState - The state of the branch
+     * @param basePath - The path of the branch, relative to this store
+     * @param reducer - The reducer that handles the actions dispatched through the substore
+     * @returns A store for the branch at the base path
+     *
+     * @remarks
+     * The path of a nested substore continues from the path of the store that created it.
+     * Actions dispatched through the substore reach only its reducer,
+     * while actions dispatched anywhere else never reach it.
+     *
+     * @example
+     * ```ts
+     * const bob = store.substore([ 'users', 'bob' ], userReducer);
+     *
+     * bob.dispatch({ type: 'ADD_LOC', payload: 100 });
+     * bob.getState(); // { name: 'Bob Smith', loc: 1123 }
+     * ```
+     *
+     * @see BasePathType
+     * @see SubStoreInterface.destroy
+     *
+     * @since 6.0.0
+     */
+
+    substore<SubState>(basePath: BasePathType, reducer: Reducer<SubState>): SubStoreInterface<SubState>;
+
+    /**
+     * Returns the whole state as an observable, the interop method that RxJS `from(store)` and Redux tools look for.
+     *
+     * @returns The same observable as `select$(state => state)`
+     *
+     * @example
+     * ```ts
+     * from(store).subscribe(state => console.log(state)); // logs { counter: 0 }
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    '@@observable'(): Observable<State>;
+}
+
+/**
+ * A store that works on one branch of its parent store.
+ *
+ * @typeParam State - The state of the branch
+ *
+ * @since 6.0.0
+ */
+
+export interface SubStoreInterface<State> extends StoreInterface<State> {
+    /**
+     * Releases the substore, so the root store can forget its reducer once no other substore uses it.
+     *
+     * @remarks
+     * `injectSubstore` calls it when its injector is destroyed.
+     * A substore made with `store.substore` should call it when it is no longer needed,
+     * above all one made with an inline reducer, since each inline reducer is a new function the store would keep.
+     * Calling it twice does nothing.
+     * Do not dispatch through a destroyed substore.
+     *
+     * @example
+     * ```ts
+     * const bob = ngRedux.substore([ 'users', 'bob' ], userReducer);
+     * bob.destroy();
+     * ```
+     *
+     * @since 6.0.0
+     */
+
+    destroy(): void;
+}
