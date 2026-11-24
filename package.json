@@ -24,8 +24,8 @@
         "node": ">=20.19.0"
     },
     "scripts": {
-        "dev":              "ng-packagr -p ng-package.json -c tsconfig.lib.json --watch",
-        "build":            "ng-packagr -p ng-package.json -c tsconfig.lib.json",
+        "dev":              "ng-packagr -p ng-package.json -c tsconfig.json --watch",
+        "build":            "ng-packagr -p ng-package.json -c tsconfig.json",
 
         "test":             "xjet",
         "test:coverage":    "xjet --coverage",
