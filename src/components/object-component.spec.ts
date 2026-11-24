@@ -2,227 +2,156 @@
  * Imports
  */
 
-import { get, set, shallowCopy } from '@components/object.component';
+import { runInNewContext } from 'vm';
+import { copy, get, isPlain, set } from '@components/object.component';
 
-const storeStruct = {
-    foo: 1,
-    a: false,
-    b: 0,
-    c: '',
-    d: undefined,
-    level_1: {
-        a: false,
-        b: 0,
-        c: '',
-        d: undefined,
-        bar: 2,
-        level_2: {
-            fooBar: 3,
-            level_3: {
-                key: 'x'
-            }
-        },
-        arr: [
-            'test',
-            'array',
-            'string'
-        ]
-    }
-};
-describe('shallowCopy', () => {
-    test('should create a shallow copy of an object', () => {
-        const obj = { a: 1, b: { c: 2 } };
-        const copy = shallowCopy(obj);
-        expect(copy).toEqual(obj);
-        expect(copy).not.toBe(obj);
+/**
+ * Tests
+ */
+
+describe('isPlain', () => {
+    test.each(
+        { case: 'an array', value: [ 1, 2 ] },
+        { case: 'an empty array', value: [] },
+        { case: 'an object literal', value: { a: 1 } },
+        { case: 'an object without a prototype', value: Object.create(null) },
+        { case: 'an object from another realm', value: runInNewContext('({ a: 1 })') }
+    )('should accept $case', ({ value }) => {
+        expect(isPlain(value)).toBe(true);
     });
 
-    test('should create a shallow copy of an array', () => {
-        const arr = [ 1, 2, { a: 3 }];
-        const copy = shallowCopy(arr);
-        expect(copy).toEqual(arr);
-        expect(copy).not.toBe(arr);
+    test.each(
+        { case: 'a Date', value: new Date() },
+        { case: 'a Map', value: new Map() },
+        { case: 'a Set', value: new Set() },
+        { case: 'a class instance', value: new (class Point {})() },
+        { case: 'a function', value: () => undefined },
+        { case: 'null', value: null },
+        { case: 'undefined', value: undefined },
+        { case: 'a number', value: 1 },
+        { case: 'a string', value: 'a' }
+    )('should reject $case', ({ value }) => {
+        expect(isPlain(value)).toBe(false);
+    });
+});
+
+describe('copy', () => {
+    test('should copy an object and keep its nested values shared', () => {
+        const original = { a: 1, b: { c: 2 } };
+        const result = copy(original);
+
+        expect(result).toEqual(original);
+        expect(result).not.toBe(original);
+        expect(result.b).toBe(original.b);
     });
 
-    test('should return empty object for undefined input', () => {
-        const obj = undefined;
-        const copy = shallowCopy(obj);
-        expect(copy).toEqual({});
+    test('should copy an array and keep it an array', () => {
+        const original = [ 1, 2, { a: 3 }];
+        const result = copy(original);
+
+        expect(result).toEqual(original);
+        expect(result).not.toBe(original);
+        expect(Array.isArray(result)).toBe(true);
+    });
+
+    test.each(
+        { case: 'undefined', value: undefined },
+        { case: 'null', value: null }
+    )('should turn $case into an empty object', ({ value }) => {
+        expect(copy(value)).toEqual({});
     });
 });
 
 describe('get', () => {
-    test('should return the value at the specified path', () => {
-        const obj = { a: { b: { c: 1 } } };
-        expect(get(obj, [ 'a', 'b', 'c' ])).toBe(1);
+    const state = {
+        a: false,
+        b: 0,
+        c: '',
+        d: undefined,
+        level1: {
+            bar: 2,
+            level2: { fooBar: 3 },
+            list: [ 'foo', 'bar' ]
+        }
+    };
+
+    test.each`
+        path                                  | expected
+        ${ [ 'level1', 'bar' ] }              | ${ 2 }
+        ${ [ 'level1', 'level2', 'fooBar' ] } | ${ 3 }
+        ${ [ 'level1', 'list', 0 ] }          | ${ 'foo' }
+        ${ [ 'level1', 'list', '1' ] }        | ${ 'bar' }
+        ${ [ 'level1', 'list', 2 ] }          | ${ undefined }
+    `('should read $path', ({ path, expected }: any) => {
+        expect(get(state, path)).toBe(expected);
     });
 
-    test('should return undefined for invalid path', () => {
-        const obj = { a: { b: { c: 1 } } };
-        expect(get(obj, [ 'a', 'b', 'd' ])).toBeUndefined();
-        expect(get(obj, [ 'a', 'c', 'd' ])).toBeUndefined();
-        expect(get(obj, [ 'd' ])).toBeUndefined();
+    test.each`
+        key    | expected
+        ${ 'a' } | ${ false }
+        ${ 'b' } | ${ 0 }
+        ${ 'c' } | ${ '' }
+        ${ 'd' } | ${ undefined }
+    `('should read the falsy value at $key as it is', ({ key, expected }: any) => {
+        expect(get(state, [ key ])).toBe(expected);
     });
 
-    test('should return the root object for empty path', () => {
-        const obj = { a: { b: { c: 1 } } };
-        expect(get(obj, [])).toEqual(obj);
+    test('should return the target itself for an empty path', () => {
+        expect(get(state, [])).toBe(state);
     });
 
-    describe('should get a deeply nested property value from an object', () => {
-        describe.each(
-            [[ 'foo' ], 1 ],
-            [[ 'level_1', 'bar' ], 2 ],
-            [[ 'level_1', 'level_2', 'fooBar' ], 3 ]
-        )('get() should select a deeply nested property', ([ path, expected ]: any) => {
-            test(`path ${ JSON.stringify(path) } should return ${ expected }`, () => {
-                expect(get(storeStruct, path)).toEqual(expected);
-            });
-        });
-
-        describe.each(
-            [ 'a', false ],
-            [ 'b', 0 ],
-            [ 'c', '' ],
-            [ 'd', undefined ]
-        )('get() should select falsy values properly', ([ prop, expected ]: any) => {
-            test(`property '${ prop }' should return ${ expected }`, () => {
-                expect(get(storeStruct, [ prop ])).toEqual(expected);
-            });
-        });
-
-        describe.each(
-            [ 'a', false ],
-            [ 'b', 0 ],
-            [ 'c', '' ],
-            [ 'd', undefined ]
-        )('get() should select nested falsy values properly', ([ prop, expected ]: any) => {
-            test(`property 'level_1.${ prop }' should return ${ expected }`, () => {
-                expect(get(storeStruct, [ 'level_1', prop ])).toEqual(expected);
-            });
-        });
-
-        test('get() should not panic if the object is undefined', () => {
-            expect(get(undefined, [ 'foo', 'd' ])).toEqual(undefined);
-        });
-
-        test('get() should not panic if the object is a primitive', () => {
-            expect(get(42, [ 'foo', 'd' ])).toEqual(undefined);
-        });
-
-        test('get() should return undefined for a nonexistent prop', () => {
-            expect(get(storeStruct, [ 'bar' ])).toEqual(undefined);
-        });
-
-        test('get() should return undefined for a nonexistent path', () => {
-            expect(get(storeStruct, [ 'bar', 'test' ])).toEqual(undefined);
-        });
-
-        describe.each(
-            [[ 0 ], 'foo' ],
-            [[ '0' ], 'foo' ],
-            [[ 1 ], 'bar' ],
-            [[ '1' ], 'bar' ],
-            [[ 2 ], undefined ],
-            [[ '2' ], undefined ]
-        )('get() should select array elements properly', ([ path, expected ]: any) => {
-            test(`path ${ JSON.stringify(path) } should return ${ expected }`, () => {
-                const test = [ 'foo', 'bar' ];
-                expect(get(test, path)).toEqual(expected);
-            });
-        });
+    test.each(
+        { case: 'a missing key', path: [ 'missing' ] },
+        { case: 'a path through a missing branch', path: [ 'missing', 'deeper' ] },
+        { case: 'a path through a number', path: [ 'level1', 'bar', 'deeper' ] },
+        { case: 'a path through a string', path: [ 'level1', 'list', 0, 0 ] }
+    )('should return undefined for $case', ({ path }) => {
+        expect(get(state, path)).toBeUndefined();
     });
 
-    describe.each(
-        [[ 'test', 0 ], 'foo' ],
-        [[ 'test', '0' ], 'foo' ],
-        [[ 'test', 1 ], 'bar' ],
-        [[ 'test', '1' ], 'bar' ],
-        [[ 'test', 2 ], undefined ],
-        [[ 'test', '2' ], undefined ]
-    )('get() should select nested array elements properly', ([ path, expected ]: any) => {
-        test(`path ${ JSON.stringify(path) } should return ${ JSON.stringify(expected) }`, () => {
-            const test = { test: [ 'foo', 'bar' ] };
-            expect(get(test, path)).toBe(expected);
-        });
-    });
-
-    test('Should return an array and allow find function.', () => {
-        const array = <Array<string>> get(storeStruct, [ 'level_1', 'arr' ]);
-        const result = array.find((value: string) => value == 'test');
-        expect(result).toEqual('test');
+    test.each(
+        { case: 'undefined', target: undefined },
+        { case: 'null', target: null },
+        { case: 'a primitive', target: 42 }
+    )('should return undefined for a path into $case', ({ target }) => {
+        expect(get(target, [ 'foo' ])).toBeUndefined();
     });
 });
 
 describe('set', () => {
-    test('should set the value at the specified path', () => {
-        const obj = { a: { b: { c: 1 } } };
-        const copy = set(obj, [ 'a', 'b', 'c' ], 2);
-        expect(copy).toEqual({ a: { b: { c: 2 } } });
-        expect(copy).not.toBe(obj);
+    test('should write the value and leave the original untouched', () => {
+        const original = { a: { b: { c: 1 } } };
+        const result = set(original, [ 'a', 'b', 'c' ], 2);
+
+        expect(result).toEqual({ a: { b: { c: 2 } } });
+        expect(original).toEqual({ a: { b: { c: 1 } } });
     });
 
-    test('should create intermediate keys if they do not exist', () => {
-        const obj = { a: { b: {} } };
-        const copy = set(obj, [ 'a', 'b', 'c' ], 1);
-        expect(copy).toEqual({ a: { b: { c: 1 } } });
+    test('should copy only the objects along the path', () => {
+        const original = { a: { b: 1 }, other: { c: 2 } };
+        const result = set(original, [ 'a', 'b' ], 3);
+
+        expect(result).not.toBe(original);
+        expect(result.a).not.toBe(original.a);
+        expect(result.other).toBe(original.other);
     });
 
-    test('should return input object for undefined path', () => {
-        const obj = { a: 1 };
-        const copy = set(obj, <any>undefined, 2);
-        expect(copy).toBe(obj);
+    test('should keep an array an array', () => {
+        const result = set({ list: [ 1, 2, 3 ] }, [ 'list', 0 ], 9);
+
+        expect(result).toEqual({ list: [ 9, 2, 3 ] });
+        expect(Array.isArray(result.list)).toBe(true);
     });
 
-    test('should return input object for null path', () => {
-        const obj = { a: 1 };
-        const copy = set(obj, <any>null, 2);
-        expect(copy).toBe(obj);
+    test.each(
+        { case: 'a missing branch', original: { a: 1 }, expected: { a: 1, b: { c: 2 } } },
+        { case: 'a primitive branch', original: { a: 1, b: 5 }, expected: { a: 1, b: { c: 2 } } },
+        { case: 'an undefined target', original: undefined, expected: { b: { c: 2 } } }
+    )('should create an object in place of $case', ({ original, expected }) => {
+        expect(set(original, [ 'b', 'c' ], 2)).toEqual(expected);
     });
 
-    test('should return input object for empty path', () => {
-        const obj = { a: 1 };
-        const copy = set(obj, [], 2);
-        expect(copy).toEqual(obj);
-    });
-
-    describe('Should sets a deeply-nested property value and return a new object.', () => {
-        describe.each(
-            [ undefined, [ 'foo', 'bar' ], 5, undefined ],
-            [{ arr: [ 1, 2, 3, 4 ] }, [ 'arr', '0' ], 2, { arr: [ 2, 2, 3, 4 ] }],
-            [{ a: 1 }, [ 'b' ], 2, { a: 1, b: 2 }],
-            [
-                { a: 1 }, [ 'b', 'c', 'd' ], 2, {
-                    a: 1,
-                    b: {
-                        c: {
-                            d: 2
-                        }
-                    }
-                }
-            ],
-            [
-                { a: 1, b: { wat: 3 } }, [ 'b', 'c', 'd' ], 2, {
-                    a: 1,
-                    b: {
-                        wat: 3,
-                        c: {
-                            d: 2
-                        }
-                    }
-                }
-            ]
-        )('set', ([ original, path, value, expected ]: any) => {
-            test(`returns ${ JSON.stringify(expected) }`, () => {
-                expect(set(original, path, value)).toEqual(expected);
-            });
-
-            test('does not mutate the original object', () => {
-                if (original) {
-                    expect(set(original, path, value)).not.toBe(original);
-                    expect(original).toEqual(original);
-                }
-            });
-        });
+    test('should replace the whole target with the value for an empty path', () => {
+        expect(set({ a: 1 }, [], 5)).toBe(5);
     });
 });
