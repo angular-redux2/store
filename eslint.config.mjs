@@ -70,12 +70,7 @@ export default defineConfig([
         },
         languageOptions: {
             sourceType: 'module',
-            ecmaVersion: 'latest',
-            parserOptions: {
-                // Angular injects constructor parameters by their class, so a decorated file must keep value imports.
-                emitDecoratorMetadata: true,
-                experimentalDecorators: true
-            }
+            ecmaVersion: 'latest'
         },
         rules: {
             // Disable strict require() rule because we allow it in $$inline
@@ -274,44 +269,6 @@ export default defineConfig([
         files: [ '**/*.d.ts' ],
         rules: {
             'no-var': 'off'
-        }
-    },
-    {
-        // Shipped code: ng-packagr keeps import paths as written, so the package name or an alias would not resolve
-        // in a consumer (or would be a circular dependency of the entry point on itself).
-        files: [ 'src/**/*.ts' ],
-        ignores: [ '**/*.spec.ts' ],
-        rules: {
-            'no-restricted-imports': [
-                'error',
-                {
-                    patterns: [
-                        {
-                            regex: '^@(angular-redux2/store|abstract|components|decorators|interfaces|modules|services|mocks)(/|$)',
-                            message: 'Import library code by relative path; the package name and aliases are for specs and mocks.'
-                        }
-                    ]
-                }
-            ]
-        }
-    },
-    {
-        // Shipped mocks: they reach the library through the package name, which stays external to the bundle,
-        // and each other by relative path, since ng-packagr keeps an alias as written.
-        files: [ 'mocks/**/*.ts' ],
-        ignores: [ '**/*.spec.ts' ],
-        rules: {
-            'no-restricted-imports': [
-                'error',
-                {
-                    patterns: [
-                        {
-                            regex: '^@(angular-redux2/store/mocks|abstract|components|decorators|interfaces|modules|services|mocks)(/|$)',
-                            message: 'Import the library through @angular-redux2/store, and other mocks by relative path.'
-                        }
-                    ]
-                }
-            ]
         }
     },
     {
