@@ -2,381 +2,440 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { Reducer, Store, StoreEnhancer } from 'redux';
-import type { MiddlewareInterface } from '@interfaces/reducer.interface';
+import type { InteropObservable } from 'rxjs';
+import type { Middleware, Reducer, StoreEnhancer, UnknownAction } from 'redux';
 
 /**
  * Imports
  */
 
-import { of } from 'rxjs';
-import { NgZone } from '@angular/core';
-import { ReducerService } from '@services/reducer.service';
-import { SubStoreService } from '@services/sub-store.service';
-import { combineReducers, compose, createStore } from 'redux';
-import { NgRedux, ADD_REDUCER } from '@services/ng-redux.service';
+import { from } from 'rxjs';
+import { signal } from '@angular/core';
+import { combineReducers } from 'redux';
+import { NgRedux } from '@services/ng-redux.service';
+import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
+
+/**
+ * Tests
+ */
+
+interface AppStateInterface {
+    counter: number;
+    users: Record<string, { name: string; loc: number }>;
+    todos?: Array<string>;
+}
+
+const INITIAL_STATE: AppStateInterface = {
+    counter: 0,
+    users: { bob: { name: 'Bob', loc: 10 }, alice: { name: 'Alice', loc: 20 } }
+};
+
+function counter(state = 0, action: UnknownAction): number {
+    if (action.type === 'INCREMENT') return state + 1;
+    if (action.type === 'ADD') return state + <number> action['payload'];
+
+    return state;
+}
+
+const rootReducer = <Reducer<AppStateInterface>> combineReducers({
+    counter,
+    users: (state: AppStateInterface['users'] = INITIAL_STATE.users) => state
+});
+
+function userReducer(state: { name: string; loc: number } = { name: '', loc: 0 }, action: UnknownAction): { name: string; loc: number } {
+    return action.type === 'ADD_LOC' ? { ...state, loc: state.loc + <number> action['payload'] } : state;
+}
+
+function createStore(): NgRedux<AppStateInterface> {
+    return new NgRedux({ reducer: rootReducer, initialState: INITIAL_STATE });
+}
 
 describe('NgRedux', () => {
-    let ngRedux: NgRedux<object>;
-    let mockReduxCompose: ReturnType<typeof xJet.fn>;
-
-    beforeEach(() => {
-        ngRedux = new NgRedux<object>();
-        mockReduxCompose = xJet.fn().mockReturnValue(createStore);
-    });
-
     afterEach(() => {
-        xJet.resetAllMocks();
+        xJet.restoreAllMocks();
+        delete (<any> globalThis).__REDUX_DEVTOOLS_EXTENSION__;
     });
 
-    describe('store', () => {
-        test('should throw an error if instance is not initialized', () => {
-            // Arrange
-            (NgRedux as any).instance = undefined;
-
-            // Act & Assert
-            expect(() => NgRedux.store).toThrow('NgRedux failed: instance not initialize.');
+    describe('constructor', () => {
+        test('should start from the initial state', () => {
+            expect(createStore().getState()).toBe(INITIAL_STATE);
         });
 
-        test('should return the instance of NgRedux if it is initialized', () => {
-            // Arrange
-            (NgRedux as any).instance = ngRedux;
+        test('should start from the reducer defaults without an initial state', () => {
+            const ngRedux = new NgRedux({ reducer: rootReducer });
 
-            // Act
-            const result = NgRedux.store;
-
-            // Assert
-            expect(result).toEqual(ngRedux);
-        });
-    });
-
-    describe('configureStore', () => {
-        const reducer: Reducer = (state = {}) => state;
-        const initState = {};
-        const middleware: Array<MiddlewareInterface<object>> = [];
-        const enhancers: StoreEnhancer[] = [];
-
-        test('should throw an error if store is already initialized', () => {
-            // Arrange
-            ngRedux['reduxStore'] = {} as any; // set the private reduxStore property to an object
-
-            // Act and assert
-            expect(() => ngRedux.configureStore(reducer, initState, middleware, enhancers)).toThrow(
-                'Store already initialize!'
-            );
+            expect(ngRedux.getState()).toEqual(INITIAL_STATE);
         });
 
-        test('should call setStore with the created store', () => {
-            // Arrange
-            const setStoreSpy = xJet.spyOn(ngRedux as any, 'setStore');
-            const expectedStore = {} as any;
+        test('should run the middleware on every dispatch', () => {
+            const seen: Array<string> = [];
+            const logger: Middleware = () => next => action => {
+                seen.push((<UnknownAction> action).type);
 
-            xJet.spyOn(ReducerService.getInstance(), 'composeReducers').mockReturnValue(() => expectedStore);
-            xJet.mock(compose).mockReturnValue(<any> mockReduxCompose);
-
-            // Act
-            ngRedux.configureStore(reducer, initState, middleware, enhancers);
-
-            // Assert
-            expect(mockReduxCompose).toHaveBeenCalledWith(createStore);
-            expect(ReducerService.getInstance().composeReducers).toHaveBeenCalledWith(reducer, middleware, expect.any(Map));
-            expect(setStoreSpy).toHaveBeenCalled();
-        });
-    });
-
-    describe('configureSubStore', () => {
-        test('should create a new SubStoreService instance', () => {
-            const reducer = (state: object = {}): object => state;
-            const initState = {};
-
-            xJet.spyOn(ReducerService.getInstance(), 'composeReducers').mockReturnValue(() => initState);
-
-            ngRedux.configureStore(reducer, initState);
-
-            const subStore = ngRedux.configureSubStore([ 'path' ], reducer);
-            expect(subStore).toBeInstanceOf(SubStoreService);
-        });
-    });
-
-    describe('provideStore', () => {
-        let spyReplaceReducer: any;
-        const reducer = (state: object = {}): object => state;
-
-        beforeEach(() => {
-            spyReplaceReducer = xJet.spyOn(
-                ReducerService.getInstance(),
-                'composeReducers'
-            ).mockReturnValueOnce(reducer);
-        });
-
-        test('should replace the store reducer and initialize the store', () => {
-            const store = createStore(reducer);
-
-            const mockReplaceReducer = xJet.spyOn(
-                store,
-                'replaceReducer'
-            );
-
-            ngRedux.provideStore(reducer, store);
-
-            expect(spyReplaceReducer).toHaveBeenCalledWith(reducer, [], expect.any(Map));
-            expect(mockReplaceReducer).toHaveBeenCalled();
-            expect(ngRedux['reduxStore']).toBe(store);
-        });
-
-        test('should throw an error if the store is already initialized', () => {
-            const store = createStore(reducer);
-            ngRedux.provideStore(reducer, store);
-
-            expect(() => ngRedux.provideStore(reducer, store)).toThrow('Store already initialize!');
-        });
-    });
-
-    describe('getState', () => {
-        test('should call getState on the store and return the state', () => {
-            const expectedState = { count: 0 };
-            (ngRedux as any).reduxStore = {
-                getState: xJet.fn().mockReturnValueOnce(expectedState)
+                return next(action);
             };
+            const ngRedux = new NgRedux({ reducer: rootReducer, middleware: [ logger ] });
+            ngRedux.dispatch({ type: 'INCREMENT' });
 
-            const result = ngRedux.getState();
+            expect(seen).toEqual([ 'INCREMENT' ]);
+        });
 
-            expect((ngRedux as any).reduxStore.getState).toHaveBeenCalledTimes(1);
-            expect(result).toEqual(expectedState);
+        test('should apply the enhancers', () => {
+            const enhancer: StoreEnhancer = createStore => (reducer, preloaded) => ({ ...createStore(reducer, preloaded), marked: true });
+            const ngRedux = new NgRedux({ reducer: rootReducer, enhancers: [ enhancer ] });
+
+            expect((<any> ngRedux.redux).marked).toBe(true);
+        });
+
+        test('should connect the Redux DevTools extension with the given options', () => {
+            const extension = xJet.fn((): StoreEnhancer => createStore => createStore);
+            (<any> globalThis).__REDUX_DEVTOOLS_EXTENSION__ = extension;
+
+            new NgRedux({ reducer: rootReducer, devTools: { name: 'demo' } });
+            new NgRedux({ reducer: rootReducer, devTools: true });
+
+            expect(extension).toHaveBeenNthCalledWith(1, { name: 'demo' });
+            expect(extension).toHaveBeenNthCalledWith(2, undefined);
+        });
+
+        test('should skip the Redux DevTools extension when devTools is off', () => {
+            const extension = xJet.fn((): StoreEnhancer => createStore => createStore);
+            (<any> globalThis).__REDUX_DEVTOOLS_EXTENSION__ = extension;
+
+            new NgRedux({ reducer: rootReducer });
+
+            expect(extension).not.toHaveBeenCalled();
+        });
+
+        test('should work without the extension installed when devTools is on', () => {
+            expect(new NgRedux({ reducer: rootReducer, devTools: true }).getState()).toEqual(INITIAL_STATE);
+        });
+
+        test('should freeze every state when freeze is on', () => {
+            const ngRedux = new NgRedux({ reducer: rootReducer, initialState: structuredClone(INITIAL_STATE), freeze: true });
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(Object.isFrozen(ngRedux.getState())).toBe(true);
+            expect(Object.isFrozen(ngRedux.getState().users['bob'])).toBe(true);
         });
     });
 
     describe('dispatch', () => {
-        let store: Store<any, any>;
-        const reducer = (state: object = {}): object => state;
+        test('should return what a middleware returns', () => {
+            const thunk: Middleware = () => next => action => typeof action === 'function' ? action() : next(action);
+            const ngRedux = new NgRedux({ reducer: rootReducer, middleware: [ thunk ] });
 
-        beforeEach(() => {
-            xJet.spyOn(
-                ReducerService.getInstance(),
-                'composeReducers'
-            ).mockReturnValueOnce(reducer);
-
-            store = createStore(() => ({}));
-            ngRedux.provideStore(() => ({}), store);
+            expect(ngRedux.dispatch(<any> (() => 'done'))).toBe('done');
         });
 
-        test('dispatches an action to the store', () => {
-            const action = { type: 'TEST_ACTION' };
-            const dispatchSpy = xJet.spyOn(store, 'dispatch');
+        test('should update the state signal before it returns', () => {
+            const ngRedux = createStore();
 
-            ngRedux.dispatch(action);
-
-            expect(dispatchSpy).toHaveBeenCalledWith(action);
+            expect(ngRedux.dispatch({ type: 'ADD', payload: 5 })).toEqual({ type: 'ADD', payload: 5 });
+            expect(ngRedux.state().counter).toBe(5);
         });
 
-        test('throws an error when the store is not initialized', () => {
-            ngRedux = new NgRedux<object>(); // initialize without store
-            const action = { type: 'TEST_ACTION' };
+        test('should keep the same state object for an action that changes nothing', () => {
+            const ngRedux = createStore();
+            ngRedux.dispatch({ type: 'UNKNOWN' });
 
-            expect(() => ngRedux.dispatch(action)).toThrow('Dispatch failed: store instance not initialize.');
-        });
-
-        test('runs the dispatch inside NgZone if it exists and is outside the zone', () => {
-            const action = { type: 'TEST_ACTION' };
-            const dispatchSpy = xJet.spyOn(store, 'dispatch');
-            const runMock = xJet.fn((callback: any) => {
-                callback();
-            });
-
-            (ngRedux as any).ngZone = { run: runMock } as any;
-            NgZone.isInAngularZone = xJet.fn(() => false);
-
-            ngRedux.dispatch(action);
-
-            expect(runMock).toHaveBeenCalled();
-            expect(dispatchSpy).toHaveBeenCalledWith(action);
-        });
-    });
-
-    describe('subscribe', () => {
-        test('should subscribe a listener to the store', () => {
-            const mockListener = xJet.fn();
-            const mockUnsubscribe = xJet.fn();
-            const mockStore = {
-                getState: xJet.fn().mockReturnValue({}),
-                subscribe: xJet.fn(() => mockUnsubscribe)
-            };
-
-            (ngRedux as any).setStore(mockStore as any);
-
-            const result = ngRedux.subscribe(mockListener);
-
-            expect(result).toBe(mockUnsubscribe);
-            expect(mockStore.subscribe).toHaveBeenCalledWith(mockListener);
-        });
-    });
-
-    describe('addReducer', () => {
-        interface StateInterface {
-            count: number;
-            todos?: Array<string>;
-        }
-
-        const count: Reducer<number> = (state = 0, action) => action.type === 'INCREMENT' ? state + 1 : state;
-        const todos = (state: Array<string> = [], action: any): Array<string> => {
-            if (action.type === 'ADD_TODO') {
-                state.push(action.title);
-            }
-
-            return state;
-        };
-
-        function configure(): NgRedux<StateInterface> {
-            const store = new NgRedux<StateInterface>();
-            store.configureStore(<Reducer<StateInterface>> <unknown> combineReducers({ count }), { count: 0 });
-
-            return store;
-        }
-
-        beforeEach(() => {
-            xJet.restoreAllMocks();
-        });
-
-        test('should set the initial state of the feature as soon as it is added', () => {
-            const store = configure();
-            store.addReducer('todos', todos);
-
-            expect(store.getState()).toEqual({ count: 0, todos: [] });
-        });
-
-        test('should run the feature reducer on its draft and keep the root reducer running', () => {
-            const store = configure();
-            store.addReducer('todos', todos);
-            const before = store.getState().todos;
-
-            store.dispatch({ type: 'ADD_TODO', title: 'Write docs' });
-            store.dispatch({ type: 'INCREMENT' });
-
-            expect(store.getState()).toEqual({ count: 1, todos: [ 'Write docs' ] });
-            expect(before).toEqual([]);
-        });
-
-        test('should hide the feature key from combineReducers, so it neither drops nor warns about it', () => {
-            const error = xJet.spyOn(console, 'error').mockImplementation(() => undefined);
-            const store = configure();
-            store.addReducer('todos', todos);
-
-            store.dispatch({ type: 'INCREMENT' });
-
-            expect(store.getState().todos).toEqual([]);
-            expect(error).not.toHaveBeenCalled();
-        });
-
-        test('should keep the state object when no reducer changed anything', () => {
-            const store = configure();
-            store.addReducer('todos', todos);
-            const state = store.getState();
-
-            store.dispatch({ type: 'UNKNOWN' });
-
-            expect(store.getState()).toBe(state);
-        });
-
-        test('should include a reducer added before the store is configured', () => {
-            const store = new NgRedux<StateInterface>();
-            store.addReducer('todos', todos);
-            store.configureStore(<Reducer<StateInterface>> <unknown> combineReducers({ count }), { count: 0 });
-
-            expect(store.getState()).toEqual({ count: 0, todos: [] });
-        });
-
-        test('should dispatch ADD_REDUCER only for a reducer that is new for its key', () => {
-            const store = configure();
-            const listener = xJet.fn();
-            store.subscribe(listener);
-
-            store.addReducer('todos', todos);
-            store.addReducer('todos', todos);
-
-            expect(listener).toHaveBeenCalledTimes(1);
-            expect(ADD_REDUCER).toBe('@@angular-redux2/store/ADD_REDUCER');
-        });
-
-        test('should keep the features after the root reducer is replaced', () => {
-            const store = configure();
-            store.addReducer('todos', todos);
-
-            store.replaceReducer(<Reducer<StateInterface>> <unknown> combineReducers({ count: (state: number = 0) => state + 10 }));
-            store.dispatch({ type: 'ADD_TODO', title: 'a' });
-
-            expect(store.getState()).toEqual({ count: 10, todos: [ 'a' ] });
-        });
-    });
-
-    describe('replaceReducer', () => {
-        beforeEach(() => {
-            ReducerService.getInstance().replaceReducer = xJet.fn();
-        });
-
-        test('should call ReducerService replaceReducer with nextReducer', () => {
-            const nextReducer = xJet.fn();
-            ngRedux.replaceReducer(<any> nextReducer);
-
-            expect(ReducerService.getInstance().replaceReducer).toHaveBeenCalledWith(nextReducer);
-        });
-    });
-
-    describe('setStore', () => {
-        let store: Store<any>;
-
-        beforeEach(() => {
-            store = createStore(() => ({}));
-        });
-
-        test('should set the store and subscribe to changes', () => {
-            const spy = xJet.spyOn(store, 'subscribe');
-            (ngRedux as any).setStore(store);
-            expect((ngRedux as any)['reduxStore']).toBe(store);
-            expect(spy).toHaveBeenCalled();
-        });
-
-        test('should update store$ when store changes', () => {
-            const spy = xJet.spyOn(ngRedux['state$'], 'next');
-            const state = { count: 0 };
-            store = createStore(() => state);
-            (ngRedux as any).setStore(store);
-            expect(spy).toHaveBeenCalledWith(state);
+            expect(ngRedux.getState()).toBe(INITIAL_STATE);
         });
     });
 
     describe('select', () => {
-        let mockStore: any;
+        test('should follow the state after each dispatch', () => {
+            const ngRedux = createStore();
+            const count = ngRedux.select(state => state.counter);
 
-        beforeEach(() => {
-
-            // Mock store
-            mockStore = {
-                getState: xJet.fn(),
-                subscribe: xJet.fn()
-            };
-            (ngRedux as any).setStore(mockStore);
+            expect(count()).toBe(0);
+            ngRedux.dispatch({ type: 'INCREMENT' });
+            expect(count()).toBe(1);
         });
 
-        test('should return an observable that emits the selected value when it changes', () => {
-            // Set up mock data
-            const selectedValue = 'selected value';
-            const selector = xJet.fn().mockReturnValue(selectedValue);
-            const comparator = xJet.fn().mockReturnValue(false);
+        test('should keep the previous value while equal calls the new one equal', () => {
+            const ngRedux = createStore();
+            const names = ngRedux.select(state => Object.keys(state.users), {
+                equal: (previous, next) => previous.join() === next.join()
+            });
+            const first = names();
 
-            // Create an observable that emits values on every call
-            const mockObservable = of('some value');
+            ngRedux.dispatch({ type: 'INCREMENT' });
 
-            // Spy on state$
-            xJet.spyOn(ngRedux['state$'], 'pipe').mockReturnValueOnce(mockObservable);
+            expect(names()).toBe(first);
+        });
+    });
 
-            // Call the method and subscribe to the resulting observable
-            const result = ngRedux.select(selector, <any> comparator);
-            result.subscribe(value => {
-                expect(value).toBe(selectedValue);
+    describe('select$', () => {
+        test('should emit the current value on subscribe and each change after it, synchronously', () => {
+            const ngRedux = createStore();
+            const values: Array<number> = [];
+            ngRedux.select$(state => state.counter).subscribe(value => values.push(value));
+
+            ngRedux.dispatch({ type: 'INCREMENT' });
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(values).toEqual([ 0, 1, 2 ]);
+        });
+
+        test('should emit nothing for an action that leaves the value unchanged', () => {
+            const ngRedux = createStore();
+            const values: Array<string> = [];
+            ngRedux.select$(state => state.users['bob'].name).subscribe(value => values.push(value));
+
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(values).toEqual([ 'Bob' ]);
+        });
+
+        test('should stop listening once it unsubscribes', () => {
+            const ngRedux = createStore();
+            const values: Array<number> = [];
+            const subscription = ngRedux.select$(state => state.counter).subscribe(value => values.push(value));
+
+            subscription.unsubscribe();
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(values).toEqual([ 0 ]);
+        });
+    });
+
+    describe('interop observable', () => {
+        test('should work with RxJS from without a Symbol.observable polyfill', () => {
+            const ngRedux = createStore();
+            const counters: Array<number> = [];
+            const subscription = from(<InteropObservable<AppStateInterface>> <unknown> ngRedux).subscribe(state => counters.push(state.counter));
+
+            ngRedux.dispatch({ type: 'INCREMENT' });
+            subscription.unsubscribe();
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(counters).toEqual([ 0, 1 ]);
+        });
+
+        test('should work with RxJS from on a substore', () => {
+            const bob = createStore().substore<{ name: string; loc: number }>([ 'users', 'bob' ], userReducer);
+            const locs: Array<number> = [];
+            from(<InteropObservable<{ name: string; loc: number }>> <unknown> bob).subscribe(state => locs.push(state.loc));
+
+            bob.dispatch({ type: 'ADD_LOC', payload: 5 });
+
+            expect(locs).toEqual([ 10, 15 ]);
+        });
+    });
+
+    describe('substore', () => {
+        test('should read the branch at its path', () => {
+            const bob = createStore().substore<{ name: string; loc: number }>([ 'users', 'bob' ], userReducer);
+
+            expect(bob.getState()).toEqual({ name: 'Bob', loc: 10 });
+        });
+
+        test('should run only its reducer on its branch and share every other branch', () => {
+            const ngRedux = createStore();
+            const before = ngRedux.getState();
+
+            ngRedux.substore([ 'users', 'bob' ], userReducer).dispatch({ type: 'ADD_LOC', payload: 5 });
+
+            expect(ngRedux.getState().users['bob'].loc).toBe(15);
+            expect(ngRedux.getState().users['alice']).toBe(before.users['alice']);
+            expect(ngRedux.getState().counter).toBe(0);
+        });
+
+        test('should keep the same state when its reducer changes nothing', () => {
+            const ngRedux = createStore();
+            ngRedux.substore([ 'users', 'bob' ], userReducer).dispatch({ type: 'OTHER' });
+
+            expect(ngRedux.getState()).toBe(INITIAL_STATE);
+        });
+
+        test('should register a shared reducer once', () => {
+            const ngRedux = createStore();
+            const actions: Array<UnknownAction> = [];
+            ngRedux.redux.subscribe(() => undefined);
+            xJet.spyOn(ngRedux.redux, 'dispatch').mockImplementation((action: any) => {
+                actions.push(action);
+
+                return action;
             });
 
-            // Check that the state$ pipe was called with the correct operators
-            expect(ngRedux['state$'].pipe).toHaveBeenCalled();
+            ngRedux.substore([ 'users', 'bob' ], userReducer).dispatch({ type: 'A' });
+            ngRedux.substore([ 'users', 'alice' ], userReducer).dispatch({ type: 'B' });
+
+            expect(actions.map(action => (<any> action[SUBSTORE_ROUTE]).id)).toEqual([ 0, 0 ]);
+        });
+
+        test('should forget an inline reducer once its substore is destroyed', () => {
+            const ngRedux = createStore();
+            for (let index = 0; index < 100; index++) {
+                ngRedux.substore([ 'users', 'bob' ], (state: unknown = null) => state).destroy();
+            }
+
+            expect((<any> ngRedux).substoreReducers.size).toBe(0);
+            expect((<any> ngRedux).substoreIds.size).toBe(0);
+        });
+
+        test('should keep a shared reducer until its last substore is destroyed', () => {
+            const ngRedux = createStore();
+            const bob = ngRedux.substore([ 'users', 'bob' ], userReducer);
+            const alice = ngRedux.substore([ 'users', 'alice' ], userReducer);
+
+            bob.destroy();
+            bob.destroy();
+            alice.dispatch({ type: 'ADD_LOC', payload: 5 });
+
+            expect(ngRedux.getState().users['alice'].loc).toBe(25);
+            alice.destroy();
+            expect((<any> ngRedux).substoreReducers.size).toBe(0);
+        });
+
+        test('should give a new reducer a new id after an old one is forgotten', () => {
+            const ngRedux = createStore();
+            ngRedux.substore([ 'users', 'bob' ], userReducer).destroy();
+            const alice = ngRedux.substore([ 'users', 'alice' ], (state: any, action: UnknownAction) =>
+                action.type === 'RENAME' ? { ...state, name: 'Al' } : state);
+
+            alice.dispatch({ type: 'RENAME' });
+
+            expect(ngRedux.getState().users['alice'].name).toBe('Al');
+        });
+
+        test('should hand a thunk to the middleware unchanged', () => {
+            const thunk: Middleware = api => next => action =>
+                typeof action === 'function' ? action(api.dispatch, api.getState) : next(action);
+            const ngRedux = new NgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, middleware: [ thunk ] });
+            const bob = ngRedux.substore([ 'users', 'bob' ], userReducer);
+
+            const result = bob.dispatch(<any> ((dispatch: (action: UnknownAction) => void) => {
+                dispatch({ type: 'INCREMENT' });
+
+                return 'done';
+            }));
+
+            expect(result).toBe('done');
+            expect(ngRedux.getState().counter).toBe(1);
+        });
+
+        test('should hand an action with an unknown substore id to the root reducer', () => {
+            const ngRedux = createStore();
+            ngRedux.dispatch({ type: 'INCREMENT', [SUBSTORE_ROUTE]: { id: 99, path: [ 'users' ] } });
+
+            expect(ngRedux.getState().counter).toBe(1);
+        });
+
+        test('should write a new frozen state when freeze is on', () => {
+            const ngRedux = new NgRedux({ reducer: rootReducer, initialState: structuredClone(INITIAL_STATE), freeze: true });
+            ngRedux.substore([ 'users', 'bob' ], userReducer).dispatch({ type: 'ADD_LOC', payload: 5 });
+
+            expect(ngRedux.getState().users['bob'].loc).toBe(15);
+            expect(Object.isFrozen(ngRedux.getState().users['bob'])).toBe(true);
+        });
+
+        test('should route to its branch while feature reducers run', () => {
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', (state: Array<string> = []) => state);
+
+            ngRedux.substore([ 'users', 'bob' ], userReducer).dispatch({ type: 'ADD_LOC', payload: 5 });
+
+            expect(ngRedux.getState().users['bob'].loc).toBe(15);
+            expect(ngRedux.getState().todos).toEqual([]);
+        });
+
+        test('should follow a computed path', () => {
+            const userId = signal('bob');
+            const user = createStore().substore(() => [ 'users', userId() ], userReducer);
+            const name = user.select(state => (<{ name: string }> state).name);
+
+            expect(name()).toBe('Bob');
+            userId.set('alice');
+            expect(name()).toBe('Alice');
+        });
+    });
+
+    describe('addReducer', () => {
+        const todos = (state: Array<string> = [], action: UnknownAction): Array<string> =>
+            action.type === 'ADD_TODO' ? [ ...state, <string> action['payload'] ] : state;
+
+        test('should set the initial state of the feature as soon as it is added', () => {
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', todos);
+
+            expect(ngRedux.getState().todos).toEqual([]);
+        });
+
+        test('should run the feature reducer and keep the root reducer running', () => {
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', todos);
+
+            ngRedux.dispatch({ type: 'ADD_TODO', payload: 'a' });
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(ngRedux.getState().todos).toEqual([ 'a' ]);
+            expect(ngRedux.getState().counter).toBe(1);
+        });
+
+        test('should hide the feature key from combineReducers, so it neither drops nor warns about it', () => {
+            const error = xJet.spyOn(console, 'error').mockImplementation(() => undefined);
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', todos);
+
+            ngRedux.dispatch({ type: 'INCREMENT' });
+
+            expect(ngRedux.getState().todos).toEqual([]);
+            expect(error).not.toHaveBeenCalled();
+        });
+
+        test('should keep the same state object when no reducer changed anything', () => {
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', todos);
+            const before = ngRedux.getState();
+
+            ngRedux.dispatch({ type: 'UNKNOWN' });
+
+            expect(ngRedux.getState()).toBe(before);
+        });
+
+        test('should replace the reducer of a key with a different one', () => {
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', todos);
+            ngRedux.addReducer('todos', (state: Array<string> = [], action: UnknownAction) =>
+                action.type === 'ADD_TODO' ? [ ...state, 'replaced' ] : state);
+
+            ngRedux.dispatch({ type: 'ADD_TODO', payload: 'a' });
+
+            expect(ngRedux.getState().todos).toEqual([ 'replaced' ]);
+        });
+
+        test('should start a feature from its key in the initial state, though combineReducers dropped it', () => {
+            const error = xJet.spyOn(console, 'error').mockImplementation(() => undefined);
+            const ngRedux = new NgRedux<AppStateInterface>({ reducer: rootReducer, initialState: { ...INITIAL_STATE, todos: [ 'server' ] } });
+            ngRedux.addReducer('todos', todos);
+
+            expect(ngRedux.getState().todos).toEqual([ 'server' ]);
+            ngRedux.dispatch({ type: 'ADD_TODO', payload: 'a' });
+            expect(ngRedux.getState().todos).toEqual([ 'server', 'a' ]);
+            error.mockRestore();
+        });
+
+        test('should start a feature from what the root reducer put on its key', () => {
+            const ngRedux = new NgRedux<AppStateInterface>({
+                reducer: (state = INITIAL_STATE, action) => action.type === 'SET' ? <AppStateInterface> action['state'] : state
+            });
+            ngRedux.addReducer('todos', todos);
+
+            ngRedux.dispatch({ type: 'SET', state: { ...INITIAL_STATE, todos: [ 'set' ] } });
+
+            expect(ngRedux.getState().todos).toEqual([ 'set' ]);
+        });
+
+        test('should do nothing when the same reducer is added for the same key again', () => {
+            const ngRedux = createStore();
+            ngRedux.addReducer('todos', todos);
+            const replace = xJet.spyOn(ngRedux.redux, 'replaceReducer');
+
+            ngRedux.addReducer('todos', todos);
+
+            expect(replace).not.toHaveBeenCalled();
         });
     });
 });

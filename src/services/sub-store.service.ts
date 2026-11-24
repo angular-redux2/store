@@ -2,346 +2,213 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { Observable } from 'rxjs';
-import type { NgRedux } from './ng-redux.service';
-import type { UnknownAction, Reducer } from 'redux';
-import type { Signal, WritableSignal } from '@angular/core';
-import type { SubstoreRouteType } from '../interfaces/fractal.interface';
-import type { ComparatorType, PathSelectorType, SelectorType } from '../interfaces/store.interface';
+import type { Signal } from '@angular/core';
+import type { NgRedux } from '@services/ng-redux.service';
+import type { Action, Reducer, Unsubscribe } from 'redux';
+import type { BasePathType, PathType, SubStoreInterface } from '@interfaces/store.interface';
+import type { SubstoreRouteInterface } from '@services/interfaces/sub-store-service.interface';
 
 /**
  * Imports
  */
 
-import { computed, signal } from '@angular/core';
-import { ReducerService } from './reducer.service';
-import { get } from '../components/object.component';
-import { AbstractStore } from '../abstract/store.abstract';
-import { resolver } from '../components/selectors.component';
-import { ACTION_KEY } from '../interfaces/fractal.interface';
-import { BehaviorSubject, distinctUntilChanged, map, switchMap } from 'rxjs';
+import { get } from '@components/object.component';
+import { computed, untracked } from '@angular/core';
+import { AbstractStore } from '@abstract/store.abstract';
+import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
 
 /**
- * A store scoped to one branch of the root state, with its own local reducer.
+ * Turns a base path into a function, so a fixed path and a computed path read the same way.
  *
- * @typeParam State - The type of the state at the base path
+ * @param basePath - The fixed or computed path
+ * @returns A function that returns the path
  *
  * @remarks
- * A substore reads and writes the root state at its base path.
- * Its actions carry the hash of its local reducer and its path under {@link ACTION_KEY},
- * so the root reducer runs only that local reducer against that branch.
- * Use it to keep the state of a component or module apart from the rest of the store,
- * while keeping one Redux store for DevTools and time travel.
- *
- * The local reducer is registered by a hash of its source text.
- * Two reducers with identical source share one registration, and the first one registered wins.
- *
- * Selections follow the root store at the base path, and subscribe to it only while they have subscribers.
+ * A computed path stays as it is, so the signals it reads keep driving the substore.
  *
  * @example
  * ```ts
- * const subStore = ngRedux.configureSubStore<User>([ 'users', 'u1' ], userReducer);
- *
- * subStore.setBasePath([ 'users', 'u1' ]); // starts the selection feed
- * subStore.getState();                     // { name: 'Ada' }
- * subStore.select('name');                 // emits 'Ada'
- * subStore.dispatch({ type: 'RENAME', name: 'Grace' });
+ * pathOf([ 'users' ])();         // [ 'users' ]
+ * pathOf(() => [ 'users' ])();   // [ 'users' ]
  * ```
  *
- * @see NgRedux.configureSubStore
- * @see Substore
- *
- * @since 5.0.0
+ * @since 6.0.0
  */
 
-export class SubStoreService<State> extends AbstractStore<State> {
+export function pathOf(basePath: BasePathType): () => PathType {
+    return typeof basePath === 'function' ? basePath : (): PathType => basePath;
+}
 
+/**
+ * A store that works on one branch of the root state with its own reducer.
+ *
+ * @typeParam State - The type of the branch
+ *
+ * @remarks
+ * Its state is a `computed` over the root state at the base path, so it needs no subscription and nothing to clean up.
+ * Each action that it dispatches carries a route with its reducer id and the current path,
+ * so the root reducer runs only the substore reducer on that branch.
+ * Create it through {@link NgRedux.substore} or `injectSubstore`, never directly.
+ *
+ * @example
+ * ```ts
+ * const bob = ngRedux.substore([ 'users', 'bob' ], userReducer);
+ *
+ * bob.dispatch({ type: 'ADD_LOC', payload: 100 });
+ * bob.getState(); // { name: 'Bob Smith', loc: 1123 }
+ * ```
+ *
+ * @since 6.0.0
+ */
+
+export class SubStore<State> extends AbstractStore<State> implements SubStoreInterface<State> {
     /**
-     * The current base path, which selections follow when {@link SubStoreService.setBasePath} moves the substore.
-     *
-     * @since 6.0.0
-     */
-
-    private readonly basePath$: BehaviorSubject<PathSelectorType>;
-
-    /**
-     * The current base path, which signal selections follow when {@link SubStoreService.setBasePath} moves the
-     * substore.
-     *
-     * @since 6.0.0
-     */
-
-    private readonly basePathSignal: WritableSignal<PathSelectorType>;
-
-    /**
-     * The hash of the source text of the local reducer.
+     * The branch at the base path as a read-only signal.
      *
      * @remarks
-     * Every dispatched action carries it, so the root reducer can find the local reducer in the registry.
-     *
-     * @since 5.0.0
-     */
-
-    private readonly hashReducer: number;
-
-    /**
-     * The shared reducer registry.
-     *
-     * @remarks
-     * The substore registers its local reducer here and replaces it through the registry later.
-     *
-     * @since 5.0.0
-     */
-
-    private readonly reducerService: ReducerService;
-
-    /**
-     * Creates a substore and registers its local reducer.
-     *
-     * @param rootStore - The root store that holds the state
-     * @param basePath - The path of the substore in the root state
-     * @param localReducer - The reducer that handles the actions of this substore
-     *
-     * @remarks
-     * Prefer {@link NgRedux.configureSubStore}, which passes the root store for you.
-     * The constructor does not subscribe to the root store; each selection subscribes while it is in use.
+     * It follows a computed base path, so a new path moves the signal to the new branch.
      *
      * @example
      * ```ts
-     * const subStore = new SubStoreService<User>(ngRedux, [ 'users', 'u1' ], userReducer);
+     * bob.state(); // { name: 'Bob Smith', loc: 1023 }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
+     */
+
+    readonly state: Signal<State>;
+
+    /**
+     * Returns the current base path.
+     *
+     * @since 6.0.0
+     */
+
+    private readonly path: () => PathType;
+
+    /**
+     * Whether {@link SubStore.destroy} already ran.
+     *
+     * @since 6.0.0
+     */
+
+    private destroyed = false;
+
+    /**
+     * Creates a substore on the root store.
+     *
+     * @param root - The root store
+     * @param basePath - The path of the branch in the root state
+     * @param id - The id of the substore reducer in the root store
+     * @param release - Releases the substore reducer in the root store
+     *
+     * @remarks
+     * {@link NgRedux.substore} registers the reducer and passes its id, so equal reducers share one id.
+     *
+     * @since 6.0.0
      */
 
     constructor(
-        private rootStore: NgRedux<unknown>,
-        private basePath: PathSelectorType,
-        private localReducer: Reducer<State>
+        private readonly root: Pick<NgRedux<unknown>, 'state' | 'redux' | 'dispatch' | 'substore'>,
+        basePath: BasePathType,
+        private readonly id: number,
+        private readonly release: () => void
     ) {
         super();
-        this.basePath$ = new BehaviorSubject(basePath);
-        this.basePathSignal = signal(basePath);
-        this.reducerService = ReducerService.getInstance();
-
-        this.hashReducer = this.reducerService.hashSignature(localReducer.toString());
-        this.reducerService.registerSubReducer(this.hashReducer, localReducer);
+        this.path = pathOf(basePath);
+        this.state = computed(() => <State> get(root.state(), this.path()));
     }
 
     /**
-     * Creates a substore nested below this one.
+     * Dispatches an action to the substore reducer.
      *
-     * @typeParam SubState - The type of the state at the nested path
-     * @param basePath - The path of the nested substore, relative to this substore
-     * @param localReducer - The reducer that handles the actions of the nested substore
-     * @returns A substore whose path is this base path followed by `basePath`
+     * @typeParam DispatchedAction - The type of the action
+     * @param action - The action to dispatch
+     * @returns The same action, or for a thunk, what the root store returns
      *
      * @remarks
-     * The nested substore talks to the root store directly, so it does not depend on this substore afterward.
+     * The root store receives a copy of the action with the route added, so the original action stays unchanged.
+     * The route holds the base path at the moment of the dispatch.
+     * A thunk or any other non-object action goes to the root store unchanged, for its middleware to handle,
+     * because a route can only travel on a plain action.
      *
      * @example
      * ```ts
-     * const user = ngRedux.configureSubStore([ 'users', 'u1' ], userReducer);
-     * const address = user.configureSubStore([ 'address' ], addressReducer);
-     *
-     * address.getState(); // the state at users, u1, address
-     * ```
-     *
-     * @since 5.0.0
-     */
-
-    configureSubStore<SubState>(basePath: PathSelectorType, localReducer: Reducer<SubState>): SubStoreService<SubState> {
-        const path = [ ...this.basePath, ...basePath ];
-
-        return new SubStoreService<SubState>(this.rootStore, path, localReducer);
-    }
-
-    /**
-     * Returns the current state at the base path.
-     *
-     * @returns The branch of the root state at the base path, or `undefined` when the path does not exist
-     *
-     * @remarks
-     * It reads the root state on every call.
-     *
-     * @example
-     * ```ts
-     * subStore.getState(); // { name: 'Ada' }
-     * ```
-     *
-     * @since 5.0.0
-     */
-
-    getState(): State {
-        return <State> get(this.rootStore.getState(), this.basePath);
-    }
-
-    /**
-     * Selects a slice of the state at the base path.
-     *
-     * @typeParam SelectedType - The type of the selected value
-     * @param selector - The property, path, or function that picks the value, relative to the base path
-     * @param comparator - The equality check that decides whether a new value is emitted
-     * @returns An observable of the selected value that follows the base path when it moves
-     *
-     * @remarks
-     * The selection subscribes to the root store only while it has subscribers, so a substore holds no
-     * subscription of its own.
-     *
-     * @since 6.0.0
-     */
-
-    override select<SelectedType>(
-        selector?: SelectorType<State, SelectedType>,
-        comparator?: ComparatorType<SelectedType>
-    ): Observable<SelectedType> {
-        return this.basePath$.pipe(
-            switchMap(path => this.rootStore.select<State>(path)),
-            map(resolver(selector)),
-            distinctUntilChanged(comparator)
-        );
-    }
-
-    /**
-     * Selects a slice of the state at the base path as a signal.
-     *
-     * @typeParam SelectedType - The type of the selected value
-     * @param selector - The property, path, or function that picks the value, relative to the base path
-     * @param comparator - The equality check that decides whether a new value is a change
-     * @returns A read-only signal of the selected value that follows the base path when it moves
-     *
-     * @remarks
-     * The signal is computed from the root state and the base path, so it holds no subscription.
-     * It reads `undefined` until the root store is configured.
-     *
-     * @example
-     * ```ts
-     * const name = subStore.selectSignal<string>('name');
-     * name(); // 'Ada'
+     * bob.dispatch({ type: 'ADD_LOC', payload: 100 }); // { type: 'ADD_LOC', payload: 100 }
      * ```
      *
      * @since 6.0.0
      */
 
-    override selectSignal<SelectedType>(
-        selector?: SelectorType<State, SelectedType>,
-        comparator?: ComparatorType<SelectedType>
-    ): Signal<SelectedType> {
-        const resolve = resolver(selector);
-        const rootState = this.rootStore.selectSignal();
+    dispatch<DispatchedAction extends Action>(action: DispatchedAction): DispatchedAction {
+        if (typeof action !== 'object' || action === null) return this.root.dispatch(action);
 
-        return computed(() => {
-            const state = rootState();
+        const route: SubstoreRouteInterface = { id: this.id, path: untracked(this.path) };
+        this.root.dispatch({ ...action, [SUBSTORE_ROUTE]: route });
 
-            return state === undefined ? <SelectedType> undefined : resolve(<State> get(state, this.basePathSignal()));
-        }, { equal: comparator });
+        return action;
     }
 
     /**
-     * Moves the substore to another path.
+     * Creates a substore below this one.
      *
-     * @param path - The new path of the substore in the root state
+     * @typeParam SubState - The state of the nested branch
+     * @param basePath - The path of the nested branch, relative to this substore
+     * @param reducer - The reducer that handles the actions dispatched through the nested substore
+     * @returns A store for the nested branch
      *
      * @remarks
-     * Selections already made switch to the new branch, and later actions carry the new path, so the local reducer
-     * writes there. Calling it with the array instance already in use does nothing.
+     * The nested path continues from the current path of this substore, so it follows a move of either one.
      *
      * @example
      * ```ts
-     * ngOnChanges() {
-     *     this.subStore.setBasePath([ 'users', this.userId ]);
-     * }
+     * bob.substore([ 'address' ], addressReducer).getState(); // { city: 'Paris' }
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    setBasePath(path: PathSelectorType): void {
-        if (this.basePath === path) {
-            return;
-        }
+    substore<SubState>(basePath: BasePathType, reducer: Reducer<SubState>): SubStoreInterface<SubState> {
+        const below = pathOf(basePath);
 
-        this.basePath = path;
-        this.basePath$.next(path);
-        this.basePathSignal.set(path);
+        return this.root.substore(() => [ ...this.path(), ...below() ], reducer);
     }
 
     /**
-     * Dispatches an action to the local reducer of this substore.
-     *
-     * @typeParam Action - The type of the dispatched action
-     * @param action - The action to dispatch, which stays unchanged
-     * @returns The action that the root store dispatched, which includes the routing key
+     * Releases the substore, so the root store forgets its reducer once no other substore uses it.
      *
      * @remarks
-     * The action is copied with the reducer hash and the base path added under {@link ACTION_KEY},
-     * and the copy goes to the root store.
-     * When the local reducer changes its branch, the root reducer does not run for that action.
+     * Calling it twice does nothing.
+     * A nested substore has its own `destroy`.
      *
      * @example
      * ```ts
-     * subStore.dispatch({ type: 'RENAME' }); // { type: 'RENAME', '&_ACTION': { hash, path: [ 'users', 'u1' ] } }
+     * bob.destroy();
      * ```
      *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    dispatch<Action extends UnknownAction>(action: Action): Action {
-        return this.rootStore.dispatch(
-            Object.assign({}, action, {
-                [ACTION_KEY]: <SubstoreRouteType> {
-                    hash: this.hashReducer,
-                    path: this.basePath
-                }
-            })
-        );
+    destroy(): void {
+        if (this.destroyed) return;
+
+        this.destroyed = true;
+        this.release();
     }
 
     /**
-     * Adds a listener that runs whenever the state at the base path changes.
+     * Registers a listener that runs after every dispatch to the root store.
      *
-     * @param listener - The callback to run
+     * @param listener - The function to run
      * @returns A function that removes the listener
      *
      * @remarks
-     * The listener follows the selection feed of the substore,
-     * so it runs right away with the current branch and then on every change of that branch.
+     * It listens on the root Redux store, and `select$` drops the values that did not change.
      *
-     * @example
-     * ```ts
-     * const unsubscribe = subStore.subscribe(() => console.log(subStore.getState()));
-     * unsubscribe(); // the listener no longer runs
-     * ```
-     *
-     * @since 5.0.0
+     * @since 6.0.0
      */
 
-    subscribe(listener: () => void): (() => void) {
-        const subscription = this.select().subscribe(listener);
-
-        return () => subscription.unsubscribe();
-    }
-
-    /**
-     * Replaces the local reducer of this substore.
-     *
-     * @param nextLocalReducer - The reducer to use from the next action on
-     *
-     * @remarks
-     * The registry entry is keyed by the hash of the original reducer,
-     * so every substore that registered a reducer with the same source text picks up the replacement.
-     * The hash on later actions stays the same.
-     *
-     * @example
-     * ```ts
-     * subStore.replaceReducer(nextUserReducer);
-     * subStore.dispatch({ type: 'RENAME' }); // handled by nextUserReducer
-     * ```
-     *
-     * @since 5.0.0
-     */
-
-    replaceReducer(nextLocalReducer: Reducer<State>): void {
-        return this.reducerService.replaceSubReducer(this.hashReducer, nextLocalReducer);
+    protected listen(listener: () => void): Unsubscribe {
+        return this.root.redux.subscribe(listener);
     }
 }

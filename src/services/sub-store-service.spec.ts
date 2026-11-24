@@ -2,166 +2,142 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { NgRedux } from '@services/ng-redux.service';
+import type { UnknownAction } from 'redux';
 
 /**
  * Imports
  */
 
-import { of } from 'rxjs';
-import { get } from '@components/object.component';
-import { ACTION_KEY } from '@interfaces/fractal.interface';
-import { ReducerService } from '@services/reducer.service';
-import { SubStoreService } from '@services/sub-store.service';
+import { signal } from '@angular/core';
+import { NgRedux } from '@services/ng-redux.service';
+import { pathOf } from '@services/sub-store.service';
+import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
 
-describe('SubStoreService', () => {
-    let ngRedux: NgRedux<any>;
-    let reducerService: ReducerService;
-    let subStoreService: SubStoreService<any>;
-    let mockHashSignature: ReturnType<typeof xJet.fn>;
-    let mockReplaceReducer: ReturnType<typeof xJet.fn>;
-    let mockRegisterReducer: ReturnType<typeof xJet.fn>;
+/**
+ * Tests
+ */
 
-    beforeEach(() => {
-        ngRedux = <any> {
-            select: xJet.fn(),
-            dispatch: xJet.fn(),
-            getState: xJet.fn()
-        };
-        reducerService = ReducerService.getInstance();
-        mockHashSignature = xJet.fn();
-        mockReplaceReducer = xJet.fn();
-        mockRegisterReducer = xJet.fn();
-        reducerService.hashSignature = <any> mockHashSignature;
-        reducerService.replaceReducer = mockReplaceReducer;
-        reducerService.registerSubReducer = mockRegisterReducer;
-        subStoreService = new SubStoreService<any>(ngRedux, [ 'a', 'b' ], <any> xJet.fn);
+interface UserInterface {
+    name: string;
+    loc: number;
+    address?: { city: string };
+}
+
+function createStore(): NgRedux<{ users: Record<string, UserInterface> }> {
+    const users: Record<string, UserInterface> = {
+        bob: { name: 'Bob', loc: 10, address: { city: 'Paris' } },
+        alice: { name: 'Alice', loc: 20 }
+    };
+
+    return new NgRedux({ reducer: (state = { users }) => state, initialState: { users } });
+}
+
+function userReducer(state: UserInterface = { name: '', loc: 0 }, action: UnknownAction): UserInterface {
+    return action.type === 'ADD_LOC' ? { ...state, loc: state.loc + <number> action['payload'] } : state;
+}
+
+function cityReducer(state: { city: string } = { city: '' }, action: UnknownAction): { city: string } {
+    return action.type === 'MOVE' ? { city: <string> action['payload'] } : state;
+}
+
+describe('pathOf', () => {
+    test('should turn a fixed path into a function that returns it', () => {
+        expect(pathOf([ 'users', 'bob' ])()).toEqual([ 'users', 'bob' ]);
     });
 
-    afterEach(() => {
-        xJet.restoreAllMocks();
-    });
+    test('should keep a computed path as it is', () => {
+        const path = (): Array<string> => [ 'users' ];
 
-    describe('constructor', () => {
-        test('should initialize constructor logic.', () => {
-            expect(mockHashSignature).toHaveBeenCalled();
-            expect(mockRegisterReducer).toHaveBeenCalled();
+        expect(pathOf(path)).toBe(path);
+    });
+});
+
+describe('SubStore', () => {
+    describe('state', () => {
+        test('should hold the branch at the base path', () => {
+            const bob = createStore().substore([ 'users', 'bob' ], userReducer);
+
+            expect(bob.state()).toEqual({ name: 'Bob', loc: 10, address: { city: 'Paris' } });
+        });
+
+        test('should be undefined for a path that leads nowhere', () => {
+            expect(createStore().substore([ 'users', 'eve' ], userReducer).state()).toBeUndefined();
+        });
+
+        test('should move to the branch of a new computed path', () => {
+            const userId = signal('bob');
+            const user = createStore().substore<UserInterface>(() => [ 'users', userId() ], userReducer);
+
+            userId.set('alice');
+
+            expect(user.getState().name).toBe('Alice');
         });
     });
 
     describe('dispatch', () => {
-        test('should dispatch root store.', () => {
-            subStoreService.dispatch(<any>{});
-            expect(ngRedux.dispatch).toHaveBeenCalledWith({
-                [ACTION_KEY]: {
-                    hash: undefined,
-                    path: [ 'a', 'b' ]
-                }
-            });
+        test('should return the original action and leave it without a route', () => {
+            const bob = createStore().substore([ 'users', 'bob' ], userReducer);
+            const action = { type: 'ADD_LOC', payload: 5 };
+
+            expect(bob.dispatch(action)).toBe(action);
+            expect(SUBSTORE_ROUTE in action).toBe(false);
         });
 
-        test('should dispatch to root store with correct action key', () => {
-            subStoreService.dispatch({
-                type: 'test'
-            });
-            expect(ngRedux.dispatch).toHaveBeenCalledWith({
-                type: 'test',
-                [ACTION_KEY]: {
-                    hash: undefined,
-                    path: [ 'a', 'b' ]
-                }
-            });
-        });
-    });
+        test('should update its own state signal', () => {
+            const bob = createStore().substore<UserInterface>([ 'users', 'bob' ], userReducer);
+            bob.dispatch({ type: 'ADD_LOC', payload: 5 });
 
-    describe('getState', () => {
-        test('should get substore state.', () => {
-            xJet.mock(get);
-            subStoreService.getState();
-            expect(get).toHaveBeenCalledWith(undefined, [ 'a', 'b' ]);
+            expect(bob.state().loc).toBe(15);
         });
 
-        test('should call get with correct arguments', () => {
-            xJet.mock(get);
-            subStoreService.getState();
-            expect(get).toHaveBeenCalledWith(undefined, [ 'a', 'b' ]);
+        test('should route the action to the path that the base path holds at that moment', () => {
+            const ngRedux = createStore();
+            const userId = signal('bob');
+            const user = ngRedux.substore(() => [ 'users', userId() ], userReducer);
+
+            userId.set('alice');
+            user.dispatch({ type: 'ADD_LOC', payload: 5 });
+
+            expect(ngRedux.getState().users['alice'].loc).toBe(25);
+            expect(ngRedux.getState().users['bob'].loc).toBe(10);
         });
     });
 
-    describe('setBasePath', () => {
-        test('should leave the root store alone when the path is the one in use', () => {
-            subStoreService.setBasePath((subStoreService as any).basePath);
+    describe('substore', () => {
+        test('should continue the path of the substore that creates it', () => {
+            const ngRedux = createStore();
+            const address = ngRedux.substore([ 'users', 'bob' ], userReducer).substore([ 'address' ], cityReducer);
 
-            expect(ngRedux.select).not.toHaveBeenCalled();
+            address.dispatch({ type: 'MOVE', payload: 'Rome' });
+
+            expect(address.getState()).toEqual({ city: 'Rome' });
+            expect(ngRedux.getState().users['bob'].address).toEqual({ city: 'Rome' });
         });
 
-        test('should move existing selections to the new path', () => {
-            const seen: Array<unknown> = [];
-            xJet.mock(ngRedux.select).mockImplementation(<any> ((path: Array<string>) => of(path.join('.'))));
+        test('should follow a move of the parent path', () => {
+            const userId = signal('bob');
+            const ngRedux = createStore();
+            ngRedux.getState().users['alice'].address = { city: 'Oslo' };
+            const address = ngRedux.substore(() => [ 'users', userId() ], userReducer).substore([ 'address' ], cityReducer);
 
-            const subscription = subStoreService.select().subscribe(value => seen.push(value));
-            subStoreService.setBasePath([ 'c' ]);
-            subscription.unsubscribe();
+            userId.set('alice');
 
-            expect(seen).toEqual([ 'a.b', 'c' ]);
-        });
-    });
-
-    describe('select', () => {
-        test('should not subscribe to the root store until the selection is subscribed', () => {
-            subStoreService.select('x');
-
-            expect(ngRedux.select).not.toHaveBeenCalled();
-        });
-
-        test('should select relative to the base path', () => {
-            const seen: Array<unknown> = [];
-            xJet.mock(ngRedux.select).mockImplementation(<any> (() => of({ x: 7 })));
-
-            subStoreService.select('x').subscribe(value => seen.push(value)).unsubscribe();
-
-            expect(ngRedux.select).toHaveBeenCalledWith([ 'a', 'b' ]);
-            expect(seen).toEqual([ 7 ]);
+            expect(address.getState()).toEqual({ city: 'Oslo' });
         });
     });
 
-    describe('configureSubStore', () => {
-        test('should create a new substore instance with correct base path', () => {
-            const mockSubscribe = xJet.fn();
-            (ngRedux.select as ReturnType<typeof xJet.fn>).mockReturnValueOnce({ subscribe: mockSubscribe });
+    describe('select$', () => {
+        test('should emit only when its branch changes', () => {
+            const ngRedux = createStore();
+            const locs: Array<number> = [];
+            const bob = ngRedux.substore<UserInterface>([ 'users', 'bob' ], userReducer);
+            const alice = ngRedux.substore<UserInterface>([ 'users', 'alice' ], userReducer);
+            bob.select$(state => state.loc).subscribe(loc => locs.push(loc));
 
-            const instance = subStoreService.configureSubStore([ 'a', 'b', 'c' ], <any> xJet.fn);
-            expect((subStoreService as any).basePath).toEqual([ 'a', 'b' ]);
-            expect((instance as any).basePath).toEqual([ 'a', 'b', 'a', 'b', 'c' ]);
-        });
-    });
+            alice.dispatch({ type: 'ADD_LOC', payload: 1 });
+            bob.dispatch({ type: 'ADD_LOC', payload: 1 });
 
-    describe('subscribe', () => {
-        test('should call select method', () => {
-            const mockSelect = xJet.spyOn(subStoreService, 'select');
-            subStoreService.subscribe(xJet.fn);
-            expect(mockSelect).toHaveBeenCalled();
-        });
-
-        test('should assign new subscription', () => {
-            xJet.spyOn(subStoreService, 'select');
-            subStoreService.subscribe(xJet.fn);
-
-            expect(subStoreService.select).toHaveBeenCalled();
-        });
-
-        test('should call select and subscribe to substore changes', () => {
-            const mockSelect = xJet.spyOn(subStoreService, 'select');
-            subStoreService.subscribe(xJet.fn);
-            expect(mockSelect).toHaveBeenCalled();
-        });
-    });
-
-    describe('replaceReducer', () => {
-        test('should call replaceReducer on reducer service', () => {
-            xJet.spyOn((subStoreService as any).reducerService, 'replaceSubReducer').mockImplementation(mockReplaceReducer);
-            subStoreService.replaceReducer(<any> xJet.fn);
-            expect(mockReplaceReducer).toHaveBeenCalled();
+            expect(locs).toEqual([ 10, 11 ]);
         });
     });
 });
