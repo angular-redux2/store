@@ -2,28 +2,28 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { Reducer, StoreEnhancer } from 'redux';
-import type { MiddlewareInterface } from './reducer.interface';
+import type { Middleware, Reducer, StoreEnhancer } from 'redux';
 
 /**
- * The store setup that {@link provideNgRedux} applies when the application starts.
+ * The options that create the store.
  *
  * @typeParam State - The type of the root state
  *
  * @remarks
- * The fields map onto the arguments of {@link NgRedux.configureStore}, with `devTools` added so the Redux DevTools
- * enhancer no longer has to be wired by hand.
+ * `provideNgRedux` passes these options to {@link NgRedux}, which builds the Redux store once,
+ * so the store is ready before any component reads it.
+ * The store applies the middleware first, then the enhancers, and the Redux DevTools extension last.
  *
  * @example
  * ```ts
- * const config: NgReduxConfigInterface<AppState> = {
+ * provideNgRedux({
  *     reducer: rootReducer,
  *     initialState: INITIAL_STATE,
- *     devTools: isDevMode()
- * };
+ *     middleware: [ thunk ],
+ *     devTools: isDevMode(),
+ *     freeze: isDevMode()
+ * });
  * ```
- *
- * @see provideNgRedux
  *
  * @since 6.0.0
  */
@@ -32,8 +32,10 @@ export interface NgReduxConfigInterface<State> {
     /**
      * The root reducer.
      *
-     * @remarks
-     * It may mutate its state; see the draft state of {@link ReducerService}.
+     * @example
+     * ```ts
+     * reducer: combineReducers({ counter, todos: todos.reducer })
+     * ```
      *
      * @since 6.0.0
      */
@@ -41,25 +43,45 @@ export interface NgReduxConfigInterface<State> {
     reducer: Reducer<State>;
 
     /**
-     * The state the store starts from.
+     * The state that the store starts from.
+     *
+     * @remarks
+     * Leave it out when the reducers define their own defaults.
+     *
+     * @example
+     * ```ts
+     * initialState: { counter: 0, todos: [] }
+     * ```
      *
      * @since 6.0.0
      */
 
-    initialState: State;
+    initialState?: State;
 
     /**
-     * Reducer middleware, run in order before the root reducer.
+     * The Redux middleware, applied in order.
      *
-     * @see MiddlewareInterface
+     * @remarks
+     * The store applies them before the enhancers and the Redux DevTools extension,
+     * so the extension records the actions that a middleware dispatches.
+     *
+     * @example
+     * ```ts
+     * middleware: [ thunk, logger ]
+     * ```
      *
      * @since 6.0.0
      */
 
-    middleware?: Array<MiddlewareInterface<State>>;
+    middleware?: Array<Middleware>;
 
     /**
-     * Redux store enhancers, such as `applyMiddleware(...)`.
+     * The Redux store enhancers, applied after the middleware.
+     *
+     * @example
+     * ```ts
+     * enhancers: [ persistState() ]
+     * ```
      *
      * @since 6.0.0
      */
@@ -67,14 +89,16 @@ export interface NgReduxConfigInterface<State> {
     enhancers?: Array<StoreEnhancer>;
 
     /**
-     * Connects the store to the Redux DevTools extension.
+     * Whether to connect the Redux DevTools extension, or the options to connect it with.
      *
      * @remarks
-     * `true` connects it with the default options, and an object is passed to the extension as its options.
-     * Nothing is connected when the extension is not installed, or when the value is `false` or missing.
-     * Pass `isDevMode()`, or options guarded by it, to keep the extension out of production.
+     * The store connects only when the extension is installed in the browser,
+     * so it is safe to leave on during server-side rendering.
      *
-     * @see DevToolsExtension.enhancer
+     * @example
+     * ```ts
+     * devTools: isDevMode() && { name: 'my app', trace: true }
+     * ```
      *
      * @since 6.0.0
      */
@@ -82,16 +106,17 @@ export interface NgReduxConfigInterface<State> {
     devTools?: boolean | Record<string, unknown>;
 
     /**
-     * Freezes the state, so code that mutates it outside a reducer throws at the write.
+     * Whether to deep-freeze every state, so code that mutates it throws.
      *
      * @remarks
-     * `true` adds the {@link freezeState} enhancer before the configured `enhancers`.
-     * Freezing walks the new parts of the state after every action, so pass `isDevMode()` to keep it out of production.
+     * Freezing walks the new parts of the state after every action, so enable it in development only.
      *
      * @example
      * ```ts
-     * provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, freeze: isDevMode() });
+     * freeze: isDevMode()
      * ```
+     *
+     * @see freezeReducer
      *
      * @since 6.0.0
      */
@@ -99,20 +124,14 @@ export interface NgReduxConfigInterface<State> {
     freeze?: boolean;
 
     /**
-     * Carries the state from server-side rendering to the browser through Angular's `TransferState`.
+     * Whether to hand the state from server-side rendering to the browser through Angular's `TransferState`.
      *
      * @remarks
-     * On the server, the state as it is when the page is rendered goes into the page.
-     * In the browser, the store starts from that state instead of `initialState`,
-     * so the first render matches the server's and data that the server loaded is not fetched again.
-     * Without server-side rendering there is nothing to transfer, and `initialState` is used.
-     *
-     * The state travels as JSON, so it must hold only JSON values: a `Date` arrives as a string,
-     * and a `Map`, `Set`, or class instance does not survive.
+     * The server serializes the state, and the browser starts from it instead of `initialState`.
      *
      * @example
      * ```ts
-     * provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, transferState: true });
+     * transferState: true
      * ```
      *
      * @since 6.0.0
