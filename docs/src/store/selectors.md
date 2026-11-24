@@ -1,60 +1,52 @@
 # Selectors
 
-A selector says which part of the state an observable follows. `select`, `@Select`, and `@Select$` all take the same
-three forms.
-
-| Form     | Type                          | Example                       |
-|----------|-------------------------------|-------------------------------|
-| Property | `string \| number \| symbol`  | `'counter'`                   |
-| Path     | `Array<string \| number>`     | `[ 'users', 0, 'name' ]`      |
-| Function | `(state: RootState) => State` | `state => state.items.length` |
-| None     | `undefined`                   | the whole state               |
+A selector is a function that picks one value out of the state. `select`, `select$`, and `injectSelect` all take one.
 
 ```ts
-const state = { name: 'John', address: { city: 'New York' }, tags: [ 'a', 'b' ] };
-
-ngRedux.select('name');                       // 'John'
-ngRedux.select([ 'address', 'city' ]);        // 'New York'
-ngRedux.select([ 'tags', 1 ]);                // 'b'
-ngRedux.select(state => state.tags.length);   // 2
+const name = store.select(state => state.user.name);
+const total = store.select(state => state.todos.length);
+const done = store.select(state => state.todos.filter(todo => todo.done).length);
 ```
 
-A path that runs into a missing key yields `undefined` rather than throwing, so a selection may watch a branch that
-does not exist yet.
+Only the function form exists. A string key or a path array cannot be typed, so `select('counter')` would return
+`unknown`, while `select(state => state.counter)` returns `number`.
 
-::: warning Falsy property selectors
-A property selector of `0` or `''` is read as no selector and selects the whole state. Use a path instead:
-`[ 0 ]` or `[ '' ]`.
-:::
+## Signal or observable
 
-## When a selection emits
+|                   | `select` / `injectSelect`  | `select$`                           |
+|-------------------|----------------------------|-------------------------------------|
+| Returns           | `Signal<T>`, a `computed`  | `Observable<T>`                     |
+| In a template     | `count()`                  | `count$ \| async`                   |
+| Runs the selector | when read after a change   | after every dispatch                |
+| Emits             | the latest value when read | every distinct value, synchronously |
+| Cleanup           | none                       | unsubscribe                         |
 
-A selection emits once on subscribe, then each time its value changes. The value is compared with `===` by default,
-so selecting a primitive or an object the reducer did not replace stays quiet across unrelated actions.
+Use the signal by default. Use `select$` for RxJS pipelines, such as a debounced search, that must react to each value
+in order.
+
+## When a selection updates
+
+A selection compares the new value with the previous one using `Object.is`, and `select$` using `===`. The two differ
+only for `NaN` and `-0`. Selecting a primitive, or an object that
+the reducer did not replace, stays quiet across unrelated actions.
 
 ::: warning 🔁 New objects on every call
-A function selector that builds a new object or array, such as `state => ({ a: state.a, b: state.b })`, returns a
-value that is never `===` to the last one, and so emits on every action. Select the pieces separately, or pass a
-comparator.
+A selector that builds a new object or array, such as `state => state.todos.filter(...)`, returns a value that is never
+equal to the last one, so readers update after every action. Pass `equal`, or select the pieces separately.
 :::
 
-## Comparator
+## equal
 
 ```ts
-type ComparatorType<T = unknown> = (previous: T, next: T) => boolean;
+const ids = store.select(state => state.todos.map(todo => todo.id), {
+    equal: (previous, next) => previous.length === next.length && previous.every((id, index) => id === next[index])
+});
 ```
 
-The comparator is RxJS's `distinctUntilChanged` predicate: it returns `true` when two values count as **the same**, and
-the selection then stays quiet. Return `false` to let the new value through.
-
-```ts
-const sameIds = (previous: Array<ItemInterface>, next: Array<ItemInterface>) =>
-    previous.length === next.length && previous.every((item, index) => item.id === next[index].id);
-
-ngRedux.select<Array<ItemInterface>>('items', sameIds);
-```
+`equal` returns `true` when two values count as the same, and the selection then keeps the previous value. The signal
+form takes Angular's whole `computed` options, so `debugName` works too.
 
 ## See also
 
 - [NgRedux](/store/ng-redux#select)
-- [@Select](/decorators/select)
+- [Sub-stores](/store/sub-store)
