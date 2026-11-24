@@ -4,15 +4,15 @@ title: 'angular-redux2'
 titleTemplate: 'Angular bindings for Redux'
 hero:
   name: 'angular-redux2'
-  text: 'Redux for Angular, without the boilerplate'
-  tagline: An injectable store, selection and dispatch decorators, class reducers you can mutate safely, and sub-stores scoped to a component.
+  text: 'Redux for Angular, built on signals'
+  tagline: A Redux store whose state is an Angular signal, with typed slices, mutable drafts, and sub-stores scoped to a component.
   actions:
     - theme: brand
       text: Get Started
       link: ./guide
     - theme: alt
-      text: NgRedux
-      link: ./store/ng-redux
+      text: Migrating from 5.x
+      link: ./migration/decorators
     - theme: alt
       text: GitHub
       link: https://github.com/angular-redux2/store
@@ -20,22 +20,25 @@ hero:
     src: /logo.png
     alt: 'angular-redux2 logo'
 features:
-  - title: Injectable store
-    icon: 💉
-    details: '`NgRedux` is provided in root, wraps a Redux store, and exposes it as RxJS observables for the `async` pipe or as signals with `injectSelect`.'
-  - title: Decorators
-    icon: 🎯
-    details: '`@Select` and `@Select$` bind a slice of state to a property, and `@Dispatch` sends whatever a method returns.'
-  - title: Class reducers
+  - title: Signals built in
+    icon: 📡
+    details: 'The state is an Angular signal and every selection is a `computed`, so it works with templates, `computed`, `effect`, `linkedSignal`, OnPush, and zoneless apps, with no pipe, subscription, or decorator.'
+  - title: Faster than 5.x
+    icon: ⚡
+    details: 'A dispatch sets one signal, and a selector runs only when something reads it. In the benchmarks, dispatches run ~500× faster than 5.x, and scenarios with 1,000 selections ~13-50× faster.'
+  - title: Observables when you need them
+    icon: 🌊
+    details: '`select$` emits synchronously for every change, so RxJS pipelines see each value in order.'
+  - title: Typed slices
     icon: 🧱
-    details: 'Write a reducer as a class of `@Action` methods and get typed action creators from `ReducerActionsType<T>`.'
+    details: '`createSlice` turns one handler per action into a reducer and typed action creators.'
   - title: Draft state
     icon: ✏️
-    details: Mutate `state` inside a reducer; only the paths you touch are copied, so unchanged branches keep their identity.
+    details: Mutate the state inside a slice or a `draft` reducer. Only the paths you touch are copied.
   - title: Sub-stores
     icon: 🌿
-    details: Root a store at a path with its own reducer, from code or with `@Substore` on a component.
+    details: '`injectSubstore` gives a component a store rooted at a path, which can follow a signal input.'
   - title: Testing mocks
     icon: 🧪
-    details: '`MockNgReduxModule` swaps the store for one whose selections are subjects you drive from the test.'
+    details: '`provideMockNgRedux` swaps in a store whose state the test sets and whose dispatches it records.'
 ---

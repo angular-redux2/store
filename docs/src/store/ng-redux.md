@@ -1,132 +1,98 @@
 # NgRedux
 
-`NgRedux` is the injectable store. It wraps one Redux store, feeds every state change into an RxJS stream, and is the
-store the [decorators](/decorators/select) reach when they are not scoped to a [sub-store](/store/sub-store).
+`NgRedux` is the root store. It wraps one Redux store and exposes its state as an Angular signal. Every selection is a
+`computed` over that signal.
 
 ```ts
 import { inject } from '@angular/core';
 import { NgRedux } from '@angular-redux2/store';
 
-const ngRedux = inject(NgRedux<AppStateInterface>);
+const store = inject(NgRedux<AppState>);
 ```
 
-`RootState` defaults to `unknown`, so give it the application's state type; without one, selections and reducers are
-typed `unknown`. It is provided in root. The first instance created registers itself as the static [`NgRedux.store`](#static-access).
+[`provideNgRedux`](/guide#configure-the-store) creates the one instance for the application. The Redux store is built
+in the constructor, so the store is ready the moment it is injected.
 
-## configureStore
+## constructor
 
 ```ts
-configureStore(
-    reducer: Reducer<RootState>,
-    initState: RootState,
-    middleware: Array<MiddlewareInterface<RootState>> = [],
-    enhancers: StoreEnhancer[] = []
-): void
+new NgRedux<State>(config: NgReduxConfigInterface<State>)
 ```
 
-Creates the Redux store from a root reducer and an initial state. Call it once, before anything reads from the
-store; a second call throws `Store already initialize!`.
-
-| Parameter    | Notes                                                                                             |
-|--------------|---------------------------------------------------------------------------------------------------|
-| `reducer`    | The root reducer. It may mutate `state`, see [Draft state](/reducers/draft-state).                |
-| `initState`  | The initial state.                                                                                |
-| `middleware` | [Reducer middleware](/store/middleware#reducer-middleware), run in order before the root reducer. |
-| `enhancers`  | Redux store enhancers, composed right to left: `applyMiddleware(...)`, the DevTools enhancer.     |
+Creates a store without dependency injection, such as in a script or a unit test. `config` takes the same options as
+`provideNgRedux`, except `transferState`, which needs the injector:
 
 ```ts
-import { applyMiddleware } from 'redux';
-
-ngRedux.configureStore(rootReducer, INITIAL_STATE, [], [ applyMiddleware(logger) ]);
+const store = new NgRedux<AppState>({ reducer: rootReducer, initialState: INITIAL_STATE, freeze: true });
 ```
 
-## provideStore
+## state
 
 ```ts
-provideStore(reducer: Reducer<RootState>, store: Store<RootState>): void
+readonly state: Signal<State>
 ```
 
-Adopts a Redux store created elsewhere. The store's reducer is replaced by `reducer`, wrapped so that sub-stores and
-[draft state](/reducers/draft-state) work. Reducer middleware is not applied on this path. Like `configureStore`, it
-throws when a store is already set.
+The whole state as a read-only signal. It holds the new state as soon as `dispatch` returns.
 
 ## select
 
 ```ts
-select<SelectedType>(selector?: SelectorType<RootState, SelectedType>, comparator?: ComparatorType<SelectedType>): Observable<SelectedType>
+select<Selected>(selector: (state: State) => Selected, options?: CreateComputedOptions<Selected>): Signal<Selected>
 ```
 
-Returns an observable of a slice of the state. It replays the current value to a new subscriber, then emits whenever
-the slice changes. With no selector it emits the whole state.
+Returns a read-only signal of one value. It is a `computed`, so it needs no subscription and no injection context, and
+it runs the selector only when something reads it after a change. `options` are Angular's own `computed` options, so
+`equal` decides what counts as a change. See [Selectors](/store/selectors).
 
 ```ts
-const counter$ = ngRedux.select<number>('counter');
-const city$ = ngRedux.select<string>([ 'user', 'address', 'city' ]);
-const total$ = ngRedux.select((state: AppStateInterface) => state.items.length);
+const count = store.select(state => state.counter);
+const total = store.select(state => state.todos.length);
 ```
 
-[Selectors](/store/selectors) covers the three selector forms and how a `comparator` decides what counts as a change.
+In a component, [`injectSelect`](#injectselect) is the shorthand.
 
-## selectSignal
+## select$ {#select-observable}
 
 ```ts
-selectSignal<SelectedType>(selector?: SelectorType<RootState, SelectedType>, comparator?: ComparatorType<SelectedType>): Signal<SelectedType>
+select$<Selected>(selector: (state: State) => Selected, options?: { equal?: (a: Selected, b: Selected) => boolean }): Observable<Selected>
 ```
 
-Returns a read-only signal of a slice of the state. It takes the same selectors and comparator as `select`, needs no
-subscription and no injection context, and recomputes only when the state changes. It reads `undefined` until the store
-is configured, without calling the selector; [`provideNgRedux`](/guide#configure-the-store) configures the store before
-the first component renders.
+Returns an observable that emits the current value on subscribe and then every change, synchronously, after each
+dispatch. Reach for it in RxJS pipelines that must see each value in order. `toObservable(store.select(...))` emits
+later and can skip values.
 
 ```ts
-const counter = ngRedux.selectSignal<number>('counter');
-const total = ngRedux.selectSignal((state: AppStateInterface) => state.items.length);
+store.select$(state => state.query).pipe(
+    debounceTime(300),
+    switchMap(query => http.get(`/search?q=${ query }`))
+);
 ```
-
-In a component, `injectSelect` is the shorthand for `inject(NgRedux).selectSignal(...)`:
-
-```ts
-export class CounterComponent {
-    readonly counter = injectSelect<number>('counter');
-}
-```
-
-A [sub-store](/store/sub-store) has `selectSignal` too, relative to its base path.
 
 ## dispatch
 
 ```ts
-dispatch<Action extends UnknownAction>(action: Action): Action
+dispatch<DispatchedAction extends Action>(action: DispatchedAction): DispatchedAction
 ```
 
-Dispatches an action and returns it. It throws `Dispatch failed: store instance not initialize.` when no store is set.
+Dispatches an action and returns what Redux returns, which is the action unless a middleware changes it.
 
-A dispatch from outside the Angular zone, for example from a third-party callback, is run inside it through `NgZone`,
-so templates update as they would for any event. In a zoneless application there is no zone to re-enter and the
-dispatch runs as is.
-
-## getState, subscribe, replaceReducer
-
-| Method                             | Notes                                                                        |
-|------------------------------------|------------------------------------------------------------------------------|
-| `getState()`                       | The current state.                                                           |
-| `subscribe(listener)`              | The Redux listener API; returns the function that unsubscribes.              |
-| `replaceReducer(nextReducer)`      | Swaps the root reducer. Middleware and sub-store reducers stay as they were. |
-| `configureSubStore(path, reducer)` | Carves out a [sub-store](/store/sub-store).                                  |
-
-`NgRedux` also implements `Symbol.observable`, and the `'@@observable'` key that RxJS falls back to without a
-polyfill, so `from(ngRedux)` gives the raw state stream.
-
-## replaceStore
+## getState
 
 ```ts
-replaceStore(store: Store<RootState>): void
+getState(): State
 ```
 
-Swaps the Redux store that the service wraps. The service stops listening to the old store, and every selection,
-observable or signal, continues with the new one. The store is used as given, so build it from the reducer this
-service composed, for example during hot module replacement:
-`ngRedux.replaceStore(createStore(rootReducer, ngRedux.getState()))`.
+Returns the current state without tracking it, so calling it in a `computed` or an `effect` does not make it rerun.
+
+## substore
+
+```ts
+substore<SubState>(basePath: BasePathType, reducer: Reducer<SubState>): SubStoreInterface<SubState>
+```
+
+Creates a store for one branch of the state. `basePath` is a path array such as `[ 'users', 'bob' ]`, or a function
+that returns one. Call `destroy()` on the sub-store when it is no longer needed, so the store can forget its reducer.
+See [Sub-stores](/store/sub-store).
 
 ## addReducer
 
@@ -134,45 +100,83 @@ service composed, for example during hot module replacement:
 addReducer(key: string, reducer: Reducer): void
 ```
 
-Adds a reducer that owns one top-level key of the state, next to the root reducer. A lazy route loads its reducer with
-its code this way, so the root reducer does not have to list every feature. In a route, use the provider:
+Adds a reducer that owns one top-level key, next to the root reducer, so a lazy route can bring its reducer with its
+code. In a route, use the provider:
 
 ```ts
 import { provideNgReduxFeature } from '@angular-redux2/store';
 
 export const routes: Routes = [{
     path: 'todos',
-    loadComponent: () => import('./todos.component'),
-    providers: [ provideNgReduxFeature('todos', todosReducer) ]
+    loadComponent: () => import('./todos'),
+    providers: [ provideNgReduxFeature(todos) ]
 }];
 ```
 
-Once the store is configured, adding a reducer dispatches `ADD_REDUCER`, so the key holds the reducer's initial state
-at once. The root reducer never sees the key, so `combineReducers` neither drops it nor warns about it, and the feature
-reducer gets a [draft](/reducers/draft-state) of its own key. Adding the same reducer again does nothing, and a
-different reducer for the key replaces it. The root state must be an object, and the key keeps its state after the
-route is left.
+`provideNgReduxFeature` takes any `{ name, reducer }`, such as a [slice](/reducers/slices). The key holds the initial
+state of its reducer at once. The root reducer never sees the key, so `combineReducers` neither drops it nor warns about
+it. Adding the same reducer again does nothing, and a different reducer for the key replaces it.
+
+When the initial state already has the key, such as state that [`transferState`](#server-side-rendering) brought from
+the server, the feature starts from that value instead of its reducer's default, even though `combineReducers` dropped
+the key when the store started.
+
+## redux
+
+```ts
+readonly redux: Store<State>
+```
+
+The underlying Redux store, for libraries that expect one. Do not replace its reducer, because the root reducer also
+runs sub-stores and features. Dispatch a thunk through `store.redux.dispatch` to keep its return type, see
+[Middleware](/store/middleware#thunks).
+
+## Interop observable
+
+Every store, root or sub-store, is an interop observable, so RxJS `from(store)` emits the whole state on subscribe and
+after every change, the same as `select$(state => state)`. It works with or without a `Symbol.observable` polyfill.
+
+RxJS types `Symbol.observable` as a plain `symbol`, so TypeScript does not accept a store as an `ObservableInput`. In
+TypeScript, use `select$`:
+
+```ts
+store.select$(state => state).subscribe(state => console.log(state)); // the same as from(store)
+```
+
+## injectSelect
+
+```ts
+injectSelect<State, Selected>(selector: (state: State) => Selected, options?: CreateComputedOptions<Selected>): Signal<Selected>
+```
+
+The shorthand for `inject(NgRedux).select(selector, options)`. Call it in a field initializer or a constructor:
+
+```ts
+export class Counter {
+    readonly count = injectSelect((state: AppState) => state.counter);
+}
+```
 
 ## Freezing the state
 
 ```ts
-provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, freeze: isDevMode() });
+provideNgRedux({ reducer: rootReducer, freeze: isDevMode() });
 ```
 
-`freeze: true` adds the `freezeState()` enhancer, which deep-freezes the initial state and every state the root reducer
-returns. Code that mutates the state outside a reducer, such as a component that changes an object it selected, then
-throws a `TypeError` at the write instead of changing the store behind its back. Reducers are unaffected, since they
-write to a [draft](/reducers/draft-state).
+`freeze: true` deep-freezes every state that the store holds, including the states of sub-stores and features, and the
+`initialState` object you pass, in place. Code that mutates the state, such as a component
+that changes an object it selected or a plain reducer that writes to its input, then throws a `TypeError` at the
+assignment instead of changing the store behind its back. [Slices](/reducers/slices) and [`draft`](/reducers/draft-state)
+reducers keep working, because they write to copies.
 
-Only plain objects and arrays are frozen; a `Date`, `Map`, `Set`, or class instance is left as it is. The initial state
-object is frozen in place. Freezing walks the new parts of the state after every action, so keep it to development. With
-`configureStore`, pass the enhancer yourself:
+Only plain objects and arrays are frozen. A `Date`, `Map`, `Set`, or class instance stays as it is. Freezing walks the
+new parts of the state after every action, so keep it to development.
 
 ```ts
-import { freezeState } from '@angular-redux2/store';
-
-ngRedux.configureStore(rootReducer, INITIAL_STATE, [], isDevMode() ? [ freezeState() ] : []);
+freezeReducer<State>(reducer: Reducer<State>): Reducer<State>
 ```
+
+`freezeReducer` is the same thing as a reducer wrapper, for a store made without `provideNgRedux`.
 
 ## Server-side rendering
 
@@ -181,26 +185,15 @@ provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, transferStat
 ```
 
 `transferState: true` carries the state from the server to the browser through Angular's `TransferState`. The server
-puts the state as it is at render time into the page, and the browser store starts from it instead of `initialState`,
-so the first render matches the server's and data the server loaded is not fetched again. Without server-side
-rendering there is nothing to transfer and `initialState` is used.
+writes the state into the page, and the browser starts from it instead of `initialState`, so the first render matches
+and data that the server loaded is not fetched again. The state is stored under the exported `STATE_KEY`, so code that
+needs to can read it from `TransferState` itself. A lazy feature starts from its key in the transferred state as well,
+see [addReducer](#addreducer).
 
 ::: warning 📦 JSON only
-The state travels as JSON. A `Date` arrives as a string, and a `Map`, `Set`, or class instance does not survive, so
-keep the state to plain data when this option is on.
+The state travels as JSON. A `Date` arrives as a string, and a `Map`, `Set`, or class instance does not survive, so keep
+the state to plain data when this option is on.
 :::
-
-## Static access
-
-`NgRedux.store` returns the instance the application injected. The decorators use it, and so can code that has no
-injector at hand:
-
-```ts
-NgRedux.store.dispatch({ type: 'RESET' });
-```
-
-It throws `NgRedux failed: instance not initialize.` until `NgRedux` has been created, so the store is configured in an
-initializer or root module before any decorated component renders.
 
 ## See also
 

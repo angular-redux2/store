@@ -1,8 +1,7 @@
 # Getting Started
 
-`@angular-redux2/store` connects a [Redux](https://redux.js.org/) store to an Angular application. `NgRedux` holds the
-store and hands it out as RxJS observables, and a handful of decorators bind state to components without wiring
-subscriptions by hand.
+`@angular-redux2/store` connects a [Redux](https://redux.js.org/) store to an Angular application. The state is an
+Angular signal, so a component reads it like any other signal: no `async` pipe, no subscription, and no decorator.
 
 ## Install
 
@@ -22,150 +21,103 @@ yarn add @angular-redux2/store redux
 
 :::
 
-`rxjs` and `@angular/core` are peer dependencies an Angular application already has.
+`rxjs` and `@angular/core` are peer dependencies that an Angular application already has. No `tsconfig.json` setting
+is needed.
 
-::: warning One `tsconfig.json` setting
-The decorators need `"useDefineForClassFields": false` in `compilerOptions`. A new Angular 22 project targets ES2022
-and leaves the option at its default, `true`, under which every `@Select` property reads `undefined`. See
-[@Select](/decorators/select#how-the-selection-is-resolved).
+Signals are built into the store: the state is an Angular signal, and every selection is a `computed`. See
+[Signals](/store/signals) for using them with `computed`, `effect`, and `linkedSignal`.
+
+::: info 🔁 Coming from 5.x
+Version 6 has no decorators. To keep `@Select`, `@Dispatch`, and `@Substore` while you migrate, add
+`@angular-redux2/decorators`. [Migrating from 5.x](/migration/decorators) explains why they moved and shows both
+styles side by side.
 :::
 
 ## Describe the state
 
+A slice holds one part of the state, its reducer, and one typed action creator per handler:
+
 ```ts
-/**
- * Imports
- */
-
 import { combineReducers } from 'redux';
+import { createSlice } from '@angular-redux2/store';
 
-/**
- * State
- */
-
-export interface AppStateInterface {
-    counter: number;
-}
-
-export const INITIAL_STATE: AppStateInterface = {
-    counter: 0
-};
-
-export const rootReducer = combineReducers({
-    counter: (state: number = 0, action: { type: string }) => action.type === 'INCREMENT' ? state + 1 : state
+export const counter = createSlice('counter', 0, {
+    increment: state => state + 1,
+    add: (state, amount: number) => state + amount
 });
+
+export const rootReducer = combineReducers({ counter: counter.reducer });
+export type AppState = ReturnType<typeof rootReducer>;
 ```
 
 ## Configure the store
 
-Add `provideNgRedux` to the application config. It configures the store before the first component renders:
+Add `provideNgRedux` to the application config:
 
 ```ts
-/**
- * Type-only imports erased during TypeScript compilation.
- */
-
 import type { ApplicationConfig } from '@angular/core';
-
-/**
- * Imports
- */
 
 import { isDevMode } from '@angular/core';
 import { provideNgRedux } from '@angular-redux2/store';
-import { INITIAL_STATE, rootReducer } from './store';
-
-/**
- * Config
- */
+import { rootReducer } from './store';
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideNgRedux({ reducer: rootReducer, initialState: INITIAL_STATE, devTools: isDevMode() })
+        provideNgRedux({ reducer: rootReducer, devTools: isDevMode(), freeze: isDevMode() })
     ]
 };
 ```
 
 | Option          | Notes                                                                                                        |
 |-----------------|--------------------------------------------------------------------------------------------------------------|
-| `reducer`       | The root reducer. It may mutate its state, see [Draft state](/reducers/draft-state).                         |
-| `initialState`  | The state the store starts from.                                                                             |
-| `middleware`    | [Reducer middleware](/store/middleware#reducer-middleware), run in order before the reducer.                 |
-| `enhancers`     | Redux store enhancers, such as `applyMiddleware(...)`.                                                       |
-| `devTools`      | `true` or extension options to connect [Redux DevTools](/store/devtools); off by default.                    |
-| `freeze`        | `true` [freezes the state](/store/ng-redux#freezing-the-state); pass `isDevMode()`. Off by default.          |
+| `reducer`       | The root reducer.                                                                                            |
+| `initialState`  | The state that the store starts from. Leave it out when the reducers have defaults.                          |
+| `middleware`    | Redux [middleware](/store/middleware), such as a thunk or a logger.                                          |
+| `enhancers`     | Redux store enhancers, applied after the middleware.                                                         |
+| `devTools`      | `true` or extension options to connect [Redux DevTools](/store/devtools).                                    |
+| `freeze`        | `true` [freezes every state](/store/ng-redux#freezing-the-state), so a mutation throws. Pass `isDevMode()`.  |
 | `transferState` | `true` carries the state from [server-side rendering](/store/ng-redux#server-side-rendering) to the browser. |
 
-A lazy route adds its own reducer with [`provideNgReduxFeature`](/store/ng-redux#addreducer), so the root reducer
-does not have to list every feature.
-
-An application that bootstraps an `NgModule` can import `NgReduxModule` and call
-[`configureStore`](/store/ng-redux#configurestore) from the constructor of its root module instead.
+The store is created the first time something injects it, and it is ready at that moment.
 
 ## Read and write state
 
 ```ts
-/**
- * Imports
- */
-
-import { AsyncPipe } from '@angular/common';
-import { Component } from '@angular/core';
-import { Dispatch, Select } from '@angular-redux2/store';
-
-/**
- * Type-only imports erased during TypeScript compilation.
- */
-
-import type { Observable } from 'rxjs';
-
-/**
- * Component
- */
+import { Component, inject } from '@angular/core';
+import { injectSelect, NgRedux } from '@angular-redux2/store';
+import { counter, type AppState } from './store';
 
 @Component({
     selector: 'app-counter',
-    imports: [ AsyncPipe ],
     template: `
-        <p>{{ counter$ | async }}</p>
+        <p>{{ count() }}</p>
         <button (click)="increment()">+1</button>
     `
 })
-export class CounterComponent {
-    @Select() readonly counter$: Observable<number>;
+export class Counter {
+    private readonly store = inject(NgRedux<AppState>);
 
-    @Dispatch
-    increment() {
-        return { type: 'INCREMENT' };
+    readonly count = injectSelect((state: AppState) => state.counter);
+
+    increment(): void {
+        this.store.dispatch(counter.actions.increment());
     }
 }
 ```
 
-`@Select()` with no argument selects the property named after the field, without its trailing `$`. `@Dispatch` sends
-what the method returns. Both reach the store through `NgRedux.store`, so the component injects nothing; it could as
-well inject `NgRedux` and call `select('counter')` and `dispatch(...)` itself.
-
-::: tip 📡 Signals
-`injectSelect` returns the same selection as a signal, without decorators, and it works with any
-`useDefineForClassFields` setting:
-
-```ts
-import { injectSelect } from '@angular-redux2/store';
-
-export class CounterComponent {
-    readonly counter = injectSelect<number>('counter'); // {{ counter() }} in the template
-}
-```
-
-See [`selectSignal`](/store/ng-redux#selectsignal).
-:::
+`injectSelect` returns a read-only signal. Annotate the selector parameter with the state type, and TypeScript infers
+the selected type. `dispatch` sends an action, and the signal holds the new value as soon as it returns.
 
 ## Where to go next
 
-- [Example](/example) - a complete application with every feature, and a unit test.
-- [NgRedux](/store/ng-redux) - configuring the store, `select`, `dispatch`, and the static accessor.
-- [Selectors](/store/selectors) - property, path, and function selectors, and comparators.
-- [Decorators](/decorators/select) - `@Select`, `@Select$`, `@Dispatch`, and `@Substore`.
-- [Class reducers](/reducers/class-reducers) - reducers written as classes with typed action creators.
+- [Example](/example) - a complete application with every feature and a unit test.
+- [NgRedux](/store/ng-redux) - the store, `select`, `select$`, and the store options.
+- [Signals](/store/signals) - selections with `computed`, `effect`, `linkedSignal`, and inputs.
+- [Selectors](/store/selectors) - signals, observables, and when a selection updates.
+- [Sub-stores](/store/sub-store) - a store scoped to one branch of the state.
+- [Slices](/reducers/slices) - reducers with typed action creators.
 - [Draft state](/reducers/draft-state) - mutating state inside a reducer.
 - [Mocks](/testing/mocks) - testing components that use the store.
+- [Migrating from 5.x](/migration/decorators) - from decorators to signals.
+- [Design decisions](/design) - what was removed or left out, and why.
+- [Benchmarks](/benchmarks) - version 6 against 5.0.2.

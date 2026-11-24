@@ -1,56 +1,78 @@
 # Example
 
-A small zoneless Angular application that uses most of the API: a plain reducer and a class reducer, reducer
-middleware, Redux DevTools, signal and observable selections, sub-stores, and a unit test on the mock store. Each file
-is complete, so the pieces can be copied into a new project as they are.
+A small zoneless Angular application that uses most of the API: a slice and a plain reducer, Redux DevTools, signal
+and observable selections, sub-stores that follow a signal input, and a unit test on the mock store. Each file is
+complete, so the pieces can be copied into a new project as they are.
 
 ```text
 src/app/
   app.config.ts          provideNgRedux
   app.ts                 the root component
   store/
-    app-state.ts         the state, the root reducer, and a middleware
-    todo.reducer.ts      a class reducer
+    app-state.ts         the state and the root reducer
+    todos.slice.ts       a slice
     user.reducer.ts      a sub-store reducer
-  counter/counter.ts     @Select, @Select$, injectSelect, @Dispatch
+  counter/counter.ts     injectSelect, select$, dispatch
   todos/todos.ts         typed action creators
-  user/user.ts           @Substore
+  user/user.ts           injectSubstore
   counter/counter.spec.ts
 ```
 
 ## The state
 
-`app-state.ts` describes the state, combines the reducers, and adds a reducer middleware that records the last action:
+`todos.slice.ts` holds the todos and their actions:
 
 ```ts
-/**
- * Type-only imports erased during TypeScript compilation.
- */
+import { createSlice } from '@angular-redux2/store';
 
+export interface TodoInterface {
+    title: string;
+    done: boolean;
+}
+
+export const todos = createSlice('todos', <Array<TodoInterface>> [], {
+    add(state, title: string) {
+        state.push({ title, done: false });
+    },
+    toggle(state, index: number) {
+        state[index].done = !state[index].done;
+    }
+});
+```
+
+`user.reducer.ts` is the reducer of one user, used through a sub-store:
+
+```ts
+import { draft } from '@angular-redux2/store';
+
+export interface UserInterface {
+    name: string;
+    loc: number;
+}
+
+export const userReducer = draft(<UserInterface> { name: '', loc: 0 }, (state, action) => {
+    if (action.type === 'ADD_LOC') state.loc += <number> action['payload'];
+});
+```
+
+`app-state.ts` combines them, and wraps the root reducer to record the last action:
+
+```ts
 import type { Reducer } from 'redux';
-import type { TodoInterface } from './todo.reducer';
 import type { UserInterface } from './user.reducer';
-import type { MiddlewareInterface, PayloadActionInterface } from '@angular-redux2/store';
-
-/**
- * Imports
- */
+import type { PayloadActionInterface } from '@angular-redux2/store';
 
 import { combineReducers } from 'redux';
-import { todoReducer } from './todo.reducer';
+import { todos, type TodoInterface } from './todos.slice';
 
-/**
- * State
- */
-
-export interface AppStateInterface {
+export interface AppState {
     counter: number;
     todos: Array<TodoInterface>;
     users: Record<string, UserInterface>;
     lastAction: string;
 }
 
-export const INITIAL_STATE: AppStateInterface = {
+export const INITIAL_STATE: AppState = {
     counter: 0,
     todos: [],
     users: {
@@ -60,97 +82,41 @@ export const INITIAL_STATE: AppStateInterface = {
     lastAction: ''
 };
 
-function counterReducer(state = 0, action: PayloadActionInterface<number>): number {
-    switch (action.type) {
-        case 'INCREMENT':
-            return state + 1;
-        case 'ADD':
-            return state + (action.payload ?? 0);
-        default:
-            return state;
-    }
-}
-
-export const rootReducer = <Reducer<AppStateInterface>> combineReducers({
-    counter: counterReducer,
-    todos: todoReducer,
-    users: (state: Record<string, UserInterface> = INITIAL_STATE.users) => state,
-    lastAction: (state = '') => state
-});
-
-export const stampLastAction: MiddlewareInterface<AppStateInterface> = (state, action, next) =>
-    next({ ...state, lastAction: action.type });
-```
-
-`todo.reducer.ts` is a [class reducer](/reducers/class-reducers). Its methods mutate a
-[draft](/reducers/draft-state), and the `namespace` keeps the action types stable in a minified build:
-
-```ts
-import type { ReducerActionsType } from '@angular-redux2/store';
-import { AbstractReducer, Action } from '@angular-redux2/store';
-
-export interface TodoInterface {
-    title: string;
-    done: boolean;
-}
-
-export class TodoReducer extends AbstractReducer {
-    static override namespace = 'todos';
-    static override actions: ReducerActionsType<TodoReducer>;
-
-    @Action
-    add(state: Array<TodoInterface>, title: string): void {
-        state.push({ title, done: false });
-    }
-
-    @Action
-    toggle(state: Array<TodoInterface>, index: number): void {
-        state[index].done = !state[index].done;
-    }
-}
-
-export const todoReducer = TodoReducer.createReducer<Array<TodoInterface>>([]);
-```
-
-`user.reducer.ts` is the local reducer of a [sub-store](/store/sub-store). It only sees the user at the sub-store's
-base path:
-
-```ts
-import type { PayloadActionInterface } from '@angular-redux2/store';
-
-export interface UserInterface {
-    name: string;
-    loc: number;
-}
-
-export function userReducer(state: UserInterface = { name: '', loc: 0 }, action: PayloadActionInterface<number>): UserInterface {
-    if (action.type === 'ADD_LOC') {
-        state.loc += action.payload ?? 0;
-    }
+function counter(state = 0, action: PayloadActionInterface<number>): number {
+    if (action.type === 'INCREMENT') return state + 1;
+    if (action.type === 'ADD') return state + (action.payload ?? 0);
 
     return state;
 }
+
+const stampLastAction = (reducer: Reducer<AppState>): Reducer<AppState> =>
+    (state, action) => ({ ...reducer(state, action), lastAction: action.type });
+
+export const rootReducer = stampLastAction(<Reducer<AppState>> combineReducers({
+    counter,
+    todos: todos.reducer,
+    users: (state: Record<string, UserInterface> = INITIAL_STATE.users) => state,
+    lastAction: (state = '') => state
+}));
 ```
 
-## Configure the store
-
-`app.config.ts` creates the store before the first component renders, and connects
-[Redux DevTools](/store/devtools) in development:
+## The store
 
 ```ts
 import type { ApplicationConfig } from '@angular/core';
+
 import { provideNgRedux } from '@angular-redux2/store';
+import { INITIAL_STATE, rootReducer } from './store/app-state';
 import { isDevMode, provideZonelessChangeDetection } from '@angular/core';
-import { INITIAL_STATE, rootReducer, stampLastAction } from './store/app-state';
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideZonelessChangeDetection(), // the default from Angular 21 on
+        provideZonelessChangeDetection(),
         provideNgRedux({
             reducer: rootReducer,
             initialState: INITIAL_STATE,
-            middleware: [ stampLastAction ],
-            devTools: isDevMode() && { name: 'example', trace: true }
+            devTools: isDevMode() && { name: 'angular-redux2 demo' },
+            freeze: isDevMode()
         })
     ]
 };
@@ -158,125 +124,106 @@ export const appConfig: ApplicationConfig = {
 
 ## Components
 
-`counter.ts` reads the same value four ways and dispatches with [`@Dispatch`](/decorators/dispatch):
+`counter.ts` reads with signals, derives an observable with `select$`, and dispatches:
 
 ```ts
-import type { Observable } from 'rxjs';
-import type { AppStateInterface } from '../store/app-state';
-
 import { map } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
-import { Component } from '@angular/core';
-import { Dispatch, injectSelect, Select, Select$ } from '@angular-redux2/store';
-
-const doubled = (value$: Observable<number>) => value$.pipe(map(value => value * 2));
+import { Component, inject } from '@angular/core';
+import { injectSelect, NgRedux } from '@angular-redux2/store';
+import type { AppState } from '../store/app-state';
 
 @Component({
     selector: 'app-counter',
     imports: [ AsyncPipe ],
     template: `
-        <p class="counter">{{ counter$ | async }}</p>
+        <p class="counter">{{ count() }}</p>
         <p class="doubled">{{ doubled$ | async }}</p>
-        <p class="signal">{{ counter() }}</p>
-        <p class="last-action">{{ lastAction$ | async }}</p>
-        <button (click)="increment()">+1</button>
-        <button (click)="add(10)">+10</button>
+        <p class="last-action">{{ lastAction() }}</p>
+        <button class="increment" (click)="increment()">+1</button>
+        <button class="add" (click)="add(10)">+10</button>
     `
 })
 export class Counter {
-    @Select() readonly counter$!: Observable<number>;
-    @Select$('counter', doubled) readonly doubled$!: Observable<number>;
-    @Select((state: AppStateInterface) => state.lastAction) readonly lastAction$!: Observable<string>;
+    private readonly store = inject(NgRedux<AppState>);
 
-    readonly counter = injectSelect<number>('counter');
+    readonly count = injectSelect((state: AppState) => state.counter);
+    readonly lastAction = injectSelect((state: AppState) => state.lastAction);
+    readonly doubled$ = this.store.select$(state => state.counter).pipe(map(value => value * 2));
 
-    @Dispatch
-    increment() {
-        return { type: 'INCREMENT' };
+    increment(): void {
+        this.store.dispatch({ type: 'INCREMENT' });
     }
 
-    @Dispatch
-    add(amount: number) {
-        return { type: 'ADD', payload: amount };
+    add(amount: number): void {
+        this.store.dispatch({ type: 'ADD', payload: amount });
     }
 }
 ```
 
-`todos.ts` dispatches the class reducer's typed creators, so a wrong payload is a compile error:
+`todos.ts` dispatches through the typed action creators of the slice:
 
 ```ts
-import type { Observable } from 'rxjs';
-import type { TodoInterface } from '../store/todo.reducer';
-
-import { AsyncPipe } from '@angular/common';
-import { Component } from '@angular/core';
-import { TodoReducer } from '../store/todo.reducer';
-import { Dispatch, Select } from '@angular-redux2/store';
+import { Component, inject } from '@angular/core';
+import { injectSelect, NgRedux } from '@angular-redux2/store';
+import { todos } from '../store/todos.slice';
+import type { AppState } from '../store/app-state';
 
 @Component({
     selector: 'app-todos',
-    imports: [ AsyncPipe ],
     template: `
-        <button (click)="add('Write docs')">Add todo</button>
+        <button class="add-todo" (click)="add('Write docs')">Add todo</button>
         <ul>
-            @for (todo of todos$ | async; track $index) {
+            @for (todo of list(); track $index) {
                 <li [class.done]="todo.done" (click)="toggle($index)">{{ todo.title }}</li>
             }
         </ul>
     `
 })
 export class Todos {
-    @Select() readonly todos$!: Observable<Array<TodoInterface>>;
+    private readonly store = inject(NgRedux<AppState>);
 
-    @Dispatch
-    add(title: string) {
-        return TodoReducer.actions.add(title); // { type: 'todos/add', payload: title }
+    readonly list = injectSelect((state: AppState) => state.todos);
+
+    add(title: string): void {
+        this.store.dispatch(todos.actions.add(title));
     }
 
-    @Dispatch
-    toggle(index: number) {
-        return TodoReducer.actions.toggle(index);
+    toggle(index: number): void {
+        this.store.dispatch(todos.actions.toggle(index));
     }
 }
 ```
 
-`user.ts` is a [`@Substore`](/decorators/substore) component. Its selections and dispatches work on
-`users[userId]`, and the base path follows the `userId` input:
+`user.ts` works on `users[userId]` through a sub-store that follows the signal input:
 
 ```ts
-import type { Observable } from 'rxjs';
-import type { PathSelectorType } from '@angular-redux2/store';
-
-import { AsyncPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
+import { injectSubstore } from '@angular-redux2/store';
 import { userReducer } from '../store/user.reducer';
-import { Dispatch, Select, Substore } from '@angular-redux2/store';
 
 @Component({
     selector: 'app-user',
-    imports: [ AsyncPipe ],
     template: `
-        <p>{{ name$ | async }}: {{ loc$ | async }} lines</p>
-        <button (click)="addCode(100)">Add 100 lines</button>
+        <p class="user">{{ name() }}: <span class="loc">{{ loc() }}</span> lines</p>
+        <button class="add-loc" (click)="addCode(100)">Add 100 lines</button>
     `
 })
-@Substore(userReducer)
 export class User {
     readonly userId = input.required<string>();
 
-    @Select('name') readonly name$!: Observable<string>;
-    @Select('loc') readonly loc$!: Observable<number>;
+    private readonly user = injectSubstore(() => [ 'users', this.userId() ], userReducer);
 
-    basePath = (): PathSelectorType => [ 'users', this.userId() ];
+    readonly name = this.user.select(user => user.name);
+    readonly loc = this.user.select(user => user.loc);
 
-    @Dispatch
-    addCode(lines: number) {
-        return { type: 'ADD_LOC', payload: lines };
+    addCode(lines: number): void {
+        this.user.dispatch({ type: 'ADD_LOC', payload: lines });
     }
 }
 ```
 
-`app.ts` puts them together, with one sub-store per user:
+`app.ts` puts them together:
 
 ```ts
 import { Component } from '@angular/core';
@@ -297,48 +244,42 @@ import { Counter } from './counter/counter';
 export class App {}
 ```
 
-::: warning `useDefineForClassFields`
-The decorators need `"useDefineForClassFields": false` in `tsconfig.json`, which a new Angular project does not set.
-`injectSelect` works either way. See [@Select](/decorators/select#how-the-selection-is-resolved).
-:::
+## A unit test
 
-## Test a component
-
-`counter.spec.ts` swaps the store for the [mock store](/testing/mocks). The selector stub feeds `@Select`, `@Select$`,
-and `injectSelect` alike, and `dispatch` is a spy target:
+`counter.spec.ts` runs the component on the mock store:
 
 ```ts
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { MockNgRedux, MockNgReduxModule } from '@angular-redux2/store/mocks';
+import { MockNgRedux, provideMockNgRedux } from '@angular-redux2/store/mocks';
 import { Counter } from './counter';
+import { INITIAL_STATE, type AppState } from '../store/app-state';
 
 describe('Counter', () => {
+    let store: MockNgRedux<AppState>;
+
     beforeEach(() => {
-        MockNgRedux.reset();
         TestBed.configureTestingModule({
-            imports: [ Counter, MockNgReduxModule ],
-            providers: [ provideZonelessChangeDetection() ]
+            imports: [ Counter ],
+            providers: [ provideZonelessChangeDetection(), provideMockNgRedux(INITIAL_STATE) ]
         });
+        store = TestBed.inject(MockNgRedux<AppState>);
     });
 
-    test('should render what the selector stub emits', async () => {
+    test('should render the state that the test sets', async () => {
         const fixture = TestBed.createComponent(Counter);
-        MockNgRedux.getSelectorStub<unknown, number>('counter').next(42);
+
+        store.patchState({ counter: 42 });
         await fixture.whenStable();
 
-        const element: HTMLElement = fixture.nativeElement;
-        expect(element.querySelector('.counter')?.textContent).toBe('42');
-        expect(element.querySelector('.doubled')?.textContent).toBe('84');
-        expect(element.querySelector('.signal')?.textContent).toBe('42');
+        expect(fixture.nativeElement.querySelector('.counter').textContent).toBe('42');
+        expect(fixture.nativeElement.querySelector('.doubled').textContent).toBe('84');
     });
 
-    test('should dispatch the action that a method returns', () => {
-        const dispatch = vi.spyOn(MockNgRedux.store, 'dispatch');
-
+    test('should record what the component dispatches', () => {
         TestBed.createComponent(Counter).componentInstance.add(5);
 
-        expect(dispatch).toHaveBeenCalledWith({ type: 'ADD', payload: 5 });
+        expect(store.dispatched).toEqual([{ type: 'ADD', payload: 5 }]);
     });
 });
 ```
@@ -346,6 +287,5 @@ describe('Counter', () => {
 ## See also
 
 - [Getting Started](/guide)
-- [NgRedux](/store/ng-redux)
-- [Class reducers](/reducers/class-reducers)
+- [Sub-stores](/store/sub-store)
 - [Mocks](/testing/mocks)

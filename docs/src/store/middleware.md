@@ -1,16 +1,10 @@
 # Middleware
 
-There are two places to hook into a dispatch: Redux middleware, which wraps `dispatch`, and reducer middleware, which
-wraps the reducer.
-
-## Redux middleware
-
-Ordinary Redux middleware sees every action before any reducer runs. Apply it with `applyMiddleware` and pass the
-result as an enhancer:
+Redux middleware sees every action before a reducer runs. Pass it as the `middleware` option:
 
 ```ts
-import { applyMiddleware } from 'redux';
 import type { Middleware } from 'redux';
+import { provideNgRedux } from '@angular-redux2/store';
 
 const logger: Middleware = store => next => action => {
     console.log('dispatching', action);
@@ -20,53 +14,43 @@ const logger: Middleware = store => next => action => {
     return result;
 };
 
-ngRedux.configureStore(rootReducer, INITIAL_STATE, [], [ applyMiddleware(logger) ]);
+provideNgRedux({ reducer: rootReducer, middleware: [ logger ] });
 ```
 
-## Reducer middleware
+The store applies the middleware first, then the `enhancers`, then [Redux DevTools](/store/devtools), so the extension
+records the actions that a middleware dispatches. `dispatch` returns what the middleware returns.
 
-Reducer middleware runs inside the reducer. Each one is handed the state and the action, and calls `next` to pass a
-state, and optionally a different action, on to the one after it.
+## Thunks
+
+`dispatch` is typed for plain actions, so TypeScript rejects a thunk. Dispatch it through the Redux store, typed with
+the thunk middleware's own types, or cast it:
 
 ```ts
-import type { MiddlewareInterface } from '@angular-redux2/store';
+import type { UnknownAction } from 'redux';
+import type { ThunkDispatch } from 'redux-thunk';
 
-const stamp: MiddlewareInterface<AppStateInterface> = (state, action, next) => {
-    return next({ ...state, lastAction: action.type });
-};
-
-const audit: MiddlewareInterface<AppStateInterface> = (state, action, next) => {
-    const nextState = next(state, action);
-    console.log(action.type, state, nextState);
-
-    return nextState;
-};
-
-ngRedux.configureStore(rootReducer, INITIAL_STATE, [ stamp, audit ]);
+const dispatch = <ThunkDispatch<AppState, unknown, UnknownAction>> store.redux.dispatch;
+const user = await dispatch(loadUser('bob'));
 ```
+
+A sub-store hands a thunk to the root store unchanged, and returns what the middleware returns. The thunk's `dispatch`
+and `getState` are the root store's, so an action it dispatches reaches the root reducer, not the sub-store reducer.
+
+::: warning 🔁 Changed from 5.x
+In 5.x, `middleware` meant reducer middleware with the signature `(state, action, next)`. That form is gone. Wrap the
+root reducer instead, which works with any Redux tool:
 
 ```ts
-interface MiddlewareInterface<S = unknown, A extends Action = UnknownAction> {
-    (state: S, action: A, next: NextMiddlewareInterface<A, S>): S;
-}
+const stampLastAction = (reducer: Reducer<AppState>): Reducer<AppState> =>
+    (state, action) => ({ ...reducer(state, action), lastAction: action.type });
 
-interface NextMiddlewareInterface<A extends Action = UnknownAction, S = unknown> {
-    (state: S, action?: A): S;
-}
+provideNgRedux({ reducer: stampLastAction(rootReducer) });
 ```
 
-The chain runs in array order, then routes [sub-store](/store/sub-store) actions, then calls the root reducer last.
-`next` called without an action passes the original one on. Returning without calling `next` stops the chain, and the
-state returned becomes the new state.
-
-::: info Not Redux's `Middleware`
-`MiddlewareInterface` is a different shape from the `Middleware` type `redux` exports: it wraps the reducer, not
-`dispatch`. Type `S` as the root state, the one `NgRedux` is configured with.
 :::
-
-Reducer middleware is set by `configureStore` only; [`provideStore`](/store/ng-redux#providestore) takes none.
 
 ## See also
 
-- [NgRedux](/store/ng-redux#configurestore)
-- [Draft state](/reducers/draft-state)
+- [NgRedux](/store/ng-redux)
+- [DevTools](/store/devtools)
+- [Migrating from 5.x](/migration/decorators)

@@ -11,7 +11,7 @@ import { defineVersionedConfig } from '@viteplus/versions';
 export default defineVersionedConfig({
     title: 'angular-redux2',
     base: '/store/',
-    description: 'Angular bindings for Redux: an injectable store, selection decorators, class reducers, and sub-stores',
+    description: 'Angular bindings for Redux: a signal-native store, typed slices, draft state, and sub-stores',
     head: [
         [ 'link', { rel: 'icon', type: 'image/png', href: '/store/logo.png' }],
         [ 'meta', { name: 'theme-color', content: '#764abc' }],
@@ -41,6 +41,7 @@ export default defineVersionedConfig({
                     text: 'Store',
                     items: [
                         { text: 'NgRedux', link: '/store/ng-redux' },
+                        { text: 'Signals', link: '/store/signals' },
                         { text: 'Selectors', link: '/store/selectors' },
                         { text: 'Sub-stores', link: '/store/sub-store' },
                         { text: 'Middleware', link: '/store/middleware' },
@@ -48,21 +49,14 @@ export default defineVersionedConfig({
                     ]
                 },
                 {
-                    text: 'Decorators',
-                    items: [
-                        { text: '@Select', link: '/decorators/select' },
-                        { text: '@Dispatch', link: '/decorators/dispatch' },
-                        { text: '@Substore', link: '/decorators/substore' }
-                    ]
-                },
-                {
                     text: 'Reducers',
                     items: [
-                        { text: 'Class reducers', link: '/reducers/class-reducers' },
+                        { text: 'Slices', link: '/reducers/slices' },
                         { text: 'Draft state', link: '/reducers/draft-state' }
                     ]
                 },
                 { text: 'Testing', link: '/testing/mocks' },
+                { text: 'Migrating from 5.x', link: '/migration/decorators' },
                 { component: 'VersionSwitcher' }
             ],
             'v5.0.x': [
@@ -127,11 +121,15 @@ export default defineVersionedConfig({
                 { text: 'Getting Started', link: '/guide' },
                 { text: 'Example', link: '/example' },
                 { text: 'Release Notes', link: '/release' },
+                { text: 'Migrating from 5.x', link: '/migration/decorators' },
+                { text: 'Design decisions', link: '/design' },
+                { text: 'Benchmarks', link: '/benchmarks' },
                 {
                     text: 'Store',
                     collapsed: false,
                     items: [
                         { text: 'NgRedux', link: '/store/ng-redux' },
+                        { text: 'Signals', link: '/store/signals' },
                         { text: 'Selectors', link: '/store/selectors' },
                         { text: 'Sub-stores', link: '/store/sub-store' },
                         { text: 'Middleware', link: '/store/middleware' },
@@ -139,19 +137,10 @@ export default defineVersionedConfig({
                     ]
                 },
                 {
-                    text: 'Decorators',
-                    collapsed: false,
-                    items: [
-                        { text: '@Select', link: '/decorators/select' },
-                        { text: '@Dispatch', link: '/decorators/dispatch' },
-                        { text: '@Substore', link: '/decorators/substore' }
-                    ]
-                },
-                {
                     text: 'Reducers',
                     collapsed: false,
                     items: [
-                        { text: 'Class reducers', link: '/reducers/class-reducers' },
+                        { text: 'Slices', link: '/reducers/slices' },
                         { text: 'Draft state', link: '/reducers/draft-state' }
                     ]
                 },
