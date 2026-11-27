@@ -125,6 +125,9 @@ migrate one component at a time, add `@angular-redux2/decorators`:
 import { Dispatch, Select } from '@angular-redux2/decorators'; // was '@angular-redux2/store'
 ```
 
+The decorators package has its own [documentation](https://angular-redux2.github.io/decorators/) and
+[GitHub repository](https://github.com/angular-redux2/decorators).
+
 See [Migrating from 5.x](https://angular-redux2.github.io/store/v6.0.x/migration/decorators) for the reasons and a
 side-by-side guide, and [Design decisions](https://angular-redux2.github.io/store/v6.0.x/design) for everything else that was removed or left out.
 
