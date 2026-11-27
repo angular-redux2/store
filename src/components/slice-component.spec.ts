@@ -3,7 +3,7 @@
  */
 
 import { types } from 'util';
-import { createAction, createSlice } from '@components/slice.component';
+import { createAction, createSlice } from './slice.component';
 
 /**
  * Tests

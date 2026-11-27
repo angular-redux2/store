@@ -3,10 +3,10 @@
  */
 
 import { NgRedux } from '@angular-redux2/store';
+import { provideMockNgRedux } from './ng-redux.provider.mock';
+import { MockNgRedux } from '../services/ng-redux.service.mock';
 import { Injector, runInInjectionContext } from '@angular/core';
-import { MockNgRedux } from '@mocks/services/ng-redux.service.mock';
-import { injectSelect } from '@ng-redux/components/inject.component';
-import { provideMockNgRedux } from '@mocks/providers/ng-redux.provider.mock';
+import { injectSelect } from '../../ng-redux/components/inject.component';
 
 /**
  * Tests

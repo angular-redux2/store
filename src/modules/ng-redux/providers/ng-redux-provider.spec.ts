@@ -8,11 +8,11 @@ import type { EnvironmentInjector, EnvironmentProviders, Provider } from '@angul
  * Imports
  */
 
-import { NgRedux } from '@services/ng-redux.service';
-import { createSlice } from '@components/slice.component';
-import { STATE_KEY } from '@ng-redux/constants/ng-redux.constant';
+import { STATE_KEY } from '../constants/ng-redux.constant';
+import { NgRedux } from '../../../services/ng-redux.service';
+import { createSlice } from '../../../components/slice.component';
+import { provideNgRedux, provideNgReduxFeature } from './ng-redux.provider';
 import { createEnvironmentInjector, Injector, TransferState } from '@angular/core';
-import { provideNgRedux, provideNgReduxFeature } from '@ng-redux/providers/ng-redux.provider';
 
 /**
  * Tests

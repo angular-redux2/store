@@ -3,14 +3,14 @@
  */
 
 import type { UnknownAction } from 'redux';
-import type { DraftContextInterface } from '@components/interfaces/draft-component.interface';
+import type { DraftContextInterface } from './interfaces/draft-component.interface';
 
 /**
  * Imports
  */
 
 import { types } from 'util';
-import { createDraft, draft, finalize } from '@components/draft.component';
+import { createDraft, draft, finalize } from './draft.component';
 
 /**
  * Tests
