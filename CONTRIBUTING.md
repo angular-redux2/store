@@ -94,32 +94,38 @@ package.json          the package manifest; ng-packagr publishes it without scri
 ng-package.json       the build of the main entry point, src/index.ts → dist/
 src/
   index.ts            @angular-redux2/store
-  abstract/ components/ decorators/ interfaces/ modules/ services/
-  specs/              integration specs
+  mocks.ts            @angular-redux2/store/mocks
+  abstract/ components/ constants/ interfaces/ services/
+  modules/
+    ng-redux/         the providers and inject functions
+    mocks/            the testing utilities behind mocks.ts
 mocks/
-  ng-package.json     the @angular-redux2/store/mocks entry point
-  index.ts
-  interfaces/ modules/ services/
+  ng-package.json     the @angular-redux2/store/mocks entry point, built from src/mocks.ts
 ```
 
 ng-packagr names an entry point after its folder's path from the root `ng-package.json`, so `mocks/` at the root
 publishes as `@angular-redux2/store/mocks`, the way `@angular/core/testing` sits beside `src/` in Angular's own repo.
-Under `src/` it would publish as `@angular-redux2/store/src/mocks`. `dist/package.json` gets an `exports` map for `.`
-and `./mocks`, and `README.md` and `LICENSE` are copied into `dist/`.
+Its `ng-package.json` points the entry file at `src/mocks.ts`, so the sources stay under `src/`. `dist/package.json`
+gets an `exports` map for `.` and `./mocks`, and `README.md` and `LICENSE` are copied into `dist/`.
 
 ## Imports in the library
 
-Library code under `src/` and `mocks/` imports its own files by **relative** path. The `@services/*`, `@mocks/*`, and similar
-aliases in `tsconfig.json` are for specs only: ng-packagr does not rewrite them when it bundles, so an alias in
-shipped code still builds, but the published bundle imports `@services/...` and fails to resolve in every consumer.
-The mocks reach the main package as `@angular-redux2/store`.
+Code and specs under `src/` import their own files by **relative** path. ng-packagr bundles only imports that start
+with `.` or `/` and leaves any other import in the bundle as an external package, so a path alias such as
+`@services/...` still builds, but stays in the published bundle and fails to resolve in every consumer.
+
+The mocks reach the main package as `@angular-redux2/store`, which stays external to the mocks bundle, and each other by
+relative path. A relative value import of library code from the mocks would bundle a second copy of it. ESLint
+(`@typescript-eslint/no-restricted-imports` in `eslint.config.mjs`) enforces both rules. The one entry in the
+`tsconfig.json` `paths` maps `@angular-redux2/store` to `src/index.ts`, so the mocks and their specs resolve it in this
+repository.
 
 ## Tests
 
 Tests use **xJet**. Place a `*.spec.ts` file next to the code it covers, and assert the observable behavior of the unit.
 
 ```ts
-import { get } from '@components/object.component';
+import { get } from './object.component';
 
 describe('get', () => {
     test('should return undefined for a path that does not exist', () => {
