@@ -3,7 +3,7 @@
  */
 
 import type { Reducer } from 'redux';
-import type { ActionCreatorType } from '@interfaces/store.interface';
+import type { ActionCreatorType } from './store.interface';
 
 /**
  * The handlers that {@link createSlice} turns into a reducer, one per action.

@@ -4,7 +4,7 @@
 
 import type { Action, Reducer, Unsubscribe } from 'redux';
 import type { CreateComputedOptions, Signal } from '@angular/core';
-import type { BasePathType, SelectorType, StoreInterface, SubStoreInterface } from '@interfaces/store.interface';
+import type { BasePathType, SelectorType, StoreInterface, SubStoreInterface } from '../interfaces/store.interface';
 
 /**
  * Imports

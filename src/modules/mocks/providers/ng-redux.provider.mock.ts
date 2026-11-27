@@ -9,7 +9,7 @@ import type { Provider } from '@angular/core';
  */
 
 import { NgRedux } from '@angular-redux2/store';
-import { MockNgRedux } from '@mocks/services/ng-redux.service.mock';
+import { MockNgRedux } from '../services/ng-redux.service.mock';
 
 /**
  * Provides a {@link MockNgRedux} in place of the real store.
