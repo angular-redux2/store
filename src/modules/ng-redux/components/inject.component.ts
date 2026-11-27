@@ -4,14 +4,14 @@
 
 import type { Reducer } from 'redux';
 import type { CreateComputedOptions, Signal } from '@angular/core';
-import type { BasePathType, SelectorType, SubStoreInterface } from '@interfaces/store.interface';
+import type { BasePathType, SelectorType, SubStoreInterface } from '../../../interfaces/store.interface';
 
 /**
  * Imports
  */
 
 import { DestroyRef, inject } from '@angular/core';
-import { NgRedux } from '@services/ng-redux.service';
+import { NgRedux } from '../../../services/ng-redux.service';
 
 /**
  * Selects one value of the root state as a signal, from inside an injection context.

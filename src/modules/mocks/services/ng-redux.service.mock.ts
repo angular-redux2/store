@@ -9,7 +9,7 @@ import type { Action, UnknownAction } from 'redux';
  */
 
 import { NgRedux } from '@angular-redux2/store';
-import { SET_STATE } from '@mocks/constants/mocks.constant';
+import { SET_STATE } from '../constants/mocks.constant';
 
 /**
  * A stand-in for {@link NgRedux} whose state a test sets directly.

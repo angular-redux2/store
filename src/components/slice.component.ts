@@ -3,14 +3,14 @@
  */
 
 import type { Reducer, UnknownAction } from 'redux';
-import type { ActionCreatorType } from '@interfaces/store.interface';
-import type { CaseReducersType, SliceActionsType, SliceInterface } from '@interfaces/slice.interface';
+import type { ActionCreatorType } from '../interfaces/store.interface';
+import type { CaseReducersType, SliceActionsType, SliceInterface } from '../interfaces/slice.interface';
 
 /**
  * Imports
  */
 
-import { draft } from '@components/draft.component';
+import { draft } from './draft.component';
 
 /**
  * Creates an action creator for one action type.

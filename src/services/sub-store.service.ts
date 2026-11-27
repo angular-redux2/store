@@ -3,19 +3,19 @@
  */
 
 import type { Signal } from '@angular/core';
-import type { NgRedux } from '@services/ng-redux.service';
+import type { NgRedux } from './ng-redux.service';
 import type { Action, Reducer, Unsubscribe } from 'redux';
-import type { BasePathType, PathType, SubStoreInterface } from '@interfaces/store.interface';
-import type { SubstoreRouteInterface } from '@services/interfaces/sub-store-service.interface';
+import type { SubstoreRouteInterface } from './interfaces/sub-store-service.interface';
+import type { BasePathType, PathType, SubStoreInterface } from '../interfaces/store.interface';
 
 /**
  * Imports
  */
 
-import { get } from '@components/object.component';
 import { computed, untracked } from '@angular/core';
-import { AbstractStore } from '@abstract/store.abstract';
-import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
+import { get } from '../components/object.component';
+import { AbstractStore } from '../abstract/store.abstract';
+import { SUBSTORE_ROUTE } from '../constants/sub-store.constant';
 
 /**
  * Turns a base path into a function, so a fixed path and a computed path read the same way.

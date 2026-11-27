@@ -3,13 +3,13 @@
  */
 
 import type { Reducer, UnknownAction } from 'redux';
-import type { DraftContextInterface, DraftNodeInterface, DraftRecordType } from '@components/interfaces/draft-component.interface';
+import type { DraftContextInterface, DraftNodeInterface, DraftRecordType } from './interfaces/draft-component.interface';
 
 /**
  * Imports
  */
 
-import { copy, isPlain } from '@components/object.component';
+import { copy, isPlain } from './object.component';
 
 /**
  * Wraps an object or array in a draft.

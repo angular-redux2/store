@@ -8,7 +8,7 @@ import type { Reducer, UnknownAction } from 'redux';
  * Imports
  */
 
-import { isPlain } from '@components/object.component';
+import { isPlain } from './object.component';
 
 /**
  * Freezes a state tree in place and returns it.

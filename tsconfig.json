@@ -14,30 +14,6 @@
         "noPropertyAccessFromIndexSignature": true,
         "types": [],
         "paths": {
-            "@mocks/*": [
-                "./src/modules/mocks/*"
-            ],
-            "@abstract/*": [
-                "./src/abstract/*"
-            ],
-            "@services/*": [
-                "./src/services/*"
-            ],
-            "@interfaces/*": [
-                "./src/interfaces/*"
-            ],
-            "@components/*": [
-                "./src/components/*"
-            ],
-            "@constants/*": [
-                "./src/constants/*"
-            ],
-            "@ng-redux/*": [
-                "./src/modules/ng-redux/*"
-            ],
-            "@angular-redux2/store": [
-                "./src/index.ts"
-            ]
         }
     },
     "angularCompilerOptions": {

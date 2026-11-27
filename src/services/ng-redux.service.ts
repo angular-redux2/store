@@ -3,10 +3,10 @@
  */
 
 import type { Signal } from '@angular/core';
-import type { NgReduxConfigInterface } from '@interfaces/provider.interface';
-import type { BasePathType, SubStoreInterface } from '@interfaces/store.interface';
-import type { DevToolsGlobalInterface } from '@services/interfaces/ng-redux-service.interface';
-import type { SubstoreRouteInterface } from '@services/interfaces/sub-store-service.interface';
+import type { NgReduxConfigInterface } from '../interfaces/provider.interface';
+import type { BasePathType, SubStoreInterface } from '../interfaces/store.interface';
+import type { DevToolsGlobalInterface } from './interfaces/ng-redux-service.interface';
+import type { SubstoreRouteInterface } from './interfaces/sub-store-service.interface';
 import type { Action, Reducer, Store, StoreEnhancer, Unsubscribe, UnknownAction } from 'redux';
 
 /**
@@ -14,11 +14,11 @@ import type { Action, Reducer, Store, StoreEnhancer, Unsubscribe, UnknownAction 
  */
 
 import { signal } from '@angular/core';
-import { SubStore } from '@services/sub-store.service';
-import { AbstractStore } from '@abstract/store.abstract';
-import { freezeReducer } from '@components/freeze.component';
-import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
-import { get, isPlain, set } from '@components/object.component';
+import { SubStore } from './sub-store.service';
+import { AbstractStore } from '../abstract/store.abstract';
+import { freezeReducer } from '../components/freeze.component';
+import { SUBSTORE_ROUTE } from '../constants/sub-store.constant';
+import { get, isPlain, set } from '../components/object.component';
 import { applyMiddleware, compose, legacy_createStore as createStore } from 'redux';
 
 /**

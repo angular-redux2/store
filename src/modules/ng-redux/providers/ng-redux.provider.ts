@@ -4,14 +4,14 @@
 
 import type { Reducer } from 'redux';
 import type { EnvironmentProviders } from '@angular/core';
-import type { NgReduxConfigInterface } from '@interfaces/provider.interface';
+import type { NgReduxConfigInterface } from '../../../interfaces/provider.interface';
 
 /**
  * Imports
  */
 
-import { NgRedux } from '@services/ng-redux.service';
-import { STATE_KEY } from '@ng-redux/constants/ng-redux.constant';
+import { STATE_KEY } from '../constants/ng-redux.constant';
+import { NgRedux } from '../../../services/ng-redux.service';
 import { inject, makeEnvironmentProviders, provideEnvironmentInitializer, TransferState } from '@angular/core';
 
 /**

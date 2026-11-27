@@ -2,7 +2,7 @@
  * Type-only imports erased during TypeScript compilation.
  */
 
-import type { PathType } from '@interfaces/store.interface';
+import type { PathType } from '../../interfaces/store.interface';
 
 /**
  * The route that a substore adds to each action it dispatches.
