@@ -112,7 +112,8 @@ export class User {
 
 To migrate one component at a time, add `@angular-redux2/decorators`. It brings back the 5.x `@Select`, `@Select$`,
 `@Dispatch`, and `@Substore` on top of the version 6 store, so existing components keep working while new ones use
-signals.
+signals. Its full documentation lives at [angular-redux2.github.io/decorators](https://angular-redux2.github.io/decorators/),
+and its source at [github.com/angular-redux2/decorators](https://github.com/angular-redux2/decorators).
 
 ::: code-group
 
@@ -243,3 +244,5 @@ The `middleware` option now takes Redux middleware. The 5.x reducer middleware i
 - [Selectors](/store/selectors)
 - [Sub-stores](/store/sub-store)
 - [Release Notes](/release)
+- [@angular-redux2/decorators documentation](https://angular-redux2.github.io/decorators/)
+- [@angular-redux2/decorators on GitHub](https://github.com/angular-redux2/decorators)
