@@ -2,6 +2,15 @@
 
 What changed in the notable releases of `@angular-redux2/store`. The current line is `v6.0.x`.
 
+## v6.0.1
+
+- **Fixed**: An application that installed 6.0.0 failed to build with `Could not resolve "@services/ng-redux.service"`
+  and similar errors. The published bundle imported the library's own files through internal path aliases instead of
+  including them, so `@angular-redux2/store` and `@angular-redux2/store/mocks` are self-contained again.
+- **Fixed**: The published types resolve again. They imported the same internal aliases, so `NgRedux` lost its
+  members, `select` and `select$` were reported as missing, and selector parameters were typed as implicit `any`.
+- **Migration**: Update from 6.0.0 to 6.0.1. The API is unchanged, so no application code changes.
+
 ## v6.0.0
 
 Version 6 rebuilds the store on Angular signals. The state is a signal, every selection is a `computed`, and the
