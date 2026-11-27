@@ -3,14 +3,14 @@
  */
 
 import type { Unsubscribe } from 'redux';
-import type { SubStoreInterface } from '@interfaces/store.interface';
+import type { SubStoreInterface } from '../interfaces/store.interface';
 
 /**
  * Imports
  */
 
+import { AbstractStore } from './store.abstract';
 import { computed, signal } from '@angular/core';
-import { AbstractStore } from '@abstract/store.abstract';
 
 /**
  * Tests

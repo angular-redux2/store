@@ -9,9 +9,9 @@ import type { UnknownAction } from 'redux';
  */
 
 import { signal } from '@angular/core';
-import { NgRedux } from '@services/ng-redux.service';
-import { pathOf } from '@services/sub-store.service';
-import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
+import { NgRedux } from './ng-redux.service';
+import { pathOf } from './sub-store.service';
+import { SUBSTORE_ROUTE } from '../constants/sub-store.constant';
 
 /**
  * Tests

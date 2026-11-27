@@ -9,8 +9,8 @@ import type { UnknownAction } from 'redux';
  */
 
 import { createStore } from 'redux';
-import { draft } from '@components/draft.component';
-import { deepFreeze, freezeReducer } from '@components/freeze.component';
+import { draft } from './draft.component';
+import { deepFreeze, freezeReducer } from './freeze.component';
 
 /**
  * Tests

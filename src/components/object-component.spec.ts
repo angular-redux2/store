@@ -3,7 +3,7 @@
  */
 
 import { runInNewContext } from 'vm';
-import { copy, get, isPlain, set } from '@components/object.component';
+import { copy, get, isPlain, set } from './object.component';
 
 /**
  * Tests

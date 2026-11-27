@@ -12,8 +12,8 @@ import type { Middleware, Reducer, StoreEnhancer, UnknownAction } from 'redux';
 import { from } from 'rxjs';
 import { signal } from '@angular/core';
 import { combineReducers } from 'redux';
-import { NgRedux } from '@services/ng-redux.service';
-import { SUBSTORE_ROUTE } from '@constants/sub-store.constant';
+import { NgRedux } from './ng-redux.service';
+import { SUBSTORE_ROUTE } from '../constants/sub-store.constant';
 
 /**
  * Tests

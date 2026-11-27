@@ -8,9 +8,9 @@ import type { UnknownAction } from 'redux';
  * Imports
  */
 
-import { NgRedux } from '@services/ng-redux.service';
+import { NgRedux } from '../../../services/ng-redux.service';
+import { injectSelect, injectSubstore } from './inject.component';
 import { Injector, runInInjectionContext, signal } from '@angular/core';
-import { injectSelect, injectSubstore } from '@ng-redux/components/inject.component';
 
 /**
  * Tests

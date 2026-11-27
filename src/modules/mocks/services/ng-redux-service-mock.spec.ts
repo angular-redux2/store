@@ -8,7 +8,7 @@ import type { UnknownAction } from 'redux';
  * Imports
  */
 
-import { MockNgRedux } from '@mocks/services/ng-redux.service.mock';
+import { MockNgRedux } from './ng-redux.service.mock';
 
 /**
  * Tests
