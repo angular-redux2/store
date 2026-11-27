@@ -272,6 +272,49 @@ export default defineConfig([
         }
     },
     {
+        // Shipped code: ng-packagr bundles only relative imports and leaves anything else as an external import,
+        // so an alias or the package name would stay in the published bundle and fail to resolve in a consumer.
+        files: [ 'src/**/*.ts' ],
+        ignores: [ '**/*.spec.ts', 'src/mocks.ts', 'src/modules/mocks/**' ],
+        rules: {
+            '@typescript-eslint/no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: '^@(angular-redux2/store|abstract|components|constants|interfaces|mocks|ng-redux|services)(/|$)',
+                            message: 'Import library code by relative path, so ng-packagr bundles it.'
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        // Shipped mocks: they reach the library through the package name, which stays external to the mocks bundle,
+        // and each other by relative path. A relative value import of library code would bundle a second copy of it.
+        files: [ 'src/mocks.ts', 'src/modules/mocks/**/*.ts' ],
+        ignores: [ '**/*.spec.ts' ],
+        rules: {
+            '@typescript-eslint/no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: '^@(angular-redux2/store/mocks|abstract|components|constants|interfaces|mocks|ng-redux|services)(/|$)',
+                            message: 'Import the library through @angular-redux2/store, and other mocks by relative path.'
+                        },
+                        {
+                            regex: '^(\\.\\./){2,}',
+                            allowTypeImports: true,
+                            message: 'Import library values through @angular-redux2/store, not by relative path.'
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
         files: [ '**/*.js', '**/*.cjs', '**/*.mjs' ],
         languageOptions: {
             parser: undefined,
